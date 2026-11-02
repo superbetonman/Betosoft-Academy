@@ -89,6 +89,7 @@
     ".academie-demo span{flex:1 1 280px}" +
     ".academie-demo a{display:inline-flex;align-items:center;min-height:36px;padding:6px 12px;border-radius:4px;text-decoration:none;font-weight:600;border:1px solid #1E5A66;color:#1E5A66;background:transparent}" +
     ".academie-demo a.hoofd{background:#B25C31;border-color:#B25C31;color:#fff}" +
+    ".academie-beheer{border-color:#1E5A66;background:rgba(30,90,102,.07)}" +
     "@media (prefers-color-scheme:dark){.academie-demo a{color:#6FB0BC;border-color:#6FB0BC}}"
 
   function voegToe() {
@@ -105,6 +106,13 @@
         (A.product ? '<a class="hoofd" href="/aanvragen/?product=' + encodeURIComponent(A.product) + '">Inschrijven</a>' : "") +
         '<a href="/#cursussen">Alle cursussen</a>'
       main.insertBefore(band, main.firstChild)
+    }
+    if (A.beheer) {
+      var bh = document.createElement("div")
+      bh.className = "academie-demo academie-beheer"
+      bh.setAttribute("role", "note")
+      bh.innerHTML = "<span><b>Beheerdersversie.</b> Je ziet de opnamebriefings, AI-prompts en het mediaplan. Cursisten krijgen de cursus zonder die productie-informatie; de beeldvakken staan bij hen als placeholder.</span>"
+      main.insertBefore(bh, main.firstChild)
     }
     var onder = document.createElement("div")
     onder.className = "academie-onder"

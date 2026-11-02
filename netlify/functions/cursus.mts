@@ -1,11 +1,13 @@
 import type { Config, Context } from "@netlify/functions"
 import { db } from "../lib/db.mts"
-import { aangemeld } from "../lib/sessie.mts"
+import { aangemeld, isBeheer } from "../lib/sessie.mts"
 import { CURSUSCODE, magCursus } from "../lib/cursustoegang.mts"
 
 /**
  * Serveert de cursusapps uit de databank (tabel cursus_bestanden):
  *   /cursus/<CODE>/          volledige cursus, enkel na aanmelden en met toegang (beheerders altijd, als tester)
+ *                            cursisten krijgen index.html (zonder opnamebriefings, AI-prompts en mediaplan),
+ *                            beheerders beheer.html (met die productie-informatie)
  *   /cursus/<CODE>/m2.js     losse modulescripts van dezelfde cursus
  *   /demo/<CODE>/            publieke teaser (start + eerste lessen; de rest zit niet in het bestand)
  */
@@ -30,6 +32,7 @@ export default async (req: Request, context: Context) => {
   if (m[3] === undefined || m[2] !== code) return Response.redirect(new URL(`/${soort}/${code}/`, url).toString(), 301)
 
   let pad = m[4] || ""
+  let beheer = false
   if (soort === "demo") {
     if (pad !== "" && pad !== "index.html") return pagina("Niet in de demo", "Dit onderdeel zit in de volledige cursus.", `/demo/${code}/`, "Terug naar de demo", 404)
     pad = "demo.html"
@@ -41,6 +44,7 @@ export default async (req: Request, context: Context) => {
       if (pad !== "index.html") return new Response("Niet aangemeld", { status: 401 })
       return Response.redirect(new URL(`/aanmelden/?terug=${encodeURIComponent(`/cursus/${code}/`)}`, url).toString(), 302)
     }
+    beheer = isBeheer(g)
     if (!(await magCursus(g, code)))
       return pagina(
         "Geen toegang tot deze cursus",
@@ -51,7 +55,10 @@ export default async (req: Request, context: Context) => {
       )
   }
 
-  const [b] = await db()`SELECT type, inhoud FROM cursus_bestanden WHERE cursus = ${code} AND pad = ${pad}`
+  // beheerders: de versie met briefings en prompts, als die bestaat
+  const paden = beheer && pad === "index.html" ? ["beheer.html", "index.html"] : [pad]
+  const rijen = await db()`SELECT pad, type, inhoud FROM cursus_bestanden WHERE cursus = ${code} AND pad = ANY(${paden}::text[])`
+  const b = paden.map((p) => rijen.find((r: any) => r.pad === p)).find(Boolean)
   if (!b) return pagina("Niet gevonden", soort === "demo" ? "Voor deze cursus is er nog geen demo." : "Deze cursus is nog niet beschikbaar.", "/#cursussen", "Naar de cursussen", 404)
   return new Response(b.inhoud, {
     headers: {

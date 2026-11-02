@@ -1,5 +1,7 @@
 // Bouwt de cursusbestanden voor de academie uit de artifacts:
-//  - index.html: volledige cursus + brug naar de academie (voortgang in de databank)
+//  - beheer.html: de cursus zoals gebouwd, met opnamebriefings, AI-prompts en mediaplan (enkel voor beheerders)
+//  - index.html: cursistenversie: zonder briefings, prompts en mediaplan; de beeldvakken blijven als placeholder
+//    (die teksten zitten ook niet in de broncode die de cursist ontvangt)
 //  - demo.html: ingekorte teaser (module 0 + de eerste twee lessen van module 1); de inhoud van de andere modules
 //    zit NIET in het bestand, zodat ze ook niet in de broncode van de demo te lezen is.
 // Gebruik: npm i acorn@8 acorn-walk@8 (in een aparte map) en dan node bouw.mjs <uitmap>.
@@ -27,8 +29,8 @@ const CURSUSSEN = [
 ]
 const LESSEN_IN_DEMO = 2
 
-function injecteer(html, c, demo) {
-  const cfg = JSON.stringify({ cursus: c.code, demo, product: c.product || null })
+function injecteer(html, c, { demo = false, beheer = false } = {}) {
+  const cfg = JSON.stringify({ cursus: c.code, demo, beheer, product: c.product || null })
   const tag = `<script>window.ACADEMIE=${cfg};</script><script src="/cursus-academie.js"></script>`
   const m = html.match(/<meta charset=[^>]*>/i)
   if (!m) throw new Error(c.code + ": geen meta charset")
@@ -122,6 +124,87 @@ function korteScript(code, label, extern = new Set()) {
   return { code: uit, modules, gezien }
 }
 
+// ---------- Cursistenversie: geen opnamebriefings, AI-prompts of mediaplan ----------
+// Deze functies worden leeggemaakt (hun teksten verdwijnen zo ook uit de broncode).
+const LEEG = { briefHtml: 'return "";', fichePrompt: 'return "";', renderMedia: 'location.replace("#start");' }
+const PRODUCTIEZIN = /[^.]*(referentiebeeld|in elk shot|AI-animatie die|opnamedag|draaiboek)[^.]*\.\s*/gi
+
+function zonderProductie(code, label) {
+  let ast
+  try {
+    ast = acorn.parse(code, { ecmaVersion: "latest", sourceType: "script", allowReturnOutsideFunction: true })
+  } catch (e) {
+    return { code, fout: `${label}: niet te parsen (${e.message})`, n: 0 }
+  }
+  const vervang = []
+  let n = 0
+  walk.full(ast, (k) => {
+    // functies die briefings, prompts of het mediaplan opbouwen: de hele inhoud weg
+    if (k.type === "FunctionDeclaration" && k.id && LEEG[k.id.name] !== undefined) {
+      vervang.push([k.body.start, k.body.end, "{ " + LEEG[k.id.name] + " }"]); n++
+      return
+    }
+    // AI-stijl en personages voor de beeldprompts (const AI_STYLE = "...")
+    if (k.type === "VariableDeclarator" && k.id.type === "Identifier" && /^AI_[A-Z_]+$/.test(k.id.name) && k.init) {
+      vervang.push([k.init.start, k.init.end, '""']); n++
+      return
+    }
+    if (k.type !== "ObjectExpression") return
+    const t = prop(k, "t")
+    if (t && t.value.type === "Literal" && t.value.value === "media") {
+      // beeldvak: briefing (shot) en prompt (ai) weg; de placeholder toont "Volgt binnenkort" in plaats van de opnameduur
+      const shot = prop(k, "shot"), ai = prop(k, "ai"), cap = prop(k, "cap")
+      if (ai) { vervang.push([ai.start, ai.end, 'ai: ""']); n++ }
+      if (shot) { vervang.push([shot.start, shot.end, 'shot: { duur: "Volgt binnenkort" }']); n++ }
+      if (cap && cap.value.type === "Literal" && typeof cap.value.value === "string" && PRODUCTIEZIN.test(cap.value.value)) {
+        PRODUCTIEZIN.lastIndex = 0
+        const schoon = cap.value.value.replace(PRODUCTIEZIN, "").trim()
+        vervang.push([cap.value.start, cap.value.end, JSON.stringify(schoon)]); n++
+      }
+      PRODUCTIEZIN.lastIndex = 0
+      return
+    }
+    // posterprompt bij een fiche
+    const pr = prop(k, "prompt")
+    const tekst = !pr ? "" : pr.value.type === "Literal" ? String(pr.value.value) : pr.value.type === "TemplateLiteral" ? pr.value.quasis.map((q) => q.value.cooked).join(" ") : ""
+    if (pr && /poster|ontwerp/i.test(tekst)) {
+      vervang.push([pr.value.start, pr.value.end, '""']); n++
+    }
+  })
+  vervang.sort((a, b) => b[0] - a[0])
+  let uit = code
+  for (const [a, b, t] of vervang) uit = uit.slice(0, a) + t + uit.slice(b)
+  return { code: uit, n }
+}
+
+// Tekstvervangingen in de weergave (in elke cursus die ze heeft)
+const WEERGAVE = [
+  ['<a href="#media">Mediaplan</a>', ""],
+  ['<a class="btn" href="#media">${I.video}Mediaplan</a>', ""],
+  ['<a class="btn" href="#fPrompt">Prompt voor een andere AI</a>', ""],
+  ['<section class="prompt" id="fPrompt">', '<section class="prompt" id="fPrompt" hidden>'],
+  ['<button class="btn" type="button" data-copy="fp-${b.id}">Kopieer posterprompt</button>', ""],
+  ['<button class="btn" type="button" data-copy="fp2-${id}">Kopieer posterprompt</button>', ""],
+  [", of laat ze als poster ontwerpen met de tekst onderaan.", "."],
+  ["Open de cursus op claude.ai, of kopieer de prompt hieronder.", "Probeer het opnieuw in een andere browser."],
+]
+
+function cursistVersie(html, c) {
+  const verslag = []
+  let h = html.replace(/(<script(?![^>]*\bsrc=)[^>]*>)([\s\S]*?)(<\/script>)/g, (alles, open, inhoud, sluit) => {
+    if (inhoud.length < 2000) return alles
+    const r = zonderProductie(inhoud, c.code)
+    if (r.fout) verslag.push(r.fout)
+    if (r.n) verslag.push(`${r.n} productievelden`)
+    return open + r.code + sluit
+  })
+  for (const [a, b] of WEERGAVE) {
+    const n = h.split(a).length - 1
+    if (n) { h = h.split(a).join(b); verslag.push(`${n}× ${a.slice(0, 28)}`) }
+  }
+  return { html: h, verslag }
+}
+
 function maakDemo(html, c) {
   // losse modulescripts (m2.js ...) horen niet bij de demo
   const extern = new Set([...html.matchAll(/<script src="(m\d+)\.js"><\/script>/g)].map((x) => x[1]))
@@ -152,16 +235,18 @@ for (const c of CURSUSSEN) {
   const bronHtml = fs.readFileSync(path.join(T, c.bron), "utf8")
   const map = path.join(uit, c.code)
   fs.mkdirSync(map, { recursive: true })
-  fs.writeFileSync(path.join(map, "index.html"), injecteer(bronHtml, c, false))
+  fs.writeFileSync(path.join(map, "beheer.html"), injecteer(bronHtml, c, { beheer: true }))
+  const cv = cursistVersie(bronHtml, c)
+  fs.writeFileSync(path.join(map, "index.html"), injecteer(cv.html, c))
   const extra = c.extra ? fs.readdirSync(c.extra).filter((f) => /^m\d+\.js$/.test(f)) : []
   for (const f of extra) fs.copyFileSync(path.join(c.extra, f), path.join(map, f))
   let demo = null
   if (!c.geenDemo) {
-    const d = maakDemo(bronHtml, c)
-    fs.writeFileSync(path.join(map, "demo.html"), injecteer(d.html, c, true))
+    const d = maakDemo(cv.html, c)
+    fs.writeFileSync(path.join(map, "demo.html"), injecteer(d.html, c, { demo: true }))
     demo = { grootte: d.html.length, verslag: d.verslag }
   }
-  overzicht.push({ code: c.code, volledig: bronHtml.length, extra, demo })
+  overzicht.push({ code: c.code, volledig: bronHtml.length, cursist: cv.verslag, extra, demo })
 }
 fs.writeFileSync(path.join(uit, "cursussen.json"), JSON.stringify(CURSUSSEN, null, 1))
 console.log(JSON.stringify(overzicht, null, 1))

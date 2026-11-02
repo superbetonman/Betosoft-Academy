@@ -47,6 +47,9 @@ Netlify (`betosoft-academy`, statische pagina's + functies in Frankfurt) en Neon
 - `public/cursus-academie.js` levert de functies die de apps verwachten (`window.claude.use("db" | "user" | "downloads")`):
   voortgang en eigen gegevens gaan per gebruiker naar `/api/leren/gegevens/<CODE>`. Het voegt ook de disclaimer, de demoband en de foutmelder toe.
 - Toegang tot `/cursus/<CODE>/`: beheerders altijd (tester); een cursist als hij toegang heeft tot alle modules van de cursus.
+- Twee versies per cursus: `index.html` voor cursisten (zonder opnamebriefings, AI-prompts, posterprompts en mediaplan; de
+  beeldvakken staan als placeholder "Volgt binnenkort") en `beheer.html` voor beheerders (met die productie-informatie).
+  De demo vertrekt van de cursistenversie. Die teksten zitten dus ook niet in de broncode die een cursist ontvangt.
 - Bijwerken: `scripts/cursusapps/bouw.mjs` (volledige versie + demo) en `scripts/cursusapps/opladen.mjs`.
 
 ## Meldingen
