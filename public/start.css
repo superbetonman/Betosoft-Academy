@@ -156,4 +156,12 @@ body.start { background: var(--papier); }
 .startvoet nav a { text-decoration: none; border-bottom: 1px solid transparent; }
 .startvoet nav a:hover, .startvoet nav a:focus-visible { border-bottom-color: #A9BDC3; }
 .startvoet :focus-visible { outline: 2px solid #E39A6F; outline-offset: 2px; }
+.startvoet .disclaimer { max-width: 680px; color: #F3EFE7; font-size: 12.5px; margin: 10px auto 0; }
 .startvoet .versie { font-size: 11px; letter-spacing: .08em; margin: 0; }
+
+/* Prijs op de tegel */
+.cursus .tegelprijs { padding: 12px 16px 0; font-size: 15px; }
+.cursus .tegelprijs .mono { font-size: 18px; font-weight: 500; }
+.cursus .tegelprijs .zacht { font-size: 13px; }
+.prijs-volgt { color: var(--inkt-zacht); }
+.prijzen td.num a { font-family: var(--sans); }

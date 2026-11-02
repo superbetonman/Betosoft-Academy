@@ -1,5 +1,6 @@
-// Startpagina: cursusoverzicht (uit /cursussen.js), prijzen en voorwaarden (uit de databank via /api/producten).
-import { esc, euro, getal } from "/gemeen.js"
+// Startpagina: cursusoverzicht (uit /cursussen.js), prijzen en voorwaarden (uit de databank via /prijs.js).
+import { esc, getal } from "/gemeen.js"
+import { laadProducten, productenVan, tegelPrijs, prijsTekst, voorwaardenItems } from "/prijs.js"
 import { CURSUSSEN, GROEPEN } from "/cursussen.js"
 
 const $ = (s) => document.querySelector(s)
@@ -54,6 +55,12 @@ const STATUS = {
   voorbereiding: `<span class="status s-concept">in opbouw</span>`,
 }
 const VOLGORDE = { open: 0, binnenkort: 1, voorbereiding: 2 }
+let PRODUCTEN = []
+
+// Open = er is een actief product voor deze cursus in de databank (anders de status uit de catalogus)
+function status(c) {
+  return productenVan(PRODUCTEN, c.code).length ? "open" : c.status === "open" ? "binnenkort" : c.status
+}
 
 function modulelijst(c) {
   let niveau = null
@@ -71,131 +78,79 @@ function modulelijst(c) {
 }
 
 function kaart(c) {
+  const st = status(c)
   const cijfers = [
     [c.modules_klaar < c.modules_aantal ? `${c.modules_klaar}/${c.modules_aantal}` : c.modules_aantal, c.modules_klaar < c.modules_aantal ? "modules klaar" : "modules"],
     [c.lessen ?? "—", "lessen"],
     [c.toetsen, "toetsen"],
     [c.studieminuten ? `±${uren(c.studieminuten)}` : "—", "uur"],
   ]
-  const actie =
-    c.status === "open"
-      ? `<a class="knop" href="/aanvragen/?product=${encodeURIComponent(c.product)}">Inschrijven</a>`
-      : `<span class="zacht">Inschrijven kan bij de opening.</span>`
-  return `<article class="cursus${c.status === "open" ? " uitgelicht" : ""}" data-groep="${esc(c.groep)}">
-    <div class="ckop"><span class="tag">${esc(c.code)}</span>${STATUS[c.status] || ""}</div>
+  const tp = st === "open" ? tegelPrijs(PRODUCTEN, c.code) : null
+  const knoppen = [
+    st === "open" && tp ? `<a class="knop" href="/aanvragen/?product=${encodeURIComponent(tp.product.code)}">Inschrijven</a>` : "",
+    c.demo ? `<a class="knop licht" href="/demo/${encodeURIComponent(c.code)}/">Bekijk de demo</a>` : "",
+  ].join("")
+  return `<article class="cursus${st === "open" ? " uitgelicht" : ""}" data-groep="${esc(c.groep)}">
+    <div class="ckop"><span class="tag">${esc(c.code)}</span>${STATUS[st] || ""}</div>
     <h3>${esc(c.titel)}</h3>
     <p class="voor">${esc(c.doelgroep)}</p>
     <p class="oms">${esc(c.omschrijving)}</p>
     ${c.opmerking ? `<p class="opm">${esc(c.opmerking)}</p>` : ""}
     <div class="cijferrij">${cijfers.map(([v, l]) => `<div><b>${esc(v)}</b><span>${l}</span></div>`).join("")}</div>
-    ${c.normen?.length ? `<div class="normen">${c.normen.map((n) => `<span class="tag">${esc(n)}</span>`).join("")}</div>` : ""}
     ${c.modules?.length ? `<details><summary>Bekijk de modules</summary><ol class="modlijst">${modulelijst(c)}</ol></details>` : ""}
-    <div class="cvoet">${actie}</div>
+    <div class="tegelprijs">${tp ? `${tp.tekst}${tp.prijs ? ` <span class="zacht">excl. btw</span>` : ""}` : `<span class="zacht">${st === "open" ? "" : "Prijs bij de opening"}</span>`}</div>
+    <div class="cvoet">${knoppen || `<span class="zacht">Inschrijven kan bij de opening.</span>`}</div>
   </article>`
 }
 
 function cursussen() {
   const lijst = CURSUSSEN.filter((c) => filterGroep === "alle" || c.groep === filterGroep).sort(
-    (a, b) => (VOLGORDE[a.status] ?? 9) - (VOLGORDE[b.status] ?? 9),
+    (a, b) => (VOLGORDE[status(a)] ?? 9) - (VOLGORDE[status(b)] ?? 9),
   )
   $("#cursusrooster").innerHTML = lijst.map(kaart).join("")
 }
 
-// ---------- Prijzen en voorwaarden ----------
-const PRIJSGROEPEN = [
-  ["abonnement", "Abonnement", "toegang tot alle cursussen"],
-  ["traject", "Volledige cursus of traject", "alle modules van een functie"],
-  ["module", "Losse modules", "één module naar keuze"],
-]
-
-function toegang(p) {
-  if (p.periode === "maand") return "per maand, loopt zolang je betaalt"
-  if (p.geldigheid_maanden) return `${getal(p.geldigheid_maanden)} maanden vanaf activatie`
-  return "—"
-}
-
-function prijs(p) {
-  if (p.prijs_excl_btw === null || p.prijs_excl_btw === undefined) return `<span class="opaanvraag">op aanvraag</span>`
-  return `${euro(p.prijs_excl_btw)}${p.periode === "maand" ? " / maand" : ""}`
-}
-
-function prijstabel(rijen) {
-  return `<div class="scroll-x"><table class="prijzen">
-    <colgroup><col class="c-product"><col class="c-toegang"><col class="c-prijs"></colgroup>
-    <thead><tr><th>Product</th><th>Toegang</th><th class="num">Prijs excl. btw</th></tr></thead>
-    <tbody>${rijen
-      .map(
-        (p) => `<tr><td><strong>${esc(p.naam)}</strong>${p.beschrijving ? `<span class="zacht">${esc(p.beschrijving)}</span>` : ""}</td>
-        <td class="toegang">${esc(toegang(p))}</td><td class="num">${prijs(p)}</td></tr>`,
-      )
-      .join("")}</tbody></table></div>`
-}
-
-function prijzen(producten, regels) {
+// ---------- Prijzen in het kort (de volledige lijst staat op /prijzen/) ----------
+function prijsoverzicht(producten, regels) {
   const btw = regels.btw_pct ?? 21
-  const groepen = PRIJSGROEPEN.map(([type, titel, sub]) => {
-    const rijen = producten.filter((p) => p.type === type)
-    if (!rijen.length) return ""
-    const tabel = prijstabel(rijen)
-    const kop = `<h3>${esc(titel)} <span class="zacht">${esc(sub)} · ${rijen.length} ${rijen.length === 1 ? "product" : "producten"}</span></h3>`
-    return type === "module"
-      ? `<div class="prijsgroep"><details><summary>${kop}</summary>${tabel}</details></div>`
-      : `<div class="prijsgroep">${kop}${tabel}</div>`
-  }).join("")
-  const zonderPrijs = producten.length > 0 && producten.every((p) => p.prijs_excl_btw === null)
-  $("#prijsinleiding").innerHTML =
-    `Alle prijzen zijn exclusief <span class="mono">${getal(btw)}&#8239;%</span> btw. Een centrale betaalt de prijs per plaats.` +
-    (zonderPrijs ? " De prijzen worden vastgelegd tijdens de testfase; tot dan vermelden we ‘op aanvraag’." : "") +
-    " Cursussen in voorbereiding krijgen hun prijs bij de opening."
-  $("#prijstabellen").innerHTML = groepen || `<p class="zacht">Er zijn nog geen producten gepubliceerd.</p>`
-}
-
-function meestVoorkomend(getallen, standaard) {
-  const n = {}
-  for (const g of getallen) if (g) n[g] = (n[g] || 0) + 1
-  const top = Object.entries(n).sort((a, b) => b[1] - a[1])[0]
-  return top ? Number(top[0]) : standaard
-}
-
-function voorwaarden(producten, regels) {
-  const m = (v) => `<span class="mono">${getal(v)}</span>`
-  const toegangMnd = meestVoorkomend(producten.filter((p) => p.type !== "abonnement").map((p) => p.geldigheid_maanden), 3)
-  const vm = regels.verlenging_maanden ?? 1
-  const items = [
-    ["Toegang", `Losse modules en trajecten: ${m(toegangMnd)} maanden vanaf de activatie. Updates in die periode zijn inbegrepen.`],
-    ["Abonnement", "Jaarabonnement: 12 maanden toegang tot alle cursussen. Maandabonnement: loopt per maand zolang je betaalt."],
-    [
-      "Verlengen",
-      `Telkens ${m(vm)} ${vm === 1 ? "maand" : "maanden"} voor ${m(regels.verlenging_prijs_pct ?? 25)}&#8239;% van de oorspronkelijke prijs, maximaal ${m(regels.verlenging_max ?? 3)} keer, aan te vragen binnen ${m(regels.verlenging_venster_maanden ?? 3)} maanden na de start.`,
-    ],
-    ["Na de einddatum", "De toegang stopt. Je voortgang en resultaten blijven bewaard."],
-    ["Betalen", `Toegang na betaling van de factuur. De prijs ligt vast op het moment van je aanvraag. Prijzen exclusief ${m(regels.btw_pct ?? 21)}&#8239;% btw.`],
-    ["Centrales", "Prijs per plaats. Elke plaats wordt toegewezen aan één medewerker."],
-    ["Nieuwe versies", "Wijzigt een module tijdens je toegang, dan krijg je de nieuwe versie. Afgeronde lessen en geslaagde toetsen blijven gelden, tenzij de inhoud ervan wezenlijk wijzigde."],
-  ]
-  $("#voorwaardenlijst").innerHTML = items.map(([k, v]) => `<div><dt>${k}</dt><dd>${v}</dd></div>`).join("")
-  return toegangMnd
-}
-
-async function laadProducten() {
-  let producten = []
-  let regels = {}
-  try {
-    const res = await fetch("/api/producten")
-    if (!res.ok) throw new Error()
-    const d = await res.json()
-    producten = d.producten || []
-    regels = d.regels || {}
-  } catch {
-    $("#prijstabellen").innerHTML = `<p class="melding fout">De prijzen konden niet geladen worden. Probeer later opnieuw.</p>`
+  const rij = (titel, code, lijst) => {
+    const vol = lijst.find((p) => p.code.startsWith("CRS-")) || lijst[0]
+    const delen = lijst.filter((p) => p !== vol && p.type !== "module")
+    const mods = lijst.filter((p) => p.type === "module")
+    const deel = delen.length ? `${delen.length} ${delen.length === 1 ? "traject" : "trajecten of niveaus"}` : ""
+    const los = mods.length ? `${mods.length} losse modules` : ""
+    return `<tr><td><strong>${esc(titel)}</strong><span class="zacht">${[deel, los].filter(Boolean).join(" · ") || "volledige cursus"}</span></td>
+      <td class="num">${prijsTekst(vol)}</td>
+      <td class="num"><a href="/prijzen/#${encodeURIComponent(code)}">Details</a></td></tr>`
   }
-  const toegangMnd = voorwaarden(producten, regels)
-  kerncijfers(toegangMnd)
-  if (producten.length) prijzen(producten, regels)
+  const abo = producten.filter((p) => p.type === "abonnement")
+  const perCursus = CURSUSSEN.map((c) => [c, productenVan(producten, c.code)]).filter(([, l]) => l.length)
+  $("#prijsinleiding").innerHTML = `Alle prijzen zijn exclusief <span class="mono">${getal(btw)}&#8239;%</span> btw en gelden per persoon; een centrale betaalt per plaats. Voor de cursussen in opbouw volgt de prijs bij de opening.`
+  $("#prijstabellen").innerHTML = `<div class="scroll-x"><table class="prijzen">
+    <colgroup><col class="c-product"><col class="c-toegang"><col class="c-prijs"></colgroup>
+    <thead><tr><th>Cursus</th><th class="num">Volledige cursus</th><th class="num"></th></tr></thead>
+    <tbody>${perCursus.map(([c, l]) => rij(c.titel, c.code, l)).join("")}
+    ${abo.map((p) => `<tr><td><strong>${esc(p.naam)}</strong><span class="zacht">alle cursussen</span></td><td class="num">${prijsTekst(p)}</td><td class="num"><a href="/prijzen/#abonnement">Details</a></td></tr>`).join("")}
+    </tbody></table></div>
+    <div class="knoppen" style="margin-top:14px"><a class="knop" href="/prijzen/">Alle prijzen en trajecten</a></div>`
+}
+
+async function laad() {
+  try {
+    const { producten, regels } = await laadProducten()
+    PRODUCTEN = producten
+    const v = voorwaardenItems(producten, regels)
+    $("#voorwaardenlijst").innerHTML = v.items.map(([k, t]) => `<div><dt>${k}</dt><dd>${t}</dd></div>`).join("")
+    kerncijfers(v.toegangMnd)
+    prijsoverzicht(producten, regels)
+    cursussen()
+  } catch (e) {
+    $("#prijstabellen").innerHTML = `<p class="melding fout">${esc(e.message)}</p>`
+  }
 }
 
 kerncijfers(3)
 filterknoppen()
 cursussen()
-laadProducten()
+laad()
 sessie()

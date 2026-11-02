@@ -629,8 +629,80 @@ tabs.logboek = async () => {
     </table></div>` : `<div class="leeg">Nog geen acties.</div>`}`
 }
 
+// =============== MELDINGEN (foutmelder) ===============
+const MELDSTATUS = ["Nieuw", "In behandeling", "Opgelost", "Later", "Niet weerhouden"]
+const meldStatus = (s) =>
+  ({
+    Nieuw: `<span class="status s-concept">nieuw</span>`,
+    "In behandeling": `<span class="status s-aandacht">in behandeling</span>`,
+    Opgelost: `<span class="status s-conform">opgelost</span>`,
+    Later: `<span class="status s-indicatief">later</span>`,
+    "Niet weerhouden": `<span class="status s-indicatief">niet weerhouden</span>`,
+  })[s] ?? esc(s)
+let meldFilter = "open"
+tabs.meldingen = async () => {
+  const { meldingen, tellers } = await api(`/api/meldingen/beheer?status=${encodeURIComponent(meldFilter)}`)
+  window._meldingen = Object.fromEntries(meldingen.map((m) => [m.id, m]))
+  const filters = [["open", `Open (${tellers.open})`], ...MELDSTATUS.map((x) => [x, x]), ["alle", "Alle"]]
+  inhoud.innerHTML = `<h1>Meldingen</h1>
+    <p class="zacht klein">Wat gebruikers melden met de knop <em>Fout melden</em> op de site en in de cursussen.</p>
+    <div class="balk">${filters.map(([k, l]) => `<button class="knop ${meldFilter === k ? "" : "stil"} klein" data-actie="meldFilter" data-f="${esc(k)}">${esc(l)}</button>`).join("")}</div>
+    ${meldingen.length ? `<div class="lijst">${meldingen.map((m) => `<div class="rij">
+        <div><div class="titel"><span class="mono">${esc(m.nummer)}</span> · ${esc(m.titel)}</div>
+          <div class="meta"><span>${esc(m.ernst)}</span>${meldStatus(m.status)}
+            <span>${esc((m.context && (m.context.cursus ? m.context.cursus + " · " : "") + (m.context.scherm || m.context.adres)) || "")}</span>
+            <span>${esc(m.gebruiker || m.email || "anoniem")}</span><span class="mono">${tijdstip(m.aangemaakt_op)}</span>
+            ${m.met_afbeelding ? "<span>met schermafbeelding</span>" : ""}</div></div>
+        <div class="knoppen"><button class="knop stil klein" data-actie="meldDetail" data-id="${m.id}">Bekijken</button></div>
+      </div>`).join("")}</div>` : `<div class="leeg">Geen meldingen in deze lijst.</div>`}`
+}
+async function vernieuwMeldteller() {
+  try {
+    const { tellers } = await api("/api/meldingen/beheer?status=Nieuw")
+    $("#teller-meldingen").textContent = tellers.nieuw ? tellers.nieuw : ""
+  } catch {}
+}
+
 // =============== ACTIES ===============
 const acties = {}
+
+acties.meldFilter = ({ f }) => {
+  meldFilter = f
+  herlaad()
+}
+acties.meldDetail = async ({ id }) => {
+  let m
+  try {
+    m = (await api(`/api/meldingen/beheer/${id}`)).melding
+  } catch (err) {
+    return toast(err.message, true)
+  }
+  const c = m.context || {}
+  const r = (l, v, mono) => (v ? `<tr><th>${l}</th><td class="${mono ? "mono" : ""}">${esc(v)}</td></tr>` : "")
+  dialoog({
+    titel: `Melding ${m.nummer}`,
+    inhoud: `<p style="margin-top:0"><strong>${esc(m.titel)}</strong><br><span class="klein">${esc(m.ernst)}</span> ${meldStatus(m.status)}</p>
+      ${m.omschrijving ? `<p class="label" style="margin:10px 0 2px">Wat deed en zag de gebruiker</p><p style="margin:0;white-space:pre-wrap">${esc(m.omschrijving)}</p>` : ""}
+      ${m.verwacht ? `<p class="label" style="margin:10px 0 2px">Wat werd verwacht</p><p style="margin:0;white-space:pre-wrap">${esc(m.verwacht)}</p>` : ""}
+      <table class="eenvoudig" style="margin-top:12px"><tbody>
+        ${r("Scherm", c.scherm)}${r("Adres", c.adres, true)}${r("Cursus", c.cursus)}${r("Les", c.les, true)}${r("Onderdeel", c.onderdeel)}
+        ${r("Gemeld door", m.gebruiker ? `${m.gebruiker} (${m.rol})` : m.email || m.naam || "anoniem")}${r("E-mail", m.gebruiker_email || m.email)}
+        ${r("Venster", [c.venster, c.browser].filter(Boolean).join(" · "))}${r("Versie", c.versie, true)}${r("Gemeld op", tijdstip(m.aangemaakt_op), true)}
+      </tbody></table>
+      ${m.afbeelding ? `<p class="label" style="margin:12px 0 4px">Schermafbeelding</p><a href="${m.afbeelding}" target="_blank" rel="noopener"><img src="${m.afbeelding}" alt="Schermafbeelding bij de melding" style="width:100%;border:1px solid var(--lijn);border-radius:var(--r)"></a>` : ""}
+      ${c.adres ? `<p class="klein"><a href="${esc(c.adres)}" target="_blank" rel="noopener">Pagina openen</a></p>` : ""}
+      <label class="veld" style="margin-top:12px"><span class="label">Status</span><select name="status">${MELDSTATUS.map((x) => `<option${x === m.status ? " selected" : ""}>${x}</option>`).join("")}</select></label>
+      <label class="veld"><span class="label">Antwoord aan de gebruiker</span><textarea name="antwoord" maxlength="4000">${esc(m.antwoord || "")}</textarea></label>`,
+    knop: "Opslaan",
+    bij: async (fd) => {
+      await api(`/api/meldingen/beheer/${id}`, { methode: "POST", data: fd })
+      toast("Melding bijgewerkt")
+      herlaad()
+      vernieuwMeldteller()
+    },
+  })  // de dialoog begint bovenaan (de focus op het statusveld zou anders naar beneden scrollen)
+  requestAnimationFrame(() => { dlg.scrollTop = 0; $("#dialooginhoud").scrollTop = 0 })
+}
 
 acties.aanvraagDetail = ({ id }) => {
   const a = window._aanvragen[id]
@@ -1138,5 +1210,6 @@ window.addEventListener("hashchange", () => {
     $("#wie").textContent = `${ik.gebruikersnaam || ik.email} · ${ik.rol === "superadmin" ? "superadmin" : "beheerder"}`
     $("#app").classList.remove("verborgen") // tabs en inhoud pas tonen na een geldige sessie
     kiesTab(location.hash.slice(1) || "overzicht")
+    vernieuwMeldteller()
   } catch {}
 })()

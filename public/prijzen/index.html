@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="nl-BE">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Prijzen · Betosoft Academie</title>
+  <meta name="description" content="Prijzen van de opleidingen van de Betosoft Academie: volledige cursussen, niveaus, losse modules, abonnement en prijzen voor centrales.">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/stijl.css">
+  <link rel="stylesheet" href="/start.css">
+  <style>
+    .prijskop { padding: 28px 0 8px; }
+    .prijskop h1 { font-size: clamp(28px, 4vw, 38px); font-weight: 700; letter-spacing: -.01em; }
+    .prijskop .samenvatting-licht { max-width: 66ch; font-size: 17px; margin: 10px 0 0; }
+    .cursusprijs { scroll-margin-top: 16px; margin: 0 0 28px; }
+    .cursusprijs h3 { font-size: 17px; margin: 0 0 4px; display: flex; gap: 10px; align-items: baseline; flex-wrap: wrap; }
+    .cursusprijs .sub { margin: 0 0 10px; color: var(--inkt-zacht); font-size: 14px; }
+    .cursusprijs .knoppen { margin-top: 10px; }
+    .prijzen td.actie { text-align: right; white-space: nowrap; }
+    .prijzen td.actie a { font-size: 13.5px; }
+    .rekenvb { background: var(--wit); border: 1px solid var(--lijn); border-left: 3px solid var(--petrol); border-radius: var(--r); padding: 12px 14px; max-width: 560px; }
+    .rekenvb .mono { white-space: nowrap; }
+    @media (max-width: 640px) { .prijzen td.actie { grid-column: 1 / -1; order: 4; text-align: left; margin-top: 4px; } }
+  </style>
+</head>
+<body class="start">
+  <header class="kop">
+    <div class="kop-in">
+      <a class="logo" href="/" aria-label="Betosoft Academie, startpagina"><img src="/logo.svg" alt="" width="34" height="30"><span class="logo-tekst">Betosoft <em>Academie</em></span></a>
+      <nav class="hoofdnav" aria-label="Hoofdmenu">
+        <a href="/#cursussen">Cursussen</a>
+        <a href="/#werkwijze">Werkwijze</a>
+        <a href="/prijzen/" aria-current="page">Prijzen</a>
+        <a href="/#centrales">Centrales</a>
+        <a href="/#voorwaarden">Voorwaarden</a>
+      </nav>
+      <div class="rechts"><a class="bknop" id="aanmeldknop" href="/aanmelden/">Aanmelden</a></div>
+    </div>
+  </header>
+
+  <main class="startinhoud">
+    <section class="prijskop">
+      <p class="label">Prijzen</p>
+      <h1>Wat kost een opleiding?</h1>
+      <p class="samenvatting-licht" id="inleiding"><strong>Je betaalt per cursus, per niveau of per module</strong>, of je neemt een abonnement voor alle cursussen. Prijzen exclusief btw, per persoon. Een centrale betaalt per plaats.</p>
+    </section>
+
+    <section id="abonnement" aria-labelledby="h-abo">
+      <h2 id="h-abo"><span class="nr">01</span> Abonnement: alle cursussen</h2>
+      <div id="abonnementen"><p class="zacht">Laden…</p></div>
+    </section>
+
+    <section id="per-cursus" aria-labelledby="h-cursus">
+      <h2 id="h-cursus"><span class="nr">02</span> Per cursus</h2>
+      <div id="cursusprijzen"><p class="zacht">Laden…</p></div>
+    </section>
+
+    <section id="centrales" aria-labelledby="h-centrales">
+      <h2 id="h-centrales"><span class="nr">03</span> Voor centrales</h2>
+      <div class="tweekolom">
+        <div>
+          <p class="inleiding">Een centrale koopt een aantal plaatsen voor een cursus, een niveau of een abonnement en wijst die zelf toe aan medewerkers. De prijs is de prijs per persoon maal het aantal plaatsen.</p>
+          <div class="rekenvb" id="rekenvoorbeeld"></div>
+          <div class="knoppen" style="margin-top:14px"><a class="knop" href="/aanvragen/?type=centrale">Centrale inschrijven</a></div>
+        </div>
+        <aside class="kantlijn"><p class="label">Goed om te weten</p><p>Een plaats wordt toegewezen aan één medewerker. Extra plaatsen bestel je later bij in het portaal van je centrale.</p></aside>
+      </div>
+    </section>
+
+    <section id="voorwaarden" aria-labelledby="h-voorwaarden">
+      <h2 id="h-voorwaarden"><span class="nr">04</span> Voorwaarden in het kort</h2>
+      <dl class="voorwaarden" id="voorwaardenlijst"></dl>
+    </section>
+  </main>
+
+  <footer class="voet">
+    <p class="disclaimer">De cursussen zijn met de grootste zorg samengesteld. Raadpleeg in geval van twijfel altijd de normatieve documenten en reglementen; die blijven de referentie.</p>
+    <p>Betosoft Academie · <a href="/">startpagina</a> · <a href="/aanvragen/">inschrijven</a> · <a href="https://betosoft.be">betosoft.be</a></p>
+  </footer>
+  <script src="/prijzen/prijzen.js" type="module"></script>
+  <script src="/fout.js" type="module"></script>
+</body>
+</html>

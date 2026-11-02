@@ -1,6 +1,7 @@
 // Cursusoverzicht voor de startpagina. Bron: de cursussen uit het cursusproject (stand 02.11.2026).
 // status: "open" = er is een product om in te schrijven (code in `product`), "binnenkort" = inhoud klaar maar nog niet te koop,
-// "voorbereiding" = een deel van de modules is nog in opbouw (klaar: false).
+// "voorbereiding" = een deel van de modules is nog in opbouw (klaar: false). Op de site wordt "open" ook afgeleid uit de producten
+// in de databank (een actief product voor de cursus). demo: er is een publieke demo op /demo/<code>/.
 // lessen = lessen zonder de startmodule, praktijkopdrachten en toetsen; studieminuten = leestijd van alle lessen.
 
 export const GROEPEN = [
@@ -43,11 +44,6 @@ export const CURSUSSEN = [
     "product": "CRS-BMC-BPB",
     "doelgroep": "Betonmixerchauffeurs (BMC) en betonpompbedienden (BPB)",
     "omschrijving": "Lever beton veilig, op tijd en in de juiste kwaliteit. Eerst een gemeenschappelijke basis (veiligheid, betonkennis, de klant en het milieu), daarna kies je je traject: betonmixerchauffeur of betonpompbediende.",
-    "normen": [
-      "NBN B 15-001",
-      "NBN EN 12001",
-      "Verordening 561/2006"
-    ],
     "lessen": 59,
     "toetsen": 12,
     "opdrachten": 12,
@@ -128,20 +124,16 @@ export const CURSUSSEN = [
       }
     ],
     "modules_aantal": 12,
-    "modules_klaar": 12
+    "modules_klaar": 12,
+    "demo": true
   },
   {
     "code": "LAB",
     "titel": "Laborant stortklaar beton",
     "groep": "labo",
-    "status": "binnenkort",
+    "status": "open",
     "doelgroep": "Laboranten (niveau 1) en labo- of kwaliteitsverantwoordelijken (niveau 2)",
     "omschrijving": "De proeven van het labo in een stortklaarbetoncentrale, met één doel: bewijzen dat elke m³ beton voldoet aan de bestelling. Van grondstoffen en vochtcorrectie tot productiecontrole, conformiteit en klachten.",
-    "normen": [
-      "NBN EN 206",
-      "NBN B 15-001",
-      "TRA 550"
-    ],
     "lessen": 59,
     "toetsen": 11,
     "opdrachten": 11,
@@ -216,20 +208,17 @@ export const CURSUSSEN = [
       }
     ],
     "modules_aantal": 11,
-    "modules_klaar": 11
+    "modules_klaar": 11,
+    "demo": true,
+    "product": "CRS-LAB"
   },
   {
     "code": "DSP",
     "titel": "Betondispatcher",
     "groep": "dispatch",
-    "status": "binnenkort",
+    "status": "open",
     "doelgroep": "Dispatchers: starters, ervaren dispatchers en hoofddispatchers of transportverantwoordelijken",
     "omschrijving": "Leer stortklaar beton plannen en leveren: de afgesproken dienstverlening tegen de laagste leverkost. Niveau 1 is de basis, niveau 2 de verdieping.",
-    "normen": [
-      "NBN EN 206",
-      "NBN B 15-001",
-      "TRA 550"
-    ],
     "lessen": 44,
     "toetsen": 11,
     "opdrachten": 11,
@@ -304,7 +293,9 @@ export const CURSUSSEN = [
       }
     ],
     "modules_aantal": 11,
-    "modules_klaar": 11
+    "modules_klaar": 11,
+    "demo": true,
+    "product": "CRS-DSP"
   },
   {
     "code": "VRK",
@@ -313,11 +304,6 @@ export const CURSUSSEN = [
     "status": "voorbereiding",
     "doelgroep": "Startende en ervaren verkopers en verkoopsverantwoordelijken",
     "omschrijving": "Leer stortklaar beton verkopen, en daarna verkoop en marketing leiden. Niveau 1 gaat over het verkopen zelf, niveau 2 over markt, klantenbeheer, marketing, duurzaam beton, het verkoopteam en het jaarplan.",
-    "normen": [
-      "NBN EN 206",
-      "TRA 550",
-      "EN 15804"
-    ],
     "lessen": 25,
     "toetsen": 6,
     "opdrachten": 6,
@@ -434,7 +420,8 @@ export const CURSUSSEN = [
       }
     ],
     "modules_aantal": 18,
-    "modules_klaar": 6
+    "modules_klaar": 6,
+    "demo": true
   },
   {
     "code": "PLM",
@@ -443,11 +430,6 @@ export const CURSUSSEN = [
     "status": "voorbereiding",
     "doelgroep": "Nieuwe en ervaren plant managers, zaakvoerders en directie",
     "omschrijving": "Leer een stortklaarbetoncentrale leiden, en daarna het hele bedrijf. Niveau 1 gaat over de centrale (veiligheid, installatie, milieu, vloot en planning), niveau 2 over financiën, investeren, strategie, HR, bestuur en innovatie.",
-    "normen": [
-      "NBN EN 206",
-      "TRA 550",
-      "EN 15804"
-    ],
     "lessen": 25,
     "toetsen": 6,
     "opdrachten": 6,
@@ -570,7 +552,8 @@ export const CURSUSSEN = [
       }
     ],
     "modules_aantal": 19,
-    "modules_klaar": 6
+    "modules_klaar": 6,
+    "demo": true
   },
   {
     "code": "CSC",
@@ -579,11 +562,6 @@ export const CURSUSSEN = [
     "status": "voorbereiding",
     "doelgroep": "Iedereen in de centrale (niveau 1) en de kwaliteits- of duurzaamheidscoördinator (niveau 2)",
     "omschrijving": "Wat duurzaamheid betekent in een stortklaarbetoncentrale: van de CO₂ in één m³ beton tot het CSC-certificaat, de CO₂-prestatieladder, EPD en CSRD.",
-    "normen": [
-      "CSC 3.0",
-      "EN 15804",
-      "CO₂-prestatieladder"
-    ],
     "lessen": 21,
     "toetsen": 5,
     "opdrachten": 5,
@@ -658,20 +636,16 @@ export const CURSUSSEN = [
       }
     ],
     "modules_aantal": 11,
-    "modules_klaar": 5
+    "modules_klaar": 5,
+    "demo": true
   },
   {
     "code": "MENG",
     "titel": "Mengselontwerp van beton",
     "groep": "technologie",
-    "status": "binnenkort",
+    "status": "open",
     "doelgroep": "Betontechnologen en kwaliteitsverantwoordelijken, laboranten die willen doorgroeien, en leveranciers van cement, granulaten en hulpstoffen",
     "omschrijving": "Ontwerp een betonsamenstelling die de eisen haalt, met de grondstoffen die je echt hebt: van grondstoffen over het granulair skelet en de rekenmodellen tot een recept volgens NBN EN 206 en NBN B 15-001. Met een rekentool voor je eigen materialen.",
-    "normen": [
-      "NBN EN 206",
-      "NBN B 15-001",
-      "TRA 550"
-    ],
     "lessen": 30,
     "toetsen": 7,
     "opdrachten": 7,
@@ -722,7 +696,9 @@ export const CURSUSSEN = [
       }
     ],
     "modules_aantal": 7,
-    "modules_klaar": 7
+    "modules_klaar": 7,
+    "demo": true,
+    "product": "CRS-MENG"
   },
   {
     "code": "BT1",
@@ -732,11 +708,6 @@ export const CURSUSSEN = [
     "doelgroep": "Nieuwe medewerkers, centralisten, chauffeurs, dispatching en verkoop binnendienst. Geen voorkennis nodig.",
     "omschrijving": "Iedereen in een betoncentrale beïnvloedt de kwaliteit van het beton. In elf modules krijg je dezelfde taal over beton: wat erin zit, wat er misloopt en waarom de regels bestaan.",
     "opmerking": "Halve dag, klassikaal of online. Conceptversie die nog wordt nagelezen.",
-    "normen": [
-      "NBN EN 206",
-      "NBN B 15-001",
-      "TRA 550"
-    ],
     "lessen": null,
     "toetsen": 12,
     "opdrachten": 0,
@@ -811,7 +782,8 @@ export const CURSUSSEN = [
       }
     ],
     "modules_aantal": 11,
-    "modules_klaar": 11
+    "modules_klaar": 11,
+    "demo": false
   },
   {
     "code": "BT2",
@@ -821,11 +793,6 @@ export const CURSUSSEN = [
     "doelgroep": "Laboranten, technologen, kwaliteitsverantwoordelijken en centralechefs. Voorkennis: Basis 1.0 of gelijkwaardige ervaring.",
     "omschrijving": "Het beton van grondstof tot bewijs: bestanddelen, vers en verhard beton, duurzaamheid, specificatie, mengselontwerp, productie en verwerking, speciale betonsoorten, beproeving, conformiteit en certificatie.",
     "opmerking": "Acht lesdagen klassikaal, online als voorbereiding en naslag. Conceptversie die nog wordt nagelezen.",
-    "normen": [
-      "NBN EN 206",
-      "NBN B 15-001",
-      "TRA 550"
-    ],
     "lessen": null,
     "toetsen": 17,
     "opdrachten": 11,
@@ -930,19 +897,16 @@ export const CURSUSSEN = [
       }
     ],
     "modules_aantal": 16,
-    "modules_klaar": 16
+    "modules_klaar": 16,
+    "demo": false
   },
   {
     "code": "AI",
     "titel": "AI in de betoncentrale",
     "groep": "digitaal",
-    "status": "binnenkort",
+    "status": "open",
     "doelgroep": "Zaakvoerders, kwaliteitsverantwoordelijken en medewerkers planning, verkoop of dispatching. Geen technische voorkennis nodig.",
     "omschrijving": "Leer AI veilig en nuttig gebruiken in je eigen werk, met oefeningen op taken uit je eigen werkweek. Helpt ook bij de AI-geletterdheid die artikel 4 van de AI-verordening vraagt.",
-    "normen": [
-      "AI-verordening art. 4",
-      "AVG"
-    ],
     "lessen": 30,
     "toetsen": 6,
     "opdrachten": 6,
@@ -987,6 +951,8 @@ export const CURSUSSEN = [
       }
     ],
     "modules_aantal": 6,
-    "modules_klaar": 6
+    "modules_klaar": 6,
+    "demo": true,
+    "product": "CRS-AI"
   }
 ]

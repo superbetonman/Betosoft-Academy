@@ -1,7 +1,7 @@
 # Betosoft Academie
 
 Leerplatform voor de betonsector: inschrijvingen, toegangsrechten, versies per module, centrales met eigen beheerder, verlengingen.
-Netlify (statische pagina's + functies in Frankfurt) en Neon (Postgres, Frankfurt).
+Netlify (`betosoft-academy`, statische pagina's + functies in Frankfurt) en Neon (project `betosoft-academy`, databank `academy`, Frankfurt).
 
 ## Pagina's
 | Pad | Voor wie | Wat |
@@ -11,7 +11,11 @@ Netlify (statische pagina's + functies in Frankfurt) en Neon (Postgres, Frankfur
 | `/welkom/?t=…` | nieuwe gebruiker | Wachtwoord kiezen via uitnodigingslink (14 dagen geldig, één keer) |
 | `/beheer/` | superadmin, beheerder | Aanvragen, toegangsrechten, centrales, cursisten, versies, instellingen, logboek |
 | `/centrale/` | beheerder van een centrale of locatie | Overzicht, medewerkers, scorebord, opleidingen, locaties |
-| `/leren/` | cursist | Voorlopig welkomstpagina; cursusspeler volgt |
+| `/` | publiek | Startpagina: cursussen (uit `public/cursussen.js`) met prijs en demo, werkwijze, centrales, voorwaarden |
+| `/prijzen/` | publiek | Alle prijzen: abonnement, per cursus (volledig, niveaus, losse modules), centrales, voorwaarden |
+| `/demo/<CODE>/` | publiek | Teaser van een cursus: de start en de eerste lessen; de rest zit niet in het bestand |
+| `/leren/` | cursist, beheerder | Mijn opleidingen; beheerders zien alle cursussen en volgen ze als tester |
+| `/cursus/<CODE>/` | met toegang | De volledige cursusapp; voortgang in de databank (`cursus_gegevens`) |
 
 ## Rollen
 - **superadmin** (`superbetonman`): alles, plus prijzen, voorwaarden, verlengingsregels en beheerders.
@@ -38,8 +42,21 @@ Netlify (statische pagina's + functies in Frankfurt) en Neon (Postgres, Frankfur
 - Bij publicatie als actueel gaan cursisten met lopende toegang mee. Afgeronde lessen met dezelfde sleutel en zonder inhoudelijke wijziging blijven afgerond; een geslaagde toets blijft geldig als geen enkele vraag inhoudelijk wijzigde.
 - Proefversie: enkel zichtbaar voor de proefgroep (personen of hele centrales).
 
+## Cursusapps
+- De cursussen zijn gebouwd als losse apps (claude.ai-artifacts). Ze staan in de tabel `cursus_bestanden`, **niet** in deze publieke repo.
+- `public/cursus-academie.js` levert de functies die de apps verwachten (`window.claude.use("db" | "user" | "downloads")`):
+  voortgang en eigen gegevens gaan per gebruiker naar `/api/leren/gegevens/<CODE>`. Het voegt ook de disclaimer, de demoband en de foutmelder toe.
+- Toegang tot `/cursus/<CODE>/`: beheerders altijd (tester); een cursist als hij toegang heeft tot alle modules van de cursus.
+- Bijwerken: `scripts/cursusapps/bouw.mjs` (volledige versie + demo) en `scripts/cursusapps/opladen.mjs`.
+
+## Meldingen
+- Knop **Fout melden** rechts op elke pagina en in de cursussen (`public/fout.js`), naar het model van de bevindingen in Betosoft:
+  melding over het scherm of over een aangeduid onderdeel, met ernst, automatische context en schermafbeelding.
+- Opvolging in **Beheer → Meldingen** (status en antwoord); aangemelde gebruikers zien hun meldingen via *Mijn meldingen*.
+
 ## Databank
 - `migraties/002_versies.sql`: versies, instellingen, verlengingen, locaties, uitnodigingen, medewerkerstand.
+- `migraties/003_cursusapps_meldingen.sql`: cursusbestanden, voortgang per cursusapp, meldingen; cursussen LAB, DSP, MENG, AI open met modules en producten.
   De basis (stap 1) werd rechtstreeks in Neon aangemaakt.
 - Bedrijfsregels zitten in databankfuncties: `activeer_aanvraag`, `verleng_recht`, `vraag_verlenging`, `wijs_plaats_toe`,
   `voeg_cursist_toe`, `nieuwe_versie`, `beoordeel_wijziging`, `publiceer_versie`, `zet_op_versie`. Elke actie komt in `auditlog`.
@@ -47,7 +64,6 @@ Netlify (statische pagina's + functies in Frankfurt) en Neon (Postgres, Frankfur
 ## Omgevingsvariabelen (Netlify, productie)
 - `DATABASE_URL` – verbinding met Neon
 - `SESSIE_GEHEIM` – sleutel voor de aanmeldsessie
-- `ADMIN_WACHTWOORD` – niet meer gebruikt (aanmelden gaat nu via gebruikersnaam en wachtwoord in de databank)
 
 ## Lokaal controleren
 ```

@@ -7,9 +7,19 @@ export default async (req: Request, context: Context) => {
 
   try {
     if (pad === "/api/producten" && req.method === "GET") {
+      // cursus: de code van de cursus als alle modules van het product tot één cursus behoren (abonnementen: leeg)
       const producten = await sql`
-        SELECT p.id, p.code, p.naam, p.type, p.periode, p.geldigheid_maanden, p.prijs_excl_btw, p.beschrijving
-        FROM producten p WHERE p.actief
+        SELECT p.id, p.code, p.naam, p.type, p.periode, p.geldigheid_maanden, p.prijs_excl_btw, p.beschrijving, p.alle_modules,
+               x.cursus, x.cursus_titel, COALESCE(x.modules, 0)::int AS modules
+        FROM producten p
+        LEFT JOIN LATERAL (
+          SELECT CASE WHEN count(DISTINCT c.id) = 1 THEN min(c.code) END AS cursus,
+                 CASE WHEN count(DISTINCT c.id) = 1 THEN min(c.titel) END AS cursus_titel,
+                 count(*) AS modules
+          FROM product_modules pm JOIN modules m ON m.id = pm.module_id JOIN cursussen c ON c.id = m.cursus_id
+          WHERE pm.product_id = p.id
+        ) x ON true
+        WHERE p.actief
         ORDER BY CASE p.type WHEN 'abonnement' THEN 1 WHEN 'traject' THEN 2 ELSE 3 END, p.code`
       // Publieke regels voor de startpagina (verlenging en btw); enkel getallen uit de tabel instellingen.
       const rijen = await sql`
