@@ -8,13 +8,14 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="/stijl.css">
   <style>
     main { max-width: 720px; }
     .keuze { display: grid; grid-template-columns: 1fr 1fr; gap: 0; border: 1px solid var(--lijn); border-radius: var(--r); overflow: hidden; background: var(--wit); }
-    .keuze label { padding: 12px; cursor: pointer; border-right: 1px solid var(--lijn); display: block; }
+    .keuze label { padding: 12px; cursor: pointer; border-right: 1px solid var(--lijn); display: block; position: relative; }
     .keuze label:last-child { border-right: 0; }
-    .keuze input { position: absolute; opacity: 0; pointer-events: none; }
+    .keuze input { position: absolute; left: 12px; top: 12px; width: 1px; height: 1px; margin: 0; opacity: 0; pointer-events: none; }
     .keuze label:has(input:checked) { background: var(--petrol-licht); box-shadow: inset 0 -2px 0 var(--petrol); }
     .keuze label:has(input:focus-visible) { outline: 2px solid var(--petrol); outline-offset: -2px; }
     .keuze strong { display: block; }
@@ -24,8 +25,18 @@
 </head>
 <body>
   <header class="kop">
-    <a class="merk" href="/"><span class="merk-blok">B</span><strong>Betosoft Academie</strong></a>
-  </header>
+  <div class="kop-in">
+    <a class="logo" href="/" aria-label="Betosoft Academie, startpagina"><img src="/logo.svg" alt="" width="34" height="30"><span class="logo-tekst">Betosoft <em>Academie</em></span></a>
+    <nav class="hoofdnav" aria-label="Hoofdmenu">
+      <a href="/#cursussen">Cursussen</a>
+      <a href="/#werkwijze">Werkwijze</a>
+      <a href="/#prijzen">Prijzen</a>
+      <a href="/#centrales">Centrales</a>
+      <a href="/#voorwaarden">Voorwaarden</a>
+    </nav>
+    <div class="rechts"><a class="bknop" id="aanmeldknop" href="/aanmelden/">Aanmelden</a></div>
+  </div>
+</header>
   <main>
     <p class="label" style="margin-top:8px">Inschrijven</p>
     <h1>Schrijf je in voor een opleiding</h1>

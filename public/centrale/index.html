@@ -8,6 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="/stijl.css">
   <style>
     .balkje { height: 6px; background: var(--petrol-licht); border-radius: 2px; overflow: hidden; min-width: 80px; }
@@ -19,9 +20,11 @@
 </head>
 <body>
   <header class="kop">
-    <a class="merk" href="/centrale/"><span class="merk-blok">B</span><span><strong>Betosoft Academie</strong> <span class="zacht" id="orgnaam"></span></span></a>
+  <div class="kop-in vol">
+    <a class="logo" href="/centrale/" aria-label="Betosoft Academie, centrale"><img src="/logo.svg" alt="" width="34" height="30"><span class="logo-tekst">Betosoft <em>Academie</em></span><span class="kop-context" id="orgnaam"></span></a>
     <div class="rechts"><span class="klein zacht" id="wie"></span><button id="afmelden" class="knop stil klein" type="button">Afmelden</button></div>
-  </header>
+  </div>
+</header>
   <nav class="tabs" role="tablist" aria-label="Onderdelen">
     <button class="tab" role="tab" data-tab="overzicht">Overzicht</button>
     <button class="tab" role="tab" data-tab="medewerkers">Medewerkers</button>
