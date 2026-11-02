@@ -52,6 +52,10 @@ Netlify (`betosoft-academy`, statische pagina's + functies in Frankfurt) en Neon
   De demo vertrekt van de cursistenversie. Die teksten zitten dus ook niet in de broncode die een cursist ontvangt.
 - Bijwerken: `scripts/cursusapps/bouw.mjs` (volledige versie + demo) en `scripts/cursusapps/opladen.mjs`.
 
+## Lichte en donkere modus
+- Knop met zon of maan in de kopbalk van elke pagina (`public/thema.js`, in `<head>`) en in de bovenbalk van elke cursus (`cursus-academie.js`).
+- Zonder keuze volgt de site het toestel; de keuze wordt in de browser bewaard (`academie-thema`) en geldt op de site en in de cursussen.
+
 ## Meldingen
 - Knop **Fout melden** rechts op elke pagina en in de cursussen (`public/fout.js`), naar het model van de bevindingen in Betosoft:
   melding over het scherm of over een aangeduid onderdeel, met ernst, automatische context en schermafbeelding.

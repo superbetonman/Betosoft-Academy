@@ -6,6 +6,22 @@
 (function () {
   "use strict"
   var A = window.ACADEMIE || {}
+
+  // ---------- Lichte of donkere modus: dezelfde keuze als op de site (thema.js) ----------
+  var THEMA = "academie-thema"
+  function themaLees() { try { return localStorage.getItem(THEMA) } catch (e) { return null } }
+  function themaPas(t) {
+    var r = document.documentElement
+    if (t === "licht") r.setAttribute("data-theme", "light")
+    else if (t === "donker") r.setAttribute("data-theme", "dark")
+    else r.removeAttribute("data-theme")
+  }
+  function themaHuidig() {
+    var t = themaLees()
+    if (t === "licht" || t === "donker") return t
+    return window.matchMedia && matchMedia("(prefers-color-scheme: dark)").matches ? "donker" : "licht"
+  }
+  themaPas(themaLees())
   var cursus = String(A.cursus || "")
   var basis = "/api/leren/gegevens/" + encodeURIComponent(cursus)
 
@@ -90,12 +106,42 @@
     ".academie-demo a{display:inline-flex;align-items:center;min-height:36px;padding:6px 12px;border-radius:4px;text-decoration:none;font-weight:600;border:1px solid #1E5A66;color:#1E5A66;background:transparent}" +
     ".academie-demo a.hoofd{background:#B25C31;border-color:#B25C31;color:#fff}" +
     ".academie-beheer{border-color:#1E5A66;background:rgba(30,90,102,.07)}" +
+    ".academie-thema{appearance:none;flex:none;margin-left:8px;width:38px;height:38px;padding:0;border-radius:8px;display:inline-grid;place-items:center;cursor:pointer;" +
+    "border:1px solid var(--line, rgba(127,127,127,.45));background:var(--surface, transparent);color:var(--ink, inherit)}" +
+    ".academie-thema svg{width:18px;height:18px}" +
     "@media (prefers-color-scheme:dark){.academie-demo a{color:#6FB0BC;border-color:#6FB0BC}}"
+
+  var ZON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>'
+  var MAAN = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"/></svg>'
+  function themaKnop() {
+    var b = document.createElement("button")
+    b.type = "button"
+    b.className = "academie-thema"
+    var teken = function () {
+      var d = themaHuidig() === "donker"
+      b.innerHTML = d ? ZON : MAAN
+      b.setAttribute("aria-label", d ? "Naar lichte modus" : "Naar donkere modus")
+      b.title = d ? "Lichte modus" : "Donkere modus"
+    }
+    b.addEventListener("click", function () {
+      var t = themaHuidig() === "donker" ? "licht" : "donker"
+      try { localStorage.setItem(THEMA, t) } catch (e) {}
+      themaPas(t)
+      teken()
+    })
+    teken()
+    return b
+  }
 
   function voegToe() {
     var st = document.createElement("style")
     st.textContent = css
     document.head.appendChild(st)
+    // knop in de bovenbalk van de cursus (anders rechtsboven op het scherm)
+    var balk = document.querySelector("header.top .top-in") || document.querySelector("header.top")
+    var knop = themaKnop()
+    if (balk) balk.appendChild(knop)
+    else { knop.style.position = "fixed"; knop.style.top = "10px"; knop.style.right = "10px"; knop.style.zIndex = "50"; document.body.appendChild(knop) }
     var main = document.getElementById("main") || document.body
     if (A.demo) {
       var band = document.createElement("div")
