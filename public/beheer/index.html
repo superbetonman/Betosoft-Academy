@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="nl-BE">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Beheer Academie</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/stijl.css">
+</head>
+<body>
+  <header class="kop">
+    <a class="merk" href="/beheer/"><span class="merk-blok">B</span><span><strong>Betosoft Academie</strong> <span class="zacht">· beheer</span></span></a>
+    <div class="rechts"><button id="afmelden" class="knop stil klein verborgen" type="button">Afmelden</button></div>
+  </header>
+
+  <section id="aanmeldscherm" class="aanmeldscherm verborgen">
+    <h1>Aanmelden</h1>
+    <p class="zacht">Beheer van inschrijvingen en toegangsrechten.</p>
+    <form id="aanmeldform" class="paneel">
+      <label class="veld"><span class="label">Wachtwoord</span><input type="password" name="wachtwoord" autocomplete="current-password" required></label>
+      <div id="aanmeldfout" class="melding fout verborgen"></div>
+      <button class="knop" type="submit">Aanmelden</button>
+    </form>
+  </section>
+
+  <div id="app" class="verborgen">
+    <nav class="tabs" role="tablist" aria-label="Onderdelen">
+      <button class="tab" role="tab" data-tab="overzicht">Overzicht</button>
+      <button class="tab" role="tab" data-tab="aanvragen">Aanvragen <span class="teller koper" id="teller-aanvragen"></span></button>
+      <button class="tab" role="tab" data-tab="rechten">Toegangsrechten</button>
+      <button class="tab" role="tab" data-tab="centrales">Centrales</button>
+      <button class="tab" role="tab" data-tab="cursisten">Cursisten</button>
+      <button class="tab" role="tab" data-tab="producten">Producten</button>
+      <button class="tab" role="tab" data-tab="logboek">Logboek</button>
+    </nav>
+    <main id="inhoud" aria-live="polite"></main>
+  </div>
+
+  <dialog id="dialoog">
+    <form method="dialog" id="dialoogform">
+      <div class="dkop"><h3 id="dialoogtitel"></h3><button class="sluit" value="annuleer" aria-label="Sluiten" formnovalidate>×</button></div>
+      <div class="dinhoud" id="dialooginhoud"></div>
+      <div class="dvoet" id="dialoogvoet"></div>
+    </form>
+  </dialog>
+
+  <script src="/beheer/app.js" type="module"></script>
+</body>
+</html>

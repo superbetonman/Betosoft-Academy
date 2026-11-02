@@ -1,0 +1,14 @@
+{
+  "name": "betosoft-academie",
+  "private": true,
+  "type": "module",
+  "version": "0.1.0",
+  "description": "Betosoft Academie: inschrijvingen, toegangsrechten en beheer",
+  "dependencies": {
+    "@neondatabase/serverless": "^1.2.0"
+  },
+  "devDependencies": {
+    "@netlify/functions": "^6.0.3",
+    "esbuild": "^0.25.0"
+  }
+}
