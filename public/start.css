@@ -91,6 +91,7 @@ body.start { background: var(--papier); }
 .cursus h3 { padding: 6px 16px 0; font-size: 18px; line-height: 1.3; }
 .cursus .voor { padding: 4px 16px 0; font-size: 13px; color: var(--inkt-zacht); }
 .cursus .oms { padding: 10px 16px 0; margin: 0; font-size: 14.5px; }
+.cursus .opm { padding: 8px 16px 0 14px; margin: 8px 16px 0; font-size: 13px; color: var(--inkt-zacht); border-left: 2px solid var(--lijn); }
 .cursus .cijferrij {
   margin: 14px 16px 0; padding: 10px 0; border-top: 1px solid var(--lijn); border-bottom: 1px solid var(--lijn);
   display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px;
@@ -102,7 +103,9 @@ body.start { background: var(--papier); }
 .cursus summary { cursor: pointer; color: var(--petrol); font-weight: 500; }
 .cursus summary:focus-visible { outline: 2px solid var(--petrol); outline-offset: 2px; }
 .cursus ol.modlijst { margin: 8px 0 0; padding: 0; list-style: none; border-top: 1px solid var(--lijn); }
-.cursus ol.modlijst li { display: grid; grid-template-columns: 40px 1fr; gap: 6px; padding: 6px 0; border-bottom: 1px solid var(--lijn); }
+.cursus ol.modlijst li { display: grid; grid-template-columns: 40px 1fr auto; gap: 6px; padding: 6px 0; border-bottom: 1px solid var(--lijn); }
+.cursus ol.modlijst li.nog > span:nth-child(2) { color: var(--inkt-zacht); }
+.cursus ol.modlijst li .status { font-size: 12px; }
 .cursus ol.modlijst .mono { color: var(--inkt-zacht); font-size: 13px; }
 .cursus ol.modlijst .niv { grid-column: 1 / -1; padding: 10px 0 2px; font: 600 11px var(--sans); text-transform: uppercase; letter-spacing: .08em; color: var(--petrol); border-bottom: 0; }
 .cursus .cvoet { margin-top: auto; padding: 14px 16px 16px; display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }

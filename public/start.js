@@ -23,7 +23,7 @@ async function sessie() {
 function kerncijfers(toegangMaanden) {
   const cijfers = [
     ["Cursussen", getal(CURSUSSEN.length)],
-    ["Modules", getal(som("modules_aantal"))],
+    ["Modules klaar", getal(som("modules_klaar"))],
     ["Lessen", getal(som("lessen"))],
     ["Toegang", `${getal(toegangMaanden)}<small>maanden</small>`],
   ]
@@ -50,8 +50,10 @@ function filterknoppen() {
 
 const STATUS = {
   open: `<span class="status s-conform">inschrijven mogelijk</span>`,
-  voorbereiding: `<span class="status s-concept">in voorbereiding</span>`,
+  binnenkort: `<span class="status s-indicatief">inhoud klaar · opent binnenkort</span>`,
+  voorbereiding: `<span class="status s-concept">in opbouw</span>`,
 }
+const VOLGORDE = { open: 0, binnenkort: 1, voorbereiding: 2 }
 
 function modulelijst(c) {
   let niveau = null
@@ -62,15 +64,16 @@ function modulelijst(c) {
         niveau = m.niveau
         kop = `<li class="niv">${esc(niveau)}</li>`
       }
-      return `${kop}<li><span class="mono">${esc(m.code)}</span><span>${esc(m.titel)}</span></li>`
+      const nog = m.klaar === false ? `<span class="status s-concept">in voorbereiding</span>` : ""
+      return `${kop}<li${m.klaar === false ? ' class="nog"' : ""}><span class="mono">${esc(m.code)}</span><span>${esc(m.titel)}</span>${nog}</li>`
     })
     .join("")
 }
 
 function kaart(c) {
   const cijfers = [
-    [c.modules_aantal, "modules"],
-    [c.lessen, "lessen"],
+    [c.modules_klaar < c.modules_aantal ? `${c.modules_klaar}/${c.modules_aantal}` : c.modules_aantal, c.modules_klaar < c.modules_aantal ? "modules klaar" : "modules"],
+    [c.lessen ?? "—", "lessen"],
     [c.toetsen, "toetsen"],
     [c.studieminuten ? `±${uren(c.studieminuten)}` : "—", "uur"],
   ]
@@ -83,6 +86,7 @@ function kaart(c) {
     <h3>${esc(c.titel)}</h3>
     <p class="voor">${esc(c.doelgroep)}</p>
     <p class="oms">${esc(c.omschrijving)}</p>
+    ${c.opmerking ? `<p class="opm">${esc(c.opmerking)}</p>` : ""}
     <div class="cijferrij">${cijfers.map(([v, l]) => `<div><b>${esc(v)}</b><span>${l}</span></div>`).join("")}</div>
     ${c.normen?.length ? `<div class="normen">${c.normen.map((n) => `<span class="tag">${esc(n)}</span>`).join("")}</div>` : ""}
     ${c.modules?.length ? `<details><summary>Bekijk de modules</summary><ol class="modlijst">${modulelijst(c)}</ol></details>` : ""}
@@ -91,7 +95,9 @@ function kaart(c) {
 }
 
 function cursussen() {
-  const lijst = CURSUSSEN.filter((c) => filterGroep === "alle" || c.groep === filterGroep)
+  const lijst = CURSUSSEN.filter((c) => filterGroep === "alle" || c.groep === filterGroep).sort(
+    (a, b) => (VOLGORDE[a.status] ?? 9) - (VOLGORDE[b.status] ?? 9),
+  )
   $("#cursusrooster").innerHTML = lijst.map(kaart).join("")
 }
 
