@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" role="img" aria-label="Betosoft">
+  <rect width="1024" height="1024" rx="96" fill="#223840"/>
+  <g transform="translate(512 530) scale(0.82) translate(-512 -530)">
+    <polygon fill="#5AA0AC" points="176,176 810,176 922,362 288,362"/>
+    <polygon fill="#C06B3E" points="102,437 736,437 848,623 214,623"/>
+    <polygon fill="#F3EFE7" points="139,698 773,698 885,884 250,884"/>
+  </g>
+</svg>

@@ -3,20 +3,146 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Betosoft Academie</title>
+  <title>Betosoft Academie · Opleidingen voor stortklaar beton</title>
+  <meta name="description" content="Online opleidingen voor de betoncentrale: mixerchauffeur, pompbediende, laborant, dispatcher, verkoop en kwaliteit. Gebouwd op de Belgische normen en de praktijk van de centrale.">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/stijl.css">
+  <link rel="stylesheet" href="/start.css">
 </head>
-<body>
-  <header class="kop"><a class="merk" href="https://betosoft.be"><span class="merk-blok">B</span><strong>Betosoft Academie</strong></a></header>
-  <main style="max-width:720px">
-    <p class="label" style="margin-top:8px">Opleidingen voor de betonsector</p>
-    <h1>Betosoft Academie</h1>
-    <p>Online opleidingen voor betonmixerchauffeurs, betonpompbedienden en andere functies in de betoncentrale. Het leerplatform opent binnenkort.</p>
-    <div class="knoppen" style="margin-top:16px"><a class="knop" href="/aanvragen/" style="text-decoration:none;display:inline-flex;align-items:center">Inschrijven</a></div>
+<body class="start">
+  <a class="naar-inhoud" href="#cursussen">Naar de inhoud</a>
+
+  <div class="band">
+    <header class="bandkop">
+      <a class="logo" href="/" aria-label="Betosoft Academie, startpagina">
+        <svg viewBox="92 166 840 728" aria-hidden="true"><polygon fill="#5AA0AC" points="176,176 810,176 922,362 288,362"/><polygon fill="#C06B3E" points="102,437 736,437 848,623 214,623"/><polygon fill="#F3EFE7" points="139,698 773,698 885,884 250,884"/></svg>
+        <span>Betosoft <em>Academie</em></span>
+      </a>
+      <nav class="hoofdnav" aria-label="Hoofdmenu">
+        <a href="#cursussen">Cursussen</a>
+        <a href="#werkwijze">Werkwijze</a>
+        <a href="#prijzen">Prijzen</a>
+        <a href="#centrales">Centrales</a>
+        <a href="#voorwaarden">Voorwaarden</a>
+      </nav>
+      <div class="bandknoppen">
+        <a class="bknop" id="aanmeldknop" href="/aanmelden/">Aanmelden</a>
+      </div>
+    </header>
+
+    <section class="held" aria-labelledby="titel">
+      <p class="kopregel mono" id="kopregel">OPLEIDINGEN · STORTKLAAR BETON</p>
+      <h1 id="titel">Het vak van de betoncentrale, online geleerd.</h1>
+      <p class="samenvatting"><strong>Cursussen voor elke functie in de centrale</strong>, van mixerchauffeur en pompbediende tot laborant, dispatcher en kwaliteitsverantwoordelijke. Gebouwd op de Belgische normen en de dagelijkse praktijk.</p>
+      <div class="heldknoppen">
+        <a class="bknop actie" href="/aanvragen/">Inschrijven</a>
+        <a class="bknop" href="#cursussen">Bekijk de cursussen</a>
+      </div>
+      <dl class="kerncijfers" id="kerncijfers" aria-label="Kerncijfers"></dl>
+    </section>
+  </div>
+
+  <div class="melding open-melding" role="note">
+    <strong>Testfase.</strong> Het leerplatform opent binnenkort. Inschrijven kan nu al: na betaling krijg je toegang vanaf de opening.
+  </div>
+
+  <main class="startinhoud">
+    <!-- 01 Cursussen -->
+    <section id="cursussen" aria-labelledby="h-cursussen">
+      <h2 id="h-cursussen"><span class="nr">01</span> Cursussen</h2>
+      <p class="inleiding">Elke cursus bestaat uit modules met korte lessen, animaties, een controlevraag per les, praktijkopdrachten in je eigen centrale en een toets per module. Je kunt elke les laten voorlezen.</p>
+      <div class="filter" role="group" aria-label="Filter op functie" id="filter"></div>
+      <div class="cursusrooster" id="cursusrooster"></div>
+    </section>
+
+    <!-- 02 Werkwijze -->
+    <section id="werkwijze" aria-labelledby="h-werkwijze">
+      <h2 id="h-werkwijze"><span class="nr">02</span> Zo werkt het</h2>
+      <ol class="stappen">
+        <li><span class="mono">1</span><div><strong>Inschrijven</strong><p>Kies een cursus, traject of abonnement. Als persoon of als centrale, met het aantal plaatsen dat je nodig hebt.</p></div></li>
+        <li><span class="mono">2</span><div><strong>Factuur</strong><p>Je ontvangt een factuur van Betosoft. De prijs ligt vast op het moment van je aanvraag.</p></div></li>
+        <li><span class="mono">3</span><div><strong>Toegang</strong><p>Na betaling activeren we je toegang. Je krijgt een persoonlijke link om je wachtwoord te kiezen.</p></div></li>
+        <li><span class="mono">4</span><div><strong>Leren en oefenen</strong><p>Lessen op je gsm of computer, praktijkopdrachten in je centrale en een toets per module. Je voortgang wordt bewaard.</p></div></li>
+      </ol>
+    </section>
+
+    <!-- 03 Prijzen -->
+    <section id="prijzen" aria-labelledby="h-prijzen">
+      <h2 id="h-prijzen"><span class="nr">03</span> Prijzen</h2>
+      <p class="inleiding" id="prijsinleiding">Alle prijzen zijn exclusief btw. Een centrale betaalt per plaats.</p>
+      <div id="prijstabellen"><p class="zacht">Prijzen laden…</p></div>
+    </section>
+
+    <!-- 04 Centrales -->
+    <section id="centrales" aria-labelledby="h-centrales">
+      <h2 id="h-centrales"><span class="nr">04</span> Voor centrales</h2>
+      <div class="tweekolom">
+        <div>
+          <p class="inleiding">Schrijf je centrale in met een aantal plaatsen en beheer zelf wie welke opleiding volgt.</p>
+          <ul class="vinkjes">
+            <li>Medewerkers toevoegen en plaatsen toewijzen</li>
+            <li>Voortgang, toetsscores en scorebord per medewerker</li>
+            <li>Meerdere locaties, elk met een eigen beheerder</li>
+            <li>Extra plaatsen bestellen en een verlenging aanvragen</li>
+          </ul>
+          <div class="knoppen">
+            <a class="knop" href="/aanvragen/?type=centrale">Centrale inschrijven</a>
+            <a class="knop licht" href="/aanmelden/">Aanmelden als centrale</a>
+          </div>
+        </div>
+        <aside class="kantlijn" aria-label="Goed om te weten">
+          <p class="label">Goed om te weten</p>
+          <p>Een centrale ziet enkel de voortgang en resultaten van haar eigen medewerkers. Wie van locatie wisselt, behoudt de eigen voortgang.</p>
+        </aside>
+      </div>
+    </section>
+
+    <!-- 05 Voorwaarden -->
+    <section id="voorwaarden" aria-labelledby="h-voorwaarden">
+      <h2 id="h-voorwaarden"><span class="nr">05</span> Voorwaarden in het kort</h2>
+      <div class="tweekolom">
+        <dl class="voorwaarden" id="voorwaardenlijst"></dl>
+        <aside class="kantlijn" aria-label="Privacy">
+          <p class="label">Privacy</p>
+          <p>We bewaren enkel wat nodig is voor je opleiding: naam, e-mail, facturatiegegevens, voortgang en toetsresultaten. De gegevens staan in de EU (Frankfurt).</p>
+          <p>De site gebruikt één cookie, enkel om je aangemeld te houden. Geen reclame- of volgcookies.</p>
+        </aside>
+      </div>
+    </section>
+
+    <section class="slot" aria-label="Inschrijven">
+      <div>
+        <h2 class="geen-lijn">Klaar om te starten?</h2>
+        <p class="zacht">Schrijf je in of meld je aan als je al een account hebt.</p>
+      </div>
+      <div class="knoppen">
+        <a class="knop" href="/aanvragen/">Inschrijven</a>
+        <a class="knop licht" href="/aanmelden/">Aanmelden</a>
+      </div>
+    </section>
   </main>
-  <p class="voet">Betosoft · betosoft.be</p>
+
+  <footer class="startvoet">
+    <div>
+      <a class="logo klein" href="/" aria-label="Betosoft Academie">
+        <svg viewBox="92 166 840 728" aria-hidden="true"><polygon fill="#5AA0AC" points="176,176 810,176 922,362 288,362"/><polygon fill="#C06B3E" points="102,437 736,437 848,623 214,623"/><polygon fill="#F3EFE7" points="139,698 773,698 885,884 250,884"/></svg>
+        <span>Betosoft <em>Academie</em></span>
+      </a>
+      <p>Opleidingen voor de betonsector · <a href="https://betosoft.be">betosoft.be</a></p>
+    </div>
+    <nav aria-label="Voetmenu">
+      <a href="#cursussen">Cursussen</a>
+      <a href="#prijzen">Prijzen</a>
+      <a href="#voorwaarden">Voorwaarden</a>
+      <a href="/aanvragen/">Inschrijven</a>
+      <a href="/aanmelden/">Aanmelden</a>
+    </nav>
+    <p class="mono versie" id="versie">VERSIE 0.2 · TESTFASE</p>
+  </footer>
+
+  <script src="/start.js" type="module"></script>
 </body>
 </html>

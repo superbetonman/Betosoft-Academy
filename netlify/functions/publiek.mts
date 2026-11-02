@@ -11,7 +11,16 @@ export default async (req: Request, context: Context) => {
         SELECT p.id, p.code, p.naam, p.type, p.periode, p.geldigheid_maanden, p.prijs_excl_btw, p.beschrijving
         FROM producten p WHERE p.actief
         ORDER BY CASE p.type WHEN 'abonnement' THEN 1 WHEN 'traject' THEN 2 ELSE 3 END, p.code`
-      return json({ producten })
+      // Publieke regels voor de startpagina (verlenging en btw); enkel getallen uit de tabel instellingen.
+      const rijen = await sql`
+        SELECT sleutel, waarde #>> '{}' AS waarde FROM instellingen
+        WHERE sleutel IN ('verlenging_maanden', 'verlenging_prijs_pct', 'verlenging_max', 'verlenging_venster_maanden', 'btw_pct')`
+      const regels: Record<string, number> = {}
+      for (const r of rijen) {
+        const n = Number(r.waarde)
+        if (Number.isFinite(n)) regels[r.sleutel] = n
+      }
+      return json({ producten, regels })
     }
 
     if (pad === "/api/aanvraag" && req.method === "POST") {

@@ -1,0 +1,182 @@
+/* Startpagina Betosoft Academie — Betosoft-huisstijl: donkere band met beeldmerk, daaronder papier met lijnen.
+   Koper enkel voor de ene hoofdactie (Inschrijven in de band). Geen schaduwen, verlopen of pillen. */
+
+body.start { background: var(--papier); }
+.start main.startinhoud { max-width: 1120px; padding: 8px 16px 48px; }
+
+.naar-inhoud { position: absolute; left: -9999px; top: 0; }
+.naar-inhoud:focus { left: 16px; top: 8px; z-index: 10; background: var(--wit); padding: 8px 12px; border-radius: var(--r); }
+
+/* ---------- Band (altijd donker, ook in lichte modus) ---------- */
+.band {
+  --b-grond: #223840; --b-inkt: #F3EFE7; --b-zacht: #A9BDC3; --b-lijn: #3A5560; --b-accent: #E39A6F; --b-actie: #B25C31;
+  background: var(--b-grond); color: var(--b-inkt);
+}
+.bandkop {
+  max-width: 1120px; margin: 0 auto; padding: 14px 16px;
+  display: flex; align-items: center; gap: 12px 24px; flex-wrap: wrap;
+  border-bottom: 1px solid var(--b-lijn);
+}
+.logo { display: inline-flex; align-items: center; gap: 10px; color: inherit; text-decoration: none; }
+.logo svg { width: 34px; height: 30px; flex: none; }
+.logo span { font: 700 19px/1 var(--sans); letter-spacing: -.01em; white-space: nowrap; }
+.logo em { font-style: normal; color: var(--b-accent, #E39A6F); }
+.logo.klein svg { width: 26px; height: 23px; }
+.logo.klein span { font-size: 16px; }
+
+.hoofdnav { display: flex; gap: 4px 20px; flex-wrap: wrap; order: 3; width: 100%; overflow-x: auto; scrollbar-width: none; }
+.hoofdnav::-webkit-scrollbar { display: none; }
+.hoofdnav a { color: var(--b-zacht); text-decoration: none; font-size: 14px; padding: 4px 0; border-bottom: 1px solid transparent; white-space: nowrap; }
+.hoofdnav a:hover, .hoofdnav a:focus-visible { color: var(--b-inkt); border-bottom-color: var(--b-zacht); }
+.bandknoppen { margin-left: auto; display: flex; gap: 8px; }
+@media (min-width: 900px) {
+  .hoofdnav { order: 0; width: auto; flex-wrap: nowrap; }
+}
+
+.bknop {
+  display: inline-flex; align-items: center; min-height: 40px; padding: 8px 16px;
+  border: 1px solid var(--b-zacht); border-radius: var(--r); color: var(--b-inkt);
+  font: 500 15px var(--sans); text-decoration: none; white-space: nowrap;
+}
+.bknop:hover { border-color: var(--b-inkt); }
+.bknop.actie { background: var(--b-actie); border-color: var(--b-actie); color: #fff; font-weight: 600; }
+.bknop.actie:hover { background: #A9532B; border-color: #A9532B; }
+.band :focus-visible { outline: 2px solid var(--b-accent); outline-offset: 2px; }
+
+.held { max-width: 1120px; margin: 0 auto; padding: 40px 16px 32px; }
+.kopregel { margin: 0 0 14px; font-size: 12px; letter-spacing: .1em; color: var(--b-zacht); }
+.held h1 { font-size: clamp(30px, 5.2vw, 50px); font-weight: 700; letter-spacing: -.02em; line-height: 1.08; max-width: 22ch; color: var(--b-inkt); text-wrap: balance; }
+.samenvatting { max-width: 62ch; font-size: 18px; line-height: 1.55; margin: 18px 0 0; color: var(--b-zacht); }
+.samenvatting strong { color: var(--b-inkt); font-weight: 600; }
+.heldknoppen { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 26px; }
+
+.kerncijfers {
+  display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); margin: 36px 0 0;
+  border-top: 1px solid var(--b-lijn);
+}
+@media (min-width: 720px) { .kerncijfers { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+.kerncijfers div { padding: 14px 16px 4px 0; }
+.kerncijfers dt { font: 600 11px var(--sans); letter-spacing: .08em; text-transform: uppercase; color: var(--b-zacht); }
+.kerncijfers dd { margin: 4px 0 0; font: 500 30px/1.1 var(--mono); color: var(--b-inkt); }
+.kerncijfers dd small { font-size: 14px; color: var(--b-zacht); margin-left: 4px; }
+
+.open-melding { max-width: 1088px; margin: 16px auto 0; }
+@media (max-width: 1120px) { .open-melding { margin-left: 16px; margin-right: 16px; } }
+
+/* ---------- Secties ---------- */
+.start a.knop { display: inline-flex; align-items: center; text-decoration: none; }
+.startinhoud section { scroll-margin-top: 16px; }
+.startinhoud h2 { font-size: 22px; margin-top: 48px; padding-bottom: 8px; display: flex; gap: 12px; align-items: baseline; }
+.startinhoud h2 .nr { font: 500 14px var(--mono); color: var(--inkt-zacht); }
+.startinhoud h2.geen-lijn { border: 0; margin: 0 0 4px; padding: 0; color: var(--inkt); }
+.inleiding { max-width: 70ch; margin: 0 0 16px; }
+
+/* Filter op functie */
+.filter { display: flex; gap: 6px; flex-wrap: wrap; margin: 0 0 16px; }
+.filter button {
+  appearance: none; background: var(--wit); border: 1px solid var(--lijn); border-radius: var(--r);
+  padding: 6px 10px; font: 500 13px var(--sans); color: var(--inkt); cursor: pointer; min-height: 34px;
+}
+.filter button[aria-pressed="true"] { border-color: var(--petrol); color: var(--petrol); box-shadow: inset 0 -2px 0 var(--petrol); }
+.filter button:focus-visible { outline: 2px solid var(--petrol); outline-offset: 1px; }
+
+/* Cursuskaarten */
+.cursusrooster { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 330px), 1fr)); gap: 12px; }
+.cursus {
+  background: var(--wit); border: 1px solid var(--lijn); border-radius: var(--r);
+  display: flex; flex-direction: column; min-width: 0;
+}
+.cursus.uitgelicht { border-color: var(--petrol); }
+.cursus .ckop { padding: 14px 16px 0; display: flex; justify-content: space-between; gap: 8px; align-items: baseline; flex-wrap: wrap; }
+.cursus h3 { padding: 6px 16px 0; font-size: 18px; line-height: 1.3; }
+.cursus .voor { padding: 4px 16px 0; font-size: 13px; color: var(--inkt-zacht); }
+.cursus .oms { padding: 10px 16px 0; margin: 0; font-size: 14.5px; }
+.cursus .cijferrij {
+  margin: 14px 16px 0; padding: 10px 0; border-top: 1px solid var(--lijn); border-bottom: 1px solid var(--lijn);
+  display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px;
+}
+.cursus .cijferrij div { min-width: 0; }
+.cursus .cijferrij b { display: block; font: 500 18px/1.2 var(--mono); }
+.cursus .cijferrij span { font-size: 11px; color: var(--inkt-zacht); text-transform: uppercase; letter-spacing: .06em; }
+.cursus details { padding: 10px 16px 0; font-size: 14px; }
+.cursus summary { cursor: pointer; color: var(--petrol); font-weight: 500; }
+.cursus summary:focus-visible { outline: 2px solid var(--petrol); outline-offset: 2px; }
+.cursus ol.modlijst { margin: 8px 0 0; padding: 0; list-style: none; border-top: 1px solid var(--lijn); }
+.cursus ol.modlijst li { display: grid; grid-template-columns: 40px 1fr; gap: 6px; padding: 6px 0; border-bottom: 1px solid var(--lijn); }
+.cursus ol.modlijst .mono { color: var(--inkt-zacht); font-size: 13px; }
+.cursus ol.modlijst .niv { grid-column: 1 / -1; padding: 10px 0 2px; font: 600 11px var(--sans); text-transform: uppercase; letter-spacing: .08em; color: var(--petrol); border-bottom: 0; }
+.cursus .cvoet { margin-top: auto; padding: 14px 16px 16px; display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.cursus .cvoet .zacht { font-size: 13px; }
+.normen { padding: 8px 16px 0; display: flex; gap: 4px; flex-wrap: wrap; }
+
+/* Stappen */
+.stappen { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 230px), 1fr)); border-top: 1px solid var(--lijn); }
+.stappen li { display: grid; grid-template-columns: 32px 1fr; gap: 8px; padding: 16px 16px 16px 0; border-bottom: 1px solid var(--lijn); }
+.stappen li > .mono { font-size: 20px; font-weight: 500; color: var(--petrol); line-height: 1.2; }
+.stappen p { margin: 4px 0 0; color: var(--inkt-zacht); font-size: 14px; }
+
+/* Prijzen */
+.prijsgroep { margin: 0 0 20px; }
+.prijsgroep h3 { font-size: 15px; margin: 0 0 6px; display: flex; gap: 8px; align-items: baseline; flex-wrap: wrap; }
+.prijsgroep h3 .zacht { font-weight: 400; font-size: 13px; }
+.prijzen { width: 100%; border-collapse: collapse; background: var(--wit); font-size: 14.5px; table-layout: fixed; }
+.prijzen col.c-product { width: 52%; } .prijzen col.c-toegang { width: 28%; } .prijzen col.c-prijs { width: 20%; }
+.prijsgroep summary { list-style: none; cursor: pointer; }
+.prijsgroep summary::-webkit-details-marker { display: none; }
+.prijsgroep summary h3 { color: var(--petrol); }
+.prijsgroep summary h3::before { content: "▸"; font-family: var(--mono); }
+.prijsgroep details[open] summary h3::before { content: "▾"; }
+.prijsgroep summary:focus-visible { outline: 2px solid var(--petrol); outline-offset: 2px; }
+.prijzen th, .prijzen td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--lijn); vertical-align: top; }
+.prijzen thead th { font: 600 11px var(--sans); letter-spacing: .06em; text-transform: uppercase; color: var(--inkt-zacht); border-top: 1px solid var(--lijn); }
+.prijzen td.num, .prijzen th.num { text-align: right; white-space: nowrap; }
+.prijzen td.num { font-family: var(--mono); }
+.prijzen td .zacht { display: block; font-size: 13px; }
+.prijzen .opaanvraag { color: var(--inkt-zacht); font-family: var(--sans); }
+@media (max-width: 640px) {
+  .prijzen, .prijzen tbody { display: block; }
+  .prijzen colgroup, .prijzen thead { display: none; }
+  .prijzen tr { display: grid; grid-template-columns: 1fr auto; padding: 10px 12px; border-bottom: 1px solid var(--lijn); }
+  .prijzen td { padding: 0; border: 0; }
+  .prijzen td.toegang { grid-column: 1 / -1; order: 3; color: var(--inkt-zacht); font-size: 13px; margin-top: 2px; }
+}
+
+/* Twee kolommen met kantlijn */
+.tweekolom { display: grid; gap: 16px 32px; }
+@media (min-width: 860px) { .tweekolom { grid-template-columns: minmax(0, 1fr) 320px; } }
+.kantlijn { border-left: 2px solid var(--petrol); padding: 2px 0 2px 14px; font-size: 14px; align-self: start; }
+.kantlijn p { margin: 6px 0 0; }
+.kantlijn .label { margin: 0; }
+.vinkjes { list-style: none; padding: 0; margin: 0 0 18px; border-top: 1px solid var(--lijn); }
+.vinkjes li { padding: 9px 0 9px 24px; border-bottom: 1px solid var(--lijn); position: relative; }
+.vinkjes li::before { content: "●"; position: absolute; left: 2px; top: 9px; color: var(--conform); font-size: 12px; }
+
+/* Voorwaarden */
+.voorwaarden { margin: 0; border-top: 1px solid var(--lijn); }
+.voorwaarden div { display: grid; gap: 2px 16px; padding: 10px 0; border-bottom: 1px solid var(--lijn); }
+@media (min-width: 640px) { .voorwaarden div { grid-template-columns: 180px 1fr; } }
+.voorwaarden dt { font-weight: 600; }
+.voorwaarden dd { margin: 0; }
+.voorwaarden .mono { white-space: nowrap; }
+
+/* Slot */
+.slot {
+  margin-top: 48px; padding: 20px; background: var(--wit); border: 1px solid var(--lijn); border-left: 3px solid var(--petrol); border-radius: var(--r);
+  display: flex; flex-wrap: wrap; gap: 12px 24px; align-items: center; justify-content: space-between;
+}
+.slot p { margin: 0; }
+
+/* Voet: zelfde donkere grond als de band (het beeldmerk staat altijd op donkere grond) */
+.startvoet {
+  --b-accent: #E39A6F;
+  margin-top: 48px; background: #223840; color: #A9BDC3;
+  padding: 28px 16px 32px; display: grid; gap: 14px; justify-items: center; text-align: center; font-size: 13px;
+}
+.startvoet .logo { color: #F3EFE7; }
+.startvoet p { margin: 8px 0 0; }
+.startvoet a { color: #F3EFE7; }
+.startvoet nav { display: flex; gap: 6px 18px; flex-wrap: wrap; justify-content: center; }
+.startvoet nav a { text-decoration: none; border-bottom: 1px solid transparent; }
+.startvoet nav a:hover, .startvoet nav a:focus-visible { border-bottom-color: #A9BDC3; }
+.startvoet :focus-visible { outline: 2px solid #E39A6F; outline-offset: 2px; }
+.startvoet .versie { font-size: 11px; letter-spacing: .08em; margin: 0; }

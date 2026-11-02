@@ -63,6 +63,12 @@ form.addEventListener("change", (e) => {
 })
 form.aantal_plaatsen.addEventListener("input", toonPrijs)
 
+// Vanaf de startpagina: /aanvragen/?type=centrale opent meteen de keuze voor een centrale.
+if (new URLSearchParams(location.search).get("type") === "centrale") {
+  form.type.value = "centrale"
+  typeWissel()
+}
+
 form.addEventListener("submit", async (e) => {
   e.preventDefault()
   melding.classList.add("verborgen")
