@@ -1,8 +1,13 @@
 import type { Config, Context } from "@netlify/functions"
 import { db, json, fout, dbFout, tekst, geheel, UUID, EMAIL, DATUM } from "../lib/db.mts"
-import { COOKIE, leesSessie } from "../lib/sessie.mts"
+import { aangemeld, eigenAanvraag, isBeheer, type Gebruiker } from "../lib/sessie.mts"
+import { maakUitnodiging } from "../lib/uitnodiging.mts"
+import { hashWachtwoord, wachtwoordFout } from "../lib/wachtwoord.mts"
 
-type Handler = (p: { b: any; q: URLSearchParams; id?: string }) => Promise<Response>
+type Handler = (p: { b: any; q: URLSearchParams; id?: string; ik: Gebruiker; req: Request }) => Promise<Response>
+
+/** Enkel de superadmin mag prijzen, instellingen en beheerders wijzigen. */
+const SUPERADMIN = new Set(["POST producten/wijzig", "POST instellingen", "POST beheerders", "POST beheerders/actief"])
 
 const sql = () => db()
 
@@ -23,11 +28,12 @@ const routes: Record<string, Handler> = {
         (SELECT count(*)::int FROM aanvragen WHERE status = 'nieuw') AS nieuwe_aanvragen,
         (SELECT count(*)::int FROM aanvragen WHERE status = 'gefactureerd') AS gefactureerd,
         (SELECT count(*)::int FROM v_geldige_rechten WHERE geldig) AS actieve_rechten,
-        (SELECT count(*)::int FROM gebruikers WHERE rol <> 'beheerder') AS cursisten,
+        (SELECT count(*)::int FROM gebruikers WHERE rol IN ('cursist','centrale_verantwoordelijke')) AS cursisten,
         (SELECT count(*)::int FROM organisaties) AS centrales`
     const aflopend = await sql()`
-      SELECT id, klant, email, product_naam, eind_datum::text, dagen_resterend
-      FROM v_aflopend ORDER BY eind_datum`
+      SELECT a.id, a.klant, a.email, a.product_naam, a.eind_datum::text, a.dagen_resterend, a.modules_niet_af, a.verlenging_aangevraagd,
+             s.gebruikt AS verlengingen, s.maximum AS verlengingen_max, s.aanvragen_tot::text, s.prijs_excl_btw AS verlenging_prijs
+      FROM v_aflopend a JOIN v_verlenging_stand s ON s.toegangsrecht_id = a.id ORDER BY a.eind_datum`
     return json({ cijfers, aflopend })
   },
 
@@ -37,7 +43,7 @@ const routes: Record<string, Handler> = {
     const status = ["nieuw", "gefactureerd", "geactiveerd", "geweigerd"].includes(st ?? "") ? st : null
     const rijen = await sql()`
       SELECT a.id, a.type, a.status, a.voornaam, a.achternaam, a.email, a.telefoon, a.organisatie_naam, a.btw_nummer,
-             a.adres, a.aantal_plaatsen, a.opmerking, a.factuurnummer, a.ingediend_op, a.verwerkt_op,
+             a.adres, a.aantal_plaatsen, a.opmerking, a.factuurnummer, a.ingediend_op, a.verwerkt_op, a.bedrag_excl_btw, a.toegangsrecht_id,
              p.naam AS product, p.prijs_excl_btw, p.periode, p.geldigheid_maanden
       FROM aanvragen a LEFT JOIN producten p ON p.id = a.product_id
       WHERE (${status}::text IS NULL AND a.status IN ('nieuw','gefactureerd')) OR a.status::text = ${status}::text
@@ -56,11 +62,16 @@ const routes: Record<string, Handler> = {
     return json({ ok: true })
   },
 
-  "POST aanvragen/activeer": async ({ b, id: aid }) => {
+  "POST aanvragen/activeer": async ({ b, id: aid, req, ik }) => {
     const f = tekst(b.factuurnummer, 60)
     const start = datum(b.start_datum)
     const [r] = await sql()`SELECT activeer_aanvraag(${aid}::uuid, ${f}, COALESCE(${start}::date, current_date)) AS recht`
-    return json({ ok: true, recht: r.recht })
+    // Uitnodiging voor wie nog geen wachtwoord heeft (cursist of beheerder van de centrale)
+    const [g] = await sql()`
+      SELECT g.id, coalesce(g.voornaam, g.email::text) AS wie FROM aanvragen a JOIN gebruikers g ON g.id = a.gebruiker_id
+      WHERE a.id = ${aid} AND a.type::text <> 'verlenging' AND g.wachtwoord_hash IS NULL AND g.actief`
+    const uitnodiging = g ? { ...(await maakUitnodiging(req, g.id, ik.id)), wie: g.wie } : null
+    return json({ ok: true, recht: r.recht, uitnodiging })
   },
 
   "POST aanvragen/weiger": async ({ b, id: aid }) => {
@@ -86,8 +97,10 @@ const routes: Record<string, Handler> = {
              COALESCE(o.naam, concat_ws(' ', g.voornaam, g.achternaam)) AS klant,
              COALESCE(g.email, o.contact_email) AS email,
              COALESCE(vp.gebruikt, 0)::int AS plaatsen_gebruikt,
-             CASE WHEN tr.eind_datum IS NULL THEN NULL ELSE (tr.eind_datum - current_date) END AS dagen_resterend
+             CASE WHEN tr.eind_datum IS NULL THEN NULL ELSE (tr.eind_datum - current_date) END AS dagen_resterend,
+             vs.gebruikt AS verlengingen, vs.maximum AS verlengingen_max, vs.aanvragen_tot::text, vs.prijs_excl_btw AS verlenging_prijs
       FROM v_geldige_rechten tr
+      JOIN v_verlenging_stand vs ON vs.toegangsrecht_id = tr.id
       JOIN producten p ON p.id = tr.product_id
       LEFT JOIN gebruikers g ON g.id = tr.gebruiker_id
       LEFT JOIN organisaties o ON o.id = tr.organisatie_id
@@ -169,11 +182,12 @@ const routes: Record<string, Handler> = {
   "GET centrales": async () => {
     const rijen = await sql()`
       SELECT o.id, o.naam, o.btw_nummer, o.contact_naam, o.contact_email, o.telefoon,
-             (SELECT count(*)::int FROM gebruikers g WHERE g.organisatie_id = o.id) AS personen,
+             (SELECT count(*)::int FROM gebruikers g JOIN organisaties x ON x.id = g.organisatie_id WHERE x.id = o.id OR x.ouder_id = o.id) AS personen,
+             (SELECT count(*)::int FROM organisaties l WHERE l.ouder_id = o.id) AS locaties,
              (SELECT count(*)::int FROM v_geldige_rechten tr WHERE tr.organisatie_id = o.id AND tr.geldig) AS actieve_rechten,
              (SELECT COALESCE(sum(vp.aantal_plaatsen), 0)::int FROM v_plaatsen vp JOIN v_geldige_rechten tr ON tr.id = vp.toegangsrecht_id WHERE vp.organisatie_id = o.id AND tr.geldig) AS plaatsen,
              (SELECT COALESCE(sum(vp.gebruikt), 0)::int FROM v_plaatsen vp JOIN v_geldige_rechten tr ON tr.id = vp.toegangsrecht_id WHERE vp.organisatie_id = o.id AND tr.geldig) AS plaatsen_gebruikt
-      FROM organisaties o ORDER BY o.naam`
+      FROM organisaties o WHERE o.ouder_id IS NULL ORDER BY o.naam`
     return json({ centrales: rijen })
   },
 
@@ -181,22 +195,25 @@ const routes: Record<string, Handler> = {
     const [centrale] = await sql()`SELECT * FROM organisaties WHERE id = ${oid}`
     if (!centrale) return fout("Centrale niet gevonden.", 404)
     const personen = await sql()`
-      SELECT g.id, g.email, g.voornaam, g.achternaam, g.rol, g.actief, g.aangemaakt_op,
+      SELECT g.id, g.email, g.voornaam, g.achternaam, g.rol, g.actief, g.aangemaakt_op, g.organisatie_id,
+             (g.wachtwoord_hash IS NOT NULL) AS account_actief, lo.naam AS locatie,
              COALESCE(json_agg(json_build_object('toewijzing', pt.id, 'recht', pt.toegangsrecht_id, 'product', p.naam))
                       FILTER (WHERE pt.id IS NOT NULL), '[]') AS plaatsen
       FROM gebruikers g
       LEFT JOIN plaats_toewijzingen pt ON pt.gebruiker_id = g.id AND pt.ingetrokken_op IS NULL
       LEFT JOIN toegangsrechten tr ON tr.id = pt.toegangsrecht_id
       LEFT JOIN producten p ON p.id = tr.product_id
-      WHERE g.organisatie_id = ${oid}
-      GROUP BY g.id ORDER BY g.rol DESC, g.achternaam, g.voornaam`
+      JOIN organisaties lo ON lo.id = g.organisatie_id
+      WHERE lo.id = ${oid} OR lo.ouder_id = ${oid}
+      GROUP BY g.id, lo.naam ORDER BY g.rol DESC, g.achternaam, g.voornaam`
+    const locaties = await sql()`SELECT id, naam, adres FROM organisaties WHERE ouder_id = ${oid} ORDER BY naam`
     const rechten = await sql()`
       SELECT tr.id, p.naam AS product, tr.status, tr.geldig, tr.start_datum::text, tr.eind_datum::text, tr.factuurnummer,
              tr.aantal_plaatsen, COALESCE(vp.gebruikt, 0)::int AS gebruikt
       FROM v_geldige_rechten tr JOIN producten p ON p.id = tr.product_id
       LEFT JOIN v_plaatsen vp ON vp.toegangsrecht_id = tr.id
       WHERE tr.organisatie_id = ${oid} ORDER BY tr.geldig DESC, tr.eind_datum DESC NULLS FIRST`
-    return json({ centrale, personen, rechten })
+    return json({ centrale, personen, rechten, locaties })
   },
 
   "POST centrales/wijzig": async ({ b, id: oid }) => {
@@ -211,15 +228,25 @@ const routes: Record<string, Handler> = {
     return json({ ok: true })
   },
 
-  "POST centrales/cursist": async ({ b, id: oid }) => {
+  "POST centrales/cursist": async ({ b, id: oid, req, ik }) => {
     const email = tekst(b.email, 254)
     if (!email || !EMAIL.test(email)) return fout("Vul een geldig e-mailadres in.")
     const voornaam = tekst(b.voornaam, 80)
     if (!voornaam) return fout("Vul minstens de voornaam in.")
-    const [g] = await sql()`SELECT voeg_cursist_toe(${oid}::uuid, ${email}, ${voornaam}, ${tekst(b.achternaam, 80)}) AS id`
+    const locatie = id(b.locatie_id)
+    let doel = oid
+    if (locatie) {
+      const [l] = await sql()`SELECT id FROM organisaties WHERE id = ${locatie} AND ouder_id = ${oid}`
+      if (!l) return fout("Onbekende locatie.")
+      doel = locatie
+    }
+    const [g] = await sql()`SELECT voeg_cursist_toe(${doel}::uuid, ${email}, ${voornaam}, ${tekst(b.achternaam, 80)}) AS id`
     const recht = id(b.recht_id)
     if (recht) await sql()`SELECT wijs_plaats_toe(${recht}::uuid, ${g.id}::uuid)`
-    return json({ ok: true, gebruiker: g.id })
+    if (b.verantwoordelijke === true || b.verantwoordelijke === "on")
+      await sql()`UPDATE gebruikers SET rol = 'centrale_verantwoordelijke' WHERE id = ${g.id} AND rol = 'cursist'`
+    const uitnodiging = await maakUitnodiging(req, g.id, ik.id)
+    return json({ ok: true, gebruiker: g.id, uitnodiging })
   },
 
   "POST plaatsen": async ({ b }) => {
@@ -249,14 +276,14 @@ const routes: Record<string, Handler> = {
              (SELECT count(*)::int FROM attesten a WHERE a.gebruiker_id = g.id AND a.ingetrokken_op IS NULL) AS attesten,
              (SELECT COALESCE(sum(punten), 0)::int FROM punten pt WHERE pt.gebruiker_id = g.id) AS punten
       FROM gebruikers g LEFT JOIN organisaties o ON o.id = g.organisatie_id
-      WHERE g.rol <> 'beheerder'
+      WHERE g.rol IN ('cursist','centrale_verantwoordelijke')
         AND (${patroon}::text IS NULL OR g.email ILIKE ${patroon} OR concat_ws(' ', g.voornaam, g.achternaam) ILIKE ${patroon} OR o.naam ILIKE ${patroon})
       ORDER BY g.aangemaakt_op DESC LIMIT 500`
     return json({ cursisten: rijen })
   },
 
   "POST cursisten/actief": async ({ b, id: gid }) => {
-    const r = await sql()`UPDATE gebruikers SET actief = ${b.actief === true} WHERE id = ${gid} AND rol <> 'beheerder' RETURNING id`
+    const r = await sql()`UPDATE gebruikers SET actief = ${b.actief === true} WHERE id = ${gid} AND rol IN ('cursist','centrale_verantwoordelijke') RETURNING id`
     if (!r.length) return fout("Persoon niet gevonden.", 404)
     await sql()`SELECT log_actie('gebruiker_actief', 'gebruiker', ${gid}::uuid, ${JSON.stringify({ actief: b.actief === true })}::jsonb)`
     return json({ ok: true })
@@ -292,6 +319,189 @@ const routes: Record<string, Handler> = {
     return json({ ok: true })
   },
 
+  // ---------- Locaties en verantwoordelijken ----------
+  "POST centrales/locatie": async ({ b, id: oid }) => {
+    const naam = tekst(b.naam, 160)
+    if (!naam) return fout("Vul de naam van de locatie in.")
+    const [o] = await sql()`SELECT id FROM organisaties WHERE id = ${oid} AND ouder_id IS NULL`
+    if (!o) return fout("Locaties horen bij een hoofdbedrijf.")
+    const [l] = await sql()`INSERT INTO organisaties (naam, adres, ouder_id) VALUES (${naam}, ${tekst(b.adres, 300)}, ${oid}) RETURNING id`
+    await sql()`SELECT log_actie('locatie_toegevoegd', 'organisatie', ${l.id}::uuid, ${JSON.stringify({ naam })}::jsonb)`
+    return json({ ok: true, id: l.id })
+  },
+
+  "POST cursisten/rol": async ({ b, id: gid }) => {
+    const rol = b.rol === "centrale_verantwoordelijke" ? "centrale_verantwoordelijke" : b.rol === "cursist" ? "cursist" : null
+    if (!rol) return fout("Ongeldige rol.")
+    const r = await sql()`UPDATE gebruikers SET rol = ${rol}::gebruiker_rol WHERE id = ${gid} AND organisatie_id IS NOT NULL AND rol IN ('cursist','centrale_verantwoordelijke') RETURNING id`
+    if (!r.length) return fout("Persoon niet gevonden of niet verbonden aan een centrale.")
+    await sql()`SELECT log_actie('rol_gewijzigd', 'gebruiker', ${gid}::uuid, ${JSON.stringify({ rol })}::jsonb)`
+    return json({ ok: true })
+  },
+
+  "POST cursisten/uitnodiging": async ({ id: gid, req, ik }) => {
+    const [g] = await sql()`SELECT id FROM gebruikers WHERE id = ${gid} AND actief AND rol IN ('cursist','centrale_verantwoordelijke')`
+    if (!g) return fout("Persoon niet gevonden of niet actief.")
+    return json({ ok: true, uitnodiging: await maakUitnodiging(req, gid!, ik.id) })
+  },
+
+  // ---------- Verlenging ----------
+  "POST rechten/verlenging": async ({ b, id: rid }) => {
+    const [r] = await sql()`SELECT vraag_verlenging(${rid}::uuid, ${tekst(b.opmerking, 300)}) AS id`
+    return json({ ok: true, aanvraag: r.id })
+  },
+
+  // ---------- Versies ----------
+  "GET versies": async () => {
+    const rijen = await sql()`
+      SELECT m.id AS module_id, m.code, m.titel, c.titel AS cursus, m.traject,
+             COALESCE(json_agg(json_build_object(
+               'id', mv.id, 'label', mv.label, 'status', mv.status, 'gepubliceerd_op', mv.gepubliceerd_op,
+               'nota', mv.wijzigingsnota,
+               'lessen', (SELECT count(*) FROM lessen l WHERE l.module_versie_id = mv.id),
+               'volgers', (SELECT count(*) FROM cursist_moduleversie cm WHERE cm.module_versie_id = mv.id),
+               'te_beoordelen', (SELECT count(*) FROM v_versie_verschil d WHERE d.versie_id = mv.id AND d.soort = 'te_beoordelen'),
+               'proefgroep', (SELECT count(*) FROM versie_proefgroep pg WHERE pg.module_versie_id = mv.id)
+             ) ORDER BY mv.aangemaakt_op DESC) FILTER (WHERE mv.id IS NOT NULL), '[]') AS versies,
+             (SELECT count(*)::int FROM module_versies a WHERE a.module_id = m.id AND a.status = 'archief') AS gearchiveerd
+      FROM modules m JOIN cursussen c ON c.id = m.cursus_id
+      LEFT JOIN module_versies mv ON mv.module_id = m.id AND mv.status <> 'archief'
+      GROUP BY m.id, c.titel, c.volgorde ORDER BY c.volgorde, m.volgorde`
+    return json({ modules: rijen })
+  },
+
+  "GET versies/detail": async ({ id: vid }) => {
+    const [versie] = await sql()`
+      SELECT mv.id, mv.label, mv.status, mv.wijzigingsnota, mv.gepubliceerd_op, mv.module_id,
+             m.code, m.titel AS module, vo.label AS vorige_label
+      FROM module_versies mv JOIN modules m ON m.id = mv.module_id LEFT JOIN module_versies vo ON vo.id = mv.vorige_versie_id
+      WHERE mv.id = ${vid}`
+    if (!versie) return fout("Versie niet gevonden.", 404)
+    const verschil = await sql()`
+      SELECT onderdeel, sleutel, titel, toets, nieuw_id, soort, nota FROM v_versie_verschil
+      WHERE versie_id = ${vid} AND soort <> 'ongewijzigd'
+      ORDER BY CASE soort WHEN 'te_beoordelen' THEN 0 WHEN 'nieuw' THEN 1 WHEN 'inhoudelijk' THEN 2 WHEN 'weggevallen' THEN 3 WHEN 'redactioneel' THEN 4 ELSE 5 END,
+               onderdeel, volgorde_nieuw NULLS LAST`
+    const [{ ongewijzigd }] = await sql()`SELECT count(*)::int AS ongewijzigd FROM v_versie_verschil WHERE versie_id = ${vid} AND soort = 'ongewijzigd'`
+    const proefgroep = await sql()`
+      SELECT pg.id, coalesce(o.naam, nullif(concat_ws(' ', g.voornaam, g.achternaam), ''), g.email::text) AS naam,
+             CASE WHEN pg.organisatie_id IS NOT NULL THEN 'centrale' ELSE 'persoon' END AS soort
+      FROM versie_proefgroep pg LEFT JOIN organisaties o ON o.id = pg.organisatie_id LEFT JOIN gebruikers g ON g.id = pg.gebruiker_id
+      WHERE pg.module_versie_id = ${vid} ORDER BY naam`
+    const [actueel] = await sql()`SELECT * FROM versie_impact(${vid}::uuid, 'actueel')`
+    const [proef] = await sql()`SELECT * FROM versie_impact(${vid}::uuid, 'proef')`
+    return json({ versie, verschil, ongewijzigd, proefgroep, impact: { actueel, proef } })
+  },
+
+  "POST versies": async ({ b }) => {
+    const mid = id(b.module_id)
+    const label = tekst(b.label, 30)
+    if (!mid || !label) return fout("Kies een module en geef de versie een naam, bv. 2027.1.")
+    const [r] = await sql()`SELECT nieuwe_versie(${mid}::uuid, ${label}, ${tekst(b.nota, 1000)}) AS id`
+    return json({ ok: true, id: r.id })
+  },
+
+  "POST versies/beoordeel": async ({ b }) => {
+    const soort = b.soort === "inhoudelijk" || b.soort === "redactioneel" ? b.soort : null
+    const oid = id(b.onderdeel_id)
+    if (!soort || !oid || !["les", "vraag"].includes(b.onderdeel)) return fout("Kies inhoudelijk of redactioneel.")
+    await sql()`SELECT beoordeel_wijziging(${b.onderdeel}, ${oid}::uuid, ${soort}::wijziging_soort, ${tekst(b.nota, 500)})`
+    return json({ ok: true })
+  },
+
+  "POST versies/publiceer": async ({ b, id: vid }) => {
+    const status = b.status === "proef" ? "proef" : b.status === "actueel" ? "actueel" : null
+    if (!status) return fout("Kies proef of actueel.")
+    const [r] = await sql()`SELECT publiceer_versie(${vid}::uuid, ${status}::versie_status) AS n`
+    return json({ ok: true, overgezet: r.n })
+  },
+
+  "POST versies/nota": async ({ b, id: vid }) => {
+    await sql()`UPDATE module_versies SET wijzigingsnota = ${tekst(b.nota, 1000)} WHERE id = ${vid}`
+    return json({ ok: true })
+  },
+
+  "POST versies/proefgroep": async ({ b, id: vid }) => {
+    const gebruiker = id(b.gebruiker_id)
+    const organisatie = id(b.organisatie_id)
+    if (!gebruiker === !organisatie) return fout("Kies een persoon of een centrale.")
+    await sql()`INSERT INTO versie_proefgroep (module_versie_id, gebruiker_id, organisatie_id) VALUES (${vid}, ${gebruiker}, ${organisatie}) ON CONFLICT DO NOTHING`
+    return json({ ok: true })
+  },
+
+  "POST proefgroep/verwijder": async ({ id: pid }) => {
+    await sql()`DELETE FROM versie_proefgroep WHERE id = ${pid}`
+    return json({ ok: true })
+  },
+
+  "GET keuzelijsten": async () => {
+    const centrales = await sql()`SELECT id, naam FROM organisaties WHERE ouder_id IS NULL ORDER BY naam`
+    const personen = await sql()`
+      SELECT id, coalesce(nullif(concat_ws(' ', voornaam, achternaam), ''), email::text) AS naam, email::text AS email
+      FROM gebruikers WHERE rol IN ('cursist','centrale_verantwoordelijke') ORDER BY naam LIMIT 2000`
+    return json({ centrales, personen })
+  },
+
+  // ---------- Instellingen ----------
+  "GET instellingen": async () => {
+    const rijen = await sql()`SELECT sleutel, waarde, omschrijving, gewijzigd_op FROM instellingen ORDER BY sleutel`
+    return json({ instellingen: rijen })
+  },
+
+  "POST instellingen": async ({ b }) => {
+    const grenzen: Record<string, [number, number]> = {
+      verlenging_maanden: [1, 12],
+      verlenging_prijs_pct: [0, 100],
+      verlenging_max: [0, 12],
+      verlenging_venster_maanden: [1, 24],
+      btw_pct: [0, 30],
+    }
+    const wijzigingen: [string, number][] = []
+    for (const [k, [min, max]] of Object.entries(grenzen)) {
+      if (b[k] === undefined || b[k] === "") continue
+      const n = Number(String(b[k]).replace(",", "."))
+      if (!Number.isFinite(n) || n < min || n > max) return fout(`Ongeldige waarde voor ${k.replaceAll("_", " ")} (${min} tot ${max}).`)
+      wijzigingen.push([k, n])
+    }
+    for (const [k, n] of wijzigingen)
+      await sql()`UPDATE instellingen SET waarde = ${JSON.stringify(n)}::jsonb, gewijzigd_op = now() WHERE sleutel = ${k}`
+    await sql()`SELECT log_actie('instellingen_gewijzigd', 'instellingen', NULL, ${JSON.stringify(Object.fromEntries(wijzigingen))}::jsonb)`
+    return json({ ok: true })
+  },
+
+  // ---------- Beheerders ----------
+  "GET beheerders": async () => {
+    const rijen = await sql()`
+      SELECT id, gebruikersnaam::text, email::text, voornaam, achternaam, rol::text, actief, laatst_aangemeld_op
+      FROM gebruikers WHERE rol IN ('beheerder','superadmin') ORDER BY rol DESC, gebruikersnaam`
+    return json({ beheerders: rijen })
+  },
+
+  "POST beheerders": async ({ b }) => {
+    const gebruikersnaam = tekst(b.gebruikersnaam, 40)
+    const email = tekst(b.email, 254)
+    const rol = b.rol === "superadmin" ? "superadmin" : "beheerder"
+    if (!gebruikersnaam || !/^[a-z0-9._-]{3,40}$/i.test(gebruikersnaam))
+      return fout("Gebruikersnaam: 3 tot 40 letters, cijfers, punt, streep of liggend streepje.")
+    if (!email || !EMAIL.test(email)) return fout("Vul een geldig e-mailadres in.")
+    const f = wachtwoordFout(b.wachtwoord)
+    if (f) return fout(f)
+    const [g] = await sql()`
+      INSERT INTO gebruikers (email, gebruikersnaam, voornaam, achternaam, rol, wachtwoord_hash)
+      VALUES (${email}, ${gebruikersnaam}, ${tekst(b.voornaam, 80)}, ${tekst(b.achternaam, 80)}, ${rol}::gebruiker_rol, ${await hashWachtwoord(b.wachtwoord)})
+      RETURNING id`
+    await sql()`SELECT log_actie('beheerder_toegevoegd', 'gebruiker', ${g.id}::uuid, ${JSON.stringify({ gebruikersnaam, rol })}::jsonb)`
+    return json({ ok: true })
+  },
+
+  "POST beheerders/actief": async ({ b, id: gid, ik }) => {
+    if (gid === ik.id) return fout("Je kunt je eigen account niet uitschakelen.")
+    const r = await sql()`UPDATE gebruikers SET actief = ${b.actief === true} WHERE id = ${gid} AND rol IN ('beheerder','superadmin') RETURNING id`
+    if (!r.length) return fout("Beheerder niet gevonden.", 404)
+    await sql()`SELECT log_actie('beheerder_actief', 'gebruiker', ${gid}::uuid, ${JSON.stringify({ actief: b.actief === true })}::jsonb)`
+    return json({ ok: true })
+  },
+
   // ---------- Logboek ----------
   "GET logboek": async () => {
     const rijen = await sql()`SELECT id, actie, entiteit, entiteit_id, details, tijdstip FROM auditlog ORDER BY tijdstip DESC LIMIT 200`
@@ -300,9 +510,15 @@ const routes: Record<string, Handler> = {
 }
 
 export default async (req: Request, context: Context) => {
-  const sessie = leesSessie(context.cookies.get(COOKIE))
-  if (!sessie || sessie.rol !== "beheerder") return fout("Niet aangemeld.", 401)
-  if (req.method !== "GET" && req.headers.get("x-academie") !== "1") return fout("Ongeldige aanvraag.", 403)
+  if (!eigenAanvraag(req)) return fout("Ongeldige aanvraag.", 403)
+  let ik: Gebruiker | null
+  try {
+    ik = await aangemeld(context)
+  } catch (err) {
+    return dbFout(err)
+  }
+  if (!ik) return fout("Niet aangemeld.", 401)
+  if (!isBeheer(ik)) return fout("Geen toegang.", 403)
 
   const url = new URL(req.url)
   // /api/beheer/<bron>[/<id>][/<actie>]
@@ -319,6 +535,7 @@ export default async (req: Request, context: Context) => {
 
   const h = routes[sleutel]
   if (!h) return fout("Niet gevonden.", 404)
+  if (SUPERADMIN.has(sleutel) && ik.rol !== "superadmin") return fout("Enkel de superadmin mag dit wijzigen.", 403)
 
   let b: any = {}
   if (req.method === "POST") {
@@ -329,7 +546,7 @@ export default async (req: Request, context: Context) => {
     }
   }
   try {
-    return await h({ b, q: url.searchParams, id: rid })
+    return await h({ b, q: url.searchParams, id: rid, ik, req })
   } catch (err) {
     return dbFout(err)
   }

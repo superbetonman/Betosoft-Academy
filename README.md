@@ -1,36 +1,59 @@
-# Betosoft Academie – stap 1 (inschrijvingen, toegangsrechten, beheer)
+# Betosoft Academie
 
-## Wat erin zit
-- `/aanvragen/` – inschrijfformulier voor personen en centrales (product, plaatsen, akkoord).
-- `/beheer/` – beheerscherm: overzicht, aanvragen (factuur noteren, activeren, weigeren), toegangsrechten (verlengen, pauzeren, intrekken, plaatsen), centrales (personen, plaatsen toewijzen), cursisten, producten (prijs, geldigheid), logboek.
-- `netlify/functions/` – API (`/api/...`) op Netlify Functions in Frankfurt.
-- Databank: Neon-project `betosoft-academie` (id `summer-water-53285175`), databank `academie`, regio Frankfurt.
+Leerplatform voor de betonsector: inschrijvingen, toegangsrechten, versies per module, centrales met eigen beheerder, verlengingen.
+Netlify (statische pagina's + functies in Frankfurt) en Neon (Postgres, Frankfurt).
 
-## Publiceren vanaf je laptop
-1. Pak de zip uit, bv. in `C:\Users\<jij>\Projects\betosoft-academie`.
-2. Open een terminal in die map en voer uit:
-   ```
-   npm install
-   npx netlify-cli deploy --prod --site a9afee37-bd4f-40f1-8bca-c649d96c7ceb
-   ```
-   Meld je aan bij Netlify als daarom gevraagd wordt.
-3. Open https://betosoft-academie.netlify.app/beheer/ en meld je aan met het beheerderswachtwoord.
+## Pagina's
+| Pad | Voor wie | Wat |
+|---|---|---|
+| `/aanvragen/` | publiek | Inschrijven als persoon of centrale |
+| `/aanmelden/` | iedereen | Aanmelden met gebruikersnaam of e-mail + wachtwoord |
+| `/welkom/?t=…` | nieuwe gebruiker | Wachtwoord kiezen via uitnodigingslink (14 dagen geldig, één keer) |
+| `/beheer/` | superadmin, beheerder | Aanvragen, toegangsrechten, centrales, cursisten, versies, instellingen, logboek |
+| `/centrale/` | beheerder van een centrale of locatie | Overzicht, medewerkers, scorebord, opleidingen, locaties |
+| `/leren/` | cursist | Voorlopig welkomstpagina; cursusspeler volgt |
 
-## Omgevingsvariabelen (staan al in Netlify, context productie)
-- `DATABASE_URL` – verbinding met Neon
-- `SESSIE_GEHEIM` – sleutel voor de aanmeldsessie
-- `ADMIN_WACHTWOORD` – beheerderswachtwoord (wijzigen: Netlify > Project configuration > Environment variables, daarna opnieuw publiceren)
+## Rollen
+- **superadmin** (`superbetonman`): alles, plus prijzen, voorwaarden, verlengingsregels en beheerders.
+- **beheerder**: dagelijks beheer (aanvragen, activeren, verlengen, centrales, versies).
+- **centrale_verantwoordelijke**: beheert de eigen centrale; op hoofdniveau ook alle locaties.
+- **cursist**.
 
 ## Werkwijze
-1. Klant vult `/aanvragen/` in → aanvraag "nieuw".
-2. Jij factureert in je boekhoudtool → "Factuur noteren".
-3. Na betaling → "Activeren": toegang start, einde volgens de geldigheid van het product.
-4. Maandabonnement: na elke betaling "Verlengen" (+1 maand, vanaf het huidige einde of vanaf vandaag als het verlopen is).
-5. Centrale: personen toevoegen en plaatsen toewijzen; het systeem weigert meer plaatsen dan gekocht.
+1. Aanvraag komt binnen (formulier, bestelling van een centrale of verlengingsaanvraag). Het bedrag wordt vastgelegd.
+2. Factureren in de eigen boekhoudtool → factuurnummer noteren.
+3. Na betaling **Activeren**. Je krijgt een uitnodigingslink om door te sturen.
+4. Een centrale voegt zelf medewerkers toe, wijst plaatsen toe en ziet voortgang en scorebord.
 
-## Bedrijfsregels in de databank
-`activeer_aanvraag`, `verleng_recht`, `wijs_plaats_toe`, `voeg_cursist_toe` – elke actie slaagt volledig of wijzigt niets, en komt in `auditlog`.
-Toegang per module: view `v_module_toegang` (persoonlijk recht + plaats via centrale, enkel geldige rechten).
+## Toegang en verlenging
+- Modules en trajecten: 3 maanden toegang vanaf de start. Updates in die periode zijn inbegrepen.
+- Verlenging: 1 maand voor 25 % van de oorspronkelijke prijs, maximaal 3 keer, aan te vragen binnen 3 maanden na de start.
+  Alle waarden staan in **Beheer → Instellingen** (tabel `instellingen`).
+- Niet verlengd → de toegang stopt op de einddatum. De voortgang blijft bewaard.
+
+## Versies per module
+- Status: concept → (proef) → actueel → archief. Eén actuele versie per module.
+- Een nieuwe versie start als kopie. Het overzicht toont per les en toetsvraag: nieuw, inhoudelijk gewijzigd, redactioneel gewijzigd, weggevallen, verplaatst.
+- Elke gewijzigde les of vraag moet je beoordelen (inhoudelijk of redactioneel) vóór publicatie.
+- Bij publicatie als actueel gaan cursisten met lopende toegang mee. Afgeronde lessen met dezelfde sleutel en zonder inhoudelijke wijziging blijven afgerond; een geslaagde toets blijft geldig als geen enkele vraag inhoudelijk wijzigde.
+- Proefversie: enkel zichtbaar voor de proefgroep (personen of hele centrales).
+
+## Databank
+- `migraties/002_versies.sql`: versies, instellingen, verlengingen, locaties, uitnodigingen, medewerkerstand.
+  De basis (stap 1) werd rechtstreeks in Neon aangemaakt.
+- Bedrijfsregels zitten in databankfuncties: `activeer_aanvraag`, `verleng_recht`, `vraag_verlenging`, `wijs_plaats_toe`,
+  `voeg_cursist_toe`, `nieuwe_versie`, `beoordeel_wijziging`, `publiceer_versie`, `zet_op_versie`. Elke actie komt in `auditlog`.
+
+## Omgevingsvariabelen (Netlify, productie)
+- `DATABASE_URL` – verbinding met Neon
+- `SESSIE_GEHEIM` – sleutel voor de aanmeldsessie
+- `ADMIN_WACHTWOORD` – niet meer gebruikt (aanmelden gaat nu via gebruikersnaam en wachtwoord in de databank)
+
+## Lokaal controleren
+```
+npm install
+npx tsc -p .
+```
 
 ## Volgende stappen
-2. Cursusspeler met voortgang · 3. Toetsen en score · 4. Attesten met verificatiepagina · 5. Dashboard voor centrales · 6. Punten en badges · uitnodigingsmail (Brevo) en aanmelden voor cursisten.
+Inhoudseditor en cursusspeler · toetsen afnemen · attesten met verificatiepagina · punten en badges toekennen · e-mails via Brevo (uitnodiging, herinnering voor het einde, verlenging).

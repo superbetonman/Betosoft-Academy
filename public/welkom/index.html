@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="nl-BE">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <meta name="referrer" content="no-referrer">
+  <title>Welkom · Betosoft Academie</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/stijl.css">
+</head>
+<body>
+  <header class="kop"><a class="merk" href="/"><span class="merk-blok">B</span><strong>Betosoft Academie</strong></a></header>
+  <section class="aanmeldscherm">
+    <h1 id="titel">Welkom</h1>
+    <p id="intro" class="zacht">Even geduld…</p>
+    <form id="form" class="paneel verborgen">
+      <label class="veld"><span class="label">E-mail</span><input id="email" readonly autocomplete="username"></label>
+      <label class="veld"><span class="label">Kies een wachtwoord (minstens 12 tekens)</span><input type="password" name="wachtwoord" minlength="12" autocomplete="new-password" required></label>
+      <label class="veld"><span class="label">Herhaal het wachtwoord</span><input type="password" name="herhaal" minlength="12" autocomplete="new-password" required></label>
+      <div id="fout" class="melding fout verborgen" role="alert"></div>
+      <button class="knop" type="submit">Account activeren</button>
+    </form>
+    <div id="probleem" class="melding fout verborgen"></div>
+  </section>
+  <script type="module">
+    import { api, esc } from "/gemeen.js"
+    const token = new URLSearchParams(location.search).get("t")
+    // Token uit de adresbalk halen, zodat het niet in de geschiedenis of bij anderen terechtkomt
+    history.replaceState(null, "", "/welkom/")
+    const probleem = (t) => {
+      document.getElementById("intro").classList.add("verborgen")
+      const p = document.getElementById("probleem")
+      p.innerHTML = `${esc(t)} <a href="/aanmelden/">Naar aanmelden</a>`
+      p.classList.remove("verborgen")
+    }
+    if (!token) probleem("Deze link is onvolledig.")
+    else {
+      try {
+        const u = await api(`/api/uitnodiging?t=${encodeURIComponent(token)}`)
+        document.getElementById("titel").textContent = `Welkom${u.voornaam ? ", " + u.voornaam : ""}`
+        document.getElementById("intro").textContent = u.organisatie
+          ? `Je bent uitgenodigd voor de Betosoft Academie via ${u.organisatie}. Kies een wachtwoord om je account te activeren.`
+          : "Kies een wachtwoord om je account te activeren."
+        document.getElementById("email").value = u.email
+        document.getElementById("form").classList.remove("verborgen")
+      } catch (err) {
+        probleem(err.message)
+      }
+    }
+    document.getElementById("form").addEventListener("submit", async (e) => {
+      e.preventDefault()
+      const f = document.getElementById("fout")
+      f.classList.add("verborgen")
+      const { wachtwoord, herhaal } = Object.fromEntries(new FormData(e.target))
+      if (wachtwoord !== herhaal) {
+        f.textContent = "De twee wachtwoorden zijn niet gelijk."
+        return f.classList.remove("verborgen")
+      }
+      try {
+        const r = await api("/api/uitnodiging", { methode: "POST", data: { token, wachtwoord } })
+        location.replace(r.bestemming)
+      } catch (err) {
+        f.textContent = err.message
+        f.classList.remove("verborgen")
+      }
+    })
+  </script>
+</body>
+</html>

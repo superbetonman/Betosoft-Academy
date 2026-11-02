@@ -13,18 +13,8 @@
 <body>
   <header class="kop">
     <a class="merk" href="/beheer/"><span class="merk-blok">B</span><span><strong>Betosoft Academie</strong> <span class="zacht">· beheer</span></span></a>
-    <div class="rechts"><button id="afmelden" class="knop stil klein verborgen" type="button">Afmelden</button></div>
+    <div class="rechts"><span class="klein zacht" id="wie"></span><button id="afmelden" class="knop stil klein" type="button">Afmelden</button></div>
   </header>
-
-  <section id="aanmeldscherm" class="aanmeldscherm verborgen">
-    <h1>Aanmelden</h1>
-    <p class="zacht">Beheer van inschrijvingen en toegangsrechten.</p>
-    <form id="aanmeldform" class="paneel">
-      <label class="veld"><span class="label">Wachtwoord</span><input type="password" name="wachtwoord" autocomplete="current-password" required></label>
-      <div id="aanmeldfout" class="melding fout verborgen"></div>
-      <button class="knop" type="submit">Aanmelden</button>
-    </form>
-  </section>
 
   <div id="app" class="verborgen">
     <nav class="tabs" role="tablist" aria-label="Onderdelen">
@@ -33,7 +23,8 @@
       <button class="tab" role="tab" data-tab="rechten">Toegangsrechten</button>
       <button class="tab" role="tab" data-tab="centrales">Centrales</button>
       <button class="tab" role="tab" data-tab="cursisten">Cursisten</button>
-      <button class="tab" role="tab" data-tab="producten">Producten</button>
+      <button class="tab" role="tab" data-tab="versies">Versies</button>
+      <button class="tab" role="tab" data-tab="instellingen">Instellingen</button>
       <button class="tab" role="tab" data-tab="logboek">Logboek</button>
     </nav>
     <main id="inhoud" aria-live="polite"></main>

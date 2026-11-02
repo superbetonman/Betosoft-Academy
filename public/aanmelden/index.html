@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="nl-BE">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Aanmelden · Betosoft Academie</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/stijl.css">
+</head>
+<body>
+  <header class="kop"><a class="merk" href="/"><span class="merk-blok">B</span><strong>Betosoft Academie</strong></a></header>
+  <section class="aanmeldscherm">
+    <h1>Aanmelden</h1>
+    <p class="zacht">Voor cursisten, centrales en beheerders.</p>
+    <form id="form" class="paneel">
+      <label class="veld"><span class="label">Gebruikersnaam of e-mail</span><input name="login" autocomplete="username" required autofocus></label>
+      <label class="veld"><span class="label">Wachtwoord</span><input type="password" name="wachtwoord" autocomplete="current-password" required></label>
+      <div id="fout" class="melding fout verborgen" role="alert"></div>
+      <button class="knop" type="submit">Aanmelden</button>
+    </form>
+    <p class="klein zacht">Nog geen wachtwoord? Gebruik de uitnodigingslink die je kreeg van Betosoft of van je centrale.</p>
+  </section>
+  <script type="module">
+    import { api } from "/gemeen.js"
+    const terug = new URLSearchParams(location.search).get("terug")
+    const veilig = (p) => (p && p.startsWith("/") && !p.startsWith("//") ? p : null)
+    try {
+      const s = await api("/api/sessie")
+      if (s.aangemeld) location.replace(veilig(terug) || s.bestemming)
+    } catch {}
+    document.getElementById("form").addEventListener("submit", async (e) => {
+      e.preventDefault()
+      const f = document.getElementById("fout")
+      f.classList.add("verborgen")
+      const knop = e.target.querySelector("button")
+      knop.disabled = true
+      try {
+        const r = await api("/api/aanmelden", { methode: "POST", data: Object.fromEntries(new FormData(e.target)) })
+        location.replace(veilig(terug) || r.bestemming)
+      } catch (err) {
+        f.textContent = err.message
+        f.classList.remove("verborgen")
+      } finally {
+        knop.disabled = false
+      }
+    })
+  </script>
+</body>
+</html>

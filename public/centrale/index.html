@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="nl-BE">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Centrale · Betosoft Academie</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/stijl.css">
+  <style>
+    .balkje { height: 6px; background: var(--petrol-licht); border-radius: 2px; overflow: hidden; min-width: 80px; }
+    .balkje > span { display: block; height: 100%; background: var(--petrol); }
+    .rang { font: 600 15px var(--mono); width: 2.2em; color: var(--inkt-zacht); }
+    .rang.top { color: var(--petrol); }
+    table.eenvoudig td { vertical-align: middle; }
+  </style>
+</head>
+<body>
+  <header class="kop">
+    <a class="merk" href="/centrale/"><span class="merk-blok">B</span><span><strong>Betosoft Academie</strong> <span class="zacht" id="orgnaam"></span></span></a>
+    <div class="rechts"><span class="klein zacht" id="wie"></span><button id="afmelden" class="knop stil klein" type="button">Afmelden</button></div>
+  </header>
+  <nav class="tabs" role="tablist" aria-label="Onderdelen">
+    <button class="tab" role="tab" data-tab="overzicht">Overzicht</button>
+    <button class="tab" role="tab" data-tab="medewerkers">Medewerkers</button>
+    <button class="tab" role="tab" data-tab="scorebord">Scorebord</button>
+    <button class="tab" role="tab" data-tab="opleidingen">Opleidingen</button>
+    <button class="tab verborgen" role="tab" data-tab="locaties" id="tab-locaties">Locaties</button>
+    <button class="tab" role="tab" data-tab="account">Mijn account</button>
+  </nav>
+  <main id="inhoud" aria-live="polite"><p class="zacht">Laden…</p></main>
+  <script src="/centrale/centrale.js" type="module"></script>
+</body>
+</html>

@@ -1,4 +1,5 @@
 // Betosoft Academie — beheerscherm
+import { uitnodigingHtml, koppelKopieer } from "/gemeen.js"
 const $ = (s, el = document) => el.querySelector(s)
 const $$ = (s, el = document) => [...el.querySelectorAll(s)]
 
@@ -58,8 +59,8 @@ async function api(pad, { methode = "GET", data } = {}) {
   try {
     body = await res.json()
   } catch {}
-  if (res.status === 401 && pad.startsWith("/api/beheer")) {
-    toonAanmelden()
+  if (res.status === 401) {
+    location.href = `/aanmelden/?terug=${encodeURIComponent("/beheer/" + location.hash)}`
     throw new Error("Niet aangemeld")
   }
   if (!res.ok) throw new Error(body.fout || `Fout ${res.status}`)
@@ -113,34 +114,11 @@ $("#dialoogform").addEventListener("submit", async (e) => {
 })
 
 // ---------- Aanmelden ----------
-function toonAanmelden() {
-  $("#app").classList.add("verborgen")
-  $("#afmelden").classList.add("verborgen")
-  $("#aanmeldscherm").classList.remove("verborgen")
-  $("#aanmeldform input").focus()
-}
-function toonApp() {
-  $("#aanmeldscherm").classList.add("verborgen")
-  $("#app").classList.remove("verborgen")
-  $("#afmelden").classList.remove("verborgen")
-  kiesTab(location.hash.slice(1) || "overzicht")
-}
-$("#aanmeldform").addEventListener("submit", async (e) => {
-  e.preventDefault()
-  const foutEl = $("#aanmeldfout")
-  foutEl.classList.add("verborgen")
-  try {
-    await api("/api/aanmelden", { methode: "POST", data: { wachtwoord: e.target.wachtwoord.value } })
-    e.target.reset()
-    toonApp()
-  } catch (err) {
-    foutEl.textContent = err.message
-    foutEl.classList.remove("verborgen")
-  }
-})
+let ik = null
+const isSuper = () => ik?.rol === "superadmin"
 $("#afmelden").addEventListener("click", async () => {
   await api("/api/afmelden", { methode: "POST" }).catch(() => {})
-  toonAanmelden()
+  location.href = "/aanmelden/"
 })
 
 // ---------- Tabs ----------
@@ -209,9 +187,14 @@ tabs.overzicht = async () => {
           <div>
             <div class="titel">${esc(r.klant || r.email)}</div>
             <div class="meta"><span>${esc(r.product_naam)}</span><span>einde <span class="mono">${datum(r.eind_datum)}</span></span>
-              <span class="status ${r.dagen_resterend < 0 ? "s-afwijking" : "s-aandacht"}">${r.dagen_resterend < 0 ? "verlopen" : `nog <span class="mono">${r.dagen_resterend}</span> d`}</span></div>
+              <span class="status ${r.dagen_resterend < 0 ? "s-afwijking" : "s-aandacht"}">${r.dagen_resterend < 0 ? "verlopen" : `nog <span class="mono">${r.dagen_resterend}</span> d`}</span>
+              <span>modules niet af <span class="mono">${r.modules_niet_af}</span></span>
+              <span>verlengd <span class="mono">${r.verlengingen}/${r.verlengingen_max}</span></span>
+              ${r.verlenging_aangevraagd ? `<span class="status s-concept">verlenging aangevraagd</span>` : ""}</div>
           </div>
-          <div class="knoppen"><button class="knop klein" data-actie="verleng" data-id="${r.id}" data-titel="${esc(r.klant || r.email)}">Verlengen</button></div>
+          <div class="knoppen">${!r.verlenging_aangevraagd && r.verlengingen < r.verlengingen_max && r.aanvragen_tot >= vandaag()
+            ? `<button class="knop licht klein" data-actie="verlengAanvraag" data-id="${r.id}" data-prijs="${r.verlenging_prijs ?? ""}" data-nr="${r.verlengingen + 1}" data-max="${r.verlengingen_max}" data-tot="${r.aanvragen_tot}">Verlenging registreren</button>`
+            : ""}</div>
         </div>`).join("")}</div>`
       : `<div class="leeg">Niets af te handelen.</div>`}
     <h2>02 Werkwijze</h2>
@@ -220,6 +203,7 @@ tabs.overzicht = async () => {
       <li>Je maakt de factuur in je eigen boekhoudtool en noteert het factuurnummer.</li>
       <li>Na betaling (of meteen, zoals je verkiest) klik je op <em>Activeren</em>: de toegang start.</li>
       <li>Maandabonnement: na elke betaling klik je op <em>Verlengen</em> (+1 maand).</li>
+      <li>Opleiding niet af binnen 3 maanden: registreer een verlenging (25 % per maand, max. 3 keer). Die komt als aanvraag binnen; activeer na betaling.</li>
     </ol>
     <p class="klein zacht">Aanvraagformulier voor klanten: <a href="/aanvragen/" target="_blank" rel="noopener">/aanvragen/</a></p>`
 }
@@ -254,11 +238,12 @@ function aanvraagRij(a) {
   return `
   <div class="rij">
     <div>
-      <div class="titel">${a.type === "centrale" ? esc(a.organisatie_naam) : esc(naam)} <span class="tag">${a.type === "centrale" ? "centrale" : "persoon"}</span></div>
+      <div class="titel">${a.organisatie_naam ? esc(a.organisatie_naam) : esc(naam)} <span class="tag">${a.type === "verlenging" ? "verlenging" : a.type === "centrale" ? "centrale" : "persoon"}</span></div>
       <div class="meta">
         ${a.type === "centrale" ? `<span>${esc(naam)}</span>` : ""}
         <span>${esc(a.email)}</span>
-        <span>${esc(a.product)}${a.type === "centrale" ? ` · <span class="mono">${a.aantal_plaatsen}</span> plaatsen` : ""}</span>
+        <span>${esc(a.product)}${a.aantal_plaatsen > 1 ? ` · <span class="mono">${a.aantal_plaatsen}</span> plaatsen` : ""}</span>
+        ${a.bedrag_excl_btw !== null ? `<span class="mono">${euro(a.bedrag_excl_btw)} excl. btw</span>` : `<span class="status s-aandacht">geen prijs</span>`}
         <span class="mono">${tijdstip(a.ingediend_op)}</span>
         ${a.factuurnummer ? `<span>factuur <span class="mono">${esc(a.factuurnummer)}</span></span>` : ""}
         ${aanvraagStatus(a.status)}
@@ -313,6 +298,7 @@ function rechtRij(r) {
         <span>${esc(r.product)}</span>
         <span><span class="mono">${datum(r.start_datum)}</span> – <span class="mono">${r.eind_datum ? datum(r.eind_datum) : "onbeperkt"}</span></span>
         ${centrale ? `<span>plaatsen <span class="mono">${r.plaatsen_gebruikt}/${r.aantal_plaatsen}</span></span>` : ""}
+        ${r.product_type !== "abonnement" ? `<span>verlengd <span class="mono">${r.verlengingen}/${r.verlengingen_max}</span></span>` : ""}
         ${r.factuurnummer ? `<span>factuur <span class="mono">${esc(r.factuurnummer)}</span></span>` : ""}
         ${rechtStatus(r)}
       </div>
@@ -349,8 +335,8 @@ tabs.centrales = async () => {
       </div>`).join("")}</div>` : `<div class="leeg">Nog geen centrales.</div>`}`
 }
 async function centraleDetail(oid) {
-  const { centrale: o, personen, rechten } = await api(`/api/beheer/centrales/${oid}`)
-  window._centrale = { o, personen, rechten }
+  const { centrale: o, personen, rechten, locaties } = await api(`/api/beheer/centrales/${oid}`)
+  window._centrale = { o, personen, rechten, locaties }
   const geldige = rechten.filter((r) => r.geldig)
   inhoud.innerHTML = `
     <p><a href="#centrales" data-actie="terugCentrales">← Alle centrales</a></p>
@@ -364,7 +350,9 @@ async function centraleDetail(oid) {
     <div class="knoppen" style="margin-top:12px">
       <button class="knop licht klein" data-actie="wijzigCentrale">Gegevens wijzigen</button>
       <button class="knop klein" data-actie="persoonToevoegen">Persoon toevoegen</button>
+      <button class="knop licht klein" data-actie="locatieToevoegen">Locatie toevoegen</button>
     </div>
+    ${!personen.some((p) => p.rol === "centrale_verantwoordelijke") ? `<div class="melding">Deze centrale heeft nog geen beheerder. Maak een persoon beheerder, zodat de centrale zelf medewerkers kan toevoegen.</div>` : ""}
 
     <h2>01 Toegangsrechten en plaatsen</h2>
     ${rechten.length ? `<div class="lijst">${rechten.map((r) => `
@@ -384,19 +372,28 @@ async function centraleDetail(oid) {
         </div>
       </div>`).join("")}</div>` : `<div class="leeg">Geen toegangsrechten.</div>`}
 
-    <h2>02 Personen</h2>
+    ${locaties.length ? `<h2>02 Locaties</h2><div class="lijst">${locaties.map((l) => {
+      const n = personen.filter((p) => p.organisatie_id === l.id)
+      const bh = n.filter((p) => p.rol === "centrale_verantwoordelijke")
+      return `<div class="rij"><div><div class="titel">${esc(l.naam)}</div><div class="meta">${l.adres ? `<span>${esc(l.adres)}</span>` : ""}
+        <span>personen <span class="mono">${n.length}</span></span><span>beheerder: ${bh.length ? bh.map((b) => esc([b.voornaam, b.achternaam].filter(Boolean).join(" ") || b.email)).join(", ") : `<span class="status s-aandacht">nog geen</span>`}</span></div></div></div>`
+    }).join("")}</div>` : ""}
+
+    <h2>${locaties.length ? "03" : "02"} Personen</h2>
     ${personen.length ? `<div class="lijst">${personen.map((p) => `
       <div class="rij">
         <div>
           <div class="titel">${esc([p.voornaam, p.achternaam].filter(Boolean).join(" ") || p.email)}
-            ${p.rol === "centrale_verantwoordelijke" ? `<span class="tag">verantwoordelijke</span>` : ""}
-            ${!p.actief ? `<span class="status s-indicatief">inactief</span>` : ""}</div>
-          <div class="meta"><span>${esc(p.email)}</span>
+            ${p.rol === "centrale_verantwoordelijke" ? `<span class="tag">beheerder</span>` : ""}
+            ${!p.actief ? `<span class="status s-indicatief">inactief</span>` : !p.account_actief ? `<span class="status s-aandacht">nog niet aangemeld</span>` : ""}</div>
+          <div class="meta"><span>${esc(p.email)}</span>${locaties.length ? `<span>${esc(p.locatie)}</span>` : ""}
             ${p.plaatsen.length ? p.plaatsen.map((pl) => `<span>${esc(pl.product)} <button class="knop stil klein" style="min-height:26px;padding:0 6px" data-actie="plaatsIntrekken" data-id="${pl.toewijzing}" title="Plaats intrekken">×</button></span>`).join("") : `<span class="zacht">geen plaats</span>`}
           </div>
         </div>
         <div class="knoppen">
           ${geldige.length ? `<button class="knop licht klein" data-actie="plaatsToewijzen" data-id="${p.id}" data-naam="${esc(p.voornaam || p.email)}">Plaats toewijzen</button>` : ""}
+          ${p.actief ? `<button class="knop stil klein" data-actie="uitnodiging" data-id="${p.id}" data-naam="${esc(p.voornaam || p.email)}">${p.account_actief ? "Aanmeldlink" : "Uitnodiging"}</button>` : ""}
+          <button class="knop stil klein" data-actie="wisselRol" data-id="${p.id}" data-rol="${p.rol === "centrale_verantwoordelijke" ? "cursist" : "centrale_verantwoordelijke"}">${p.rol === "centrale_verantwoordelijke" ? "Geen beheerder" : "Maak beheerder"}</button>
         </div>
       </div>`).join("")}</div>` : `<div class="leeg">Nog geen personen.</div>`}`
 }
@@ -432,14 +429,111 @@ tabs.cursisten = async () => {
   })
 }
 
-// =============== PRODUCTEN ===============
-tabs.producten = async () => {
+// =============== VERSIES ===============
+const soortTekst = {
+  nieuw: ["s-concept", "nieuw"],
+  inhoudelijk: ["s-afwijking", "inhoudelijk gewijzigd"],
+  redactioneel: ["s-conform", "redactioneel gewijzigd"],
+  te_beoordelen: ["s-aandacht", "te beoordelen"],
+  weggevallen: ["s-indicatief", "weggevallen"],
+  verplaatst: ["s-indicatief", "verplaatst"],
+}
+const versieStatus = {
+  concept: `<span class="status s-concept">concept</span>`,
+  proef: `<span class="status s-aandacht">proef</span>`,
+  actueel: `<span class="status s-conform">actueel</span>`,
+  archief: `<span class="status s-indicatief">archief</span>`,
+}
+let versieOpen = null
+tabs.versies = async () => {
+  if (versieOpen) return versieDetail(versieOpen)
+  const { modules } = await api("/api/beheer/versies")
+  window._modules = Object.fromEntries(modules.map((m) => [m.module_id, m]))
+  let cursus = null
+  inhoud.innerHTML = `
+    <h1>Versies</h1>
+    <p class="zacht klein">Elke module heeft een eigen versie. Een cursist blijft op zijn versie tot een nieuwe versie actueel wordt; wie dan toegang heeft, gaat mee. Afgeronde lessen die niet inhoudelijk wijzigden, blijven afgerond.</p>
+    ${modules.map((m) => {
+      const kop = m.cursus !== cursus ? `${cursus !== null ? "</div>" : ""}<h2>${esc(m.cursus)}</h2><div class="lijst">` : ""
+      cursus = m.cursus
+      const open = m.versies.find((v) => v.status === "concept" || v.status === "proef")
+      const act = m.versies.find((v) => v.status === "actueel")
+      return `${kop}<div class="rij"><div>
+        <div class="titel"><span class="mono">${esc(m.code)}</span> ${esc(m.titel)}</div>
+        <div class="meta">
+          ${m.versies.map((v) => `<span><span class="mono">${esc(v.label)}</span> ${versieStatus[v.status]} · <span class="mono">${v.lessen}</span> lessen · <span class="mono">${v.volgers}</span> cursisten${v.te_beoordelen ? ` · <span class="status s-aandacht"><span class="mono">${v.te_beoordelen}</span> te beoordelen</span>` : ""}</span>`).join("")}
+          ${m.gearchiveerd ? `<span><span class="mono">${m.gearchiveerd}</span> in archief</span>` : ""}
+        </div></div>
+        <div class="knoppen">
+          ${open ? `<button class="knop klein" data-actie="openVersie" data-id="${open.id}">Openen</button>` : ""}
+          ${act ? `<button class="knop stil klein" data-actie="openVersie" data-id="${act.id}">Actuele bekijken</button>` : ""}
+          ${!open && act ? `<button class="knop licht klein" data-actie="nieuweVersie" data-id="${m.module_id}">Nieuwe versie</button>` : ""}
+        </div></div>`
+    }).join("")}${modules.length ? "</div>" : ""}`
+}
+
+async function versieDetail(vid) {
+  const { versie: v, verschil, ongewijzigd, proefgroep, impact } = await api(`/api/beheer/versies/${vid}`)
+  window._versie = { v, verschil }
+  const tel = (s) => verschil.filter((d) => d.soort === s).length
+  const bewerkbaar = v.status === "concept" || v.status === "proef"
+  const teBeoordelen = tel("te_beoordelen")
+  inhoud.innerHTML = `
+    <p><a href="#versies" data-actie="terugVersies">← Alle modules</a></p>
+    <p class="label"><span class="mono">${esc(v.code)}</span> · ${esc(v.module)}</p>
+    <h1>Versie <span class="mono">${esc(v.label)}</span> ${versieStatus[v.status]}</h1>
+    <p>${v.vorige_label ? `Vergeleken met <span class="mono">${esc(v.vorige_label)}</span>: ` : "Eerste versie: "}
+      <strong>${tel("nieuw")} nieuw, ${tel("inhoudelijk")} inhoudelijk gewijzigd, ${tel("redactioneel")} redactioneel gewijzigd, ${tel("weggevallen")} weggevallen</strong>${tel("verplaatst") ? `, ${tel("verplaatst")} verplaatst` : ""}, ${ongewijzigd} ongewijzigd.
+      ${teBeoordelen ? `<br><span class="status s-aandacht">${teBeoordelen} wijziging${teBeoordelen === 1 ? "" : "en"} nog te beoordelen voor publicatie.</span>` : ""}</p>
+    <div class="paneel" style="margin-top:12px">
+      <span class="label">Wijzigingsnota voor cursisten</span>
+      <p style="margin:6px 0">${v.wijzigingsnota ? esc(v.wijzigingsnota) : `<span class="zacht">Nog geen nota.</span>`}</p>
+      ${bewerkbaar ? `<button class="knop stil klein" data-actie="versieNota">Nota wijzigen</button>` : ""}
+    </div>
+
+    <h2>01 Wat wijzigt</h2>
+    <p class="klein zacht"><strong>Inhoudelijk</strong>: cursisten moeten de les of vraag opnieuw doen. <strong>Redactioneel</strong>: tekst of beeld verbeterd, afgerond blijft afgerond.</p>
+    ${verschil.length ? `<div class="scroll-x paneel" style="padding:0"><table class="eenvoudig">
+      <thead><tr><th>Soort</th><th>Onderdeel</th><th>Titel</th><th>Nota</th>${bewerkbaar ? "<th></th>" : ""}</tr></thead>
+      <tbody>${verschil.map((d, i) => `<tr>
+        <td><span class="status ${soortTekst[d.soort]?.[0] || ""}">${soortTekst[d.soort]?.[1] || esc(d.soort)}</span></td>
+        <td>${d.onderdeel === "les" ? "les" : `vraag${d.toets ? ` <span class="zacht klein">(${esc(d.toets)})</span>` : ""}`}</td>
+        <td>${esc(d.titel)} <span class="mono zacht klein">${esc(d.sleutel)}</span></td>
+        <td class="klein">${esc(d.nota || "")}</td>
+        ${bewerkbaar ? `<td>${d.nieuw_id && ["te_beoordelen", "inhoudelijk", "redactioneel"].includes(d.soort) ? `<button class="knop ${d.soort === "te_beoordelen" ? "" : "stil"} klein" data-actie="beoordeel" data-i="${i}">Beoordelen</button>` : ""}</td>` : ""}
+      </tr>`).join("")}</tbody></table></div>`
+      : `<div class="leeg">Geen verschillen${v.vorige_label ? "" : " (nog geen lessen)"}. Lessen en toetsvragen voeg je toe in de inhoudseditor (volgende stap).</div>`}
+
+    ${bewerkbaar ? `
+    <h2>02 Proefgroep</h2>
+    <p class="klein zacht">Als proefversie zien enkel deze personen of centrales de nieuwe versie. Anderen blijven op de actuele versie.</p>
+    ${proefgroep.length ? `<div class="lijst">${proefgroep.map((p) => `<div class="rij"><div><div class="titel">${esc(p.naam)} <span class="tag">${p.soort}</span></div></div>
+      <div class="knoppen"><button class="knop stil klein" data-actie="proefWeg" data-id="${p.id}">Verwijderen</button></div></div>`).join("")}</div>` : `<div class="leeg">Nog niemand in de proefgroep.</div>`}
+    <div class="knoppen" style="margin-top:8px"><button class="knop licht klein" data-actie="proefToevoegen">Toevoegen aan proefgroep</button></div>
+
+    <h2>03 Publiceren</h2>
+    <div class="lijst">
+      <div class="rij"><div><div class="titel">Als proefversie</div><div class="meta"><span>Gaat naar de proefgroep. <span class="mono">${impact.proef.cursisten}</span> cursisten met lopende toegang worden overgezet.</span></div></div>
+        <div class="knoppen"><button class="knop licht klein" data-actie="publiceer" data-status="proef" ${teBeoordelen || !proefgroep.length ? "disabled" : ""}>Publiceren als proef</button></div></div>
+      <div class="rij"><div><div class="titel">Als actuele versie</div><div class="meta"><span>Vervangt de huidige versie. <span class="mono">${impact.actueel.cursisten}</span> cursisten met lopende toegang worden overgezet. <span class="mono">${impact.actueel.zonder_toegang}</span> zonder toegang blijven op hun versie tot een verlenging.</span></div></div>
+        <div class="knoppen"><button class="knop klein" data-actie="publiceer" data-status="actueel" ${teBeoordelen ? "disabled" : ""}>Publiceren als actueel</button></div></div>
+    </div>` : ""}`
+}
+
+// =============== INSTELLINGEN ===============
+tabs.instellingen = async () => {
   productenCache = null
-  const lijst = await producten()
+  const [lijst, { instellingen }, { beheerders }] = await Promise.all([
+    producten(),
+    api("/api/beheer/instellingen"),
+    api("/api/beheer/beheerders"),
+  ])
   window._producten = Object.fromEntries(lijst.map((p) => [p.id, p]))
-  const groep = (t, titel, nr) => {
+  const inst = Object.fromEntries(instellingen.map((i) => [i.sleutel, i.waarde]))
+  const sup = isSuper()
+  const groep = (t, titel) => {
     const rijen = lijst.filter((p) => p.type === t)
-    return `<h2>${nr} ${titel}</h2><div class="lijst">${rijen.map((p) => `
+    return `<h3 style="margin:16px 0 6px">${titel}</h3><div class="lijst">${rijen.map((p) => `
       <div class="rij">
         <div>
           <div class="titel">${esc(p.naam)} ${!p.actief ? `<span class="status s-indicatief">niet te koop</span>` : ""}</div>
@@ -447,17 +541,72 @@ tabs.producten = async () => {
             <span class="mono">${esc(p.code)}</span>
             <span class="${p.prijs_excl_btw === null ? "status s-aandacht" : "mono"}">${p.prijs_excl_btw === null ? "prijs niet ingesteld" : `${euro(p.prijs_excl_btw)} excl. btw`}</span>
             <span>${esc(periodeTekst(p.periode, p.geldigheid_maanden))}</span>
+            ${p.type !== "abonnement" && p.prijs_excl_btw !== null ? `<span>verlenging <span class="mono">${euro((p.prijs_excl_btw * inst.verlenging_prijs_pct) / 100)}</span>/maand</span>` : ""}
             <span>${p.alle_modules ? "alle modules" : `<span class="mono">${p.modules}</span> module${p.modules === 1 ? "" : "s"}`}</span>
             <span>actieve rechten <span class="mono">${p.actieve_rechten}</span></span>
           </div>
         </div>
-        <div class="knoppen"><button class="knop licht klein" data-actie="wijzigProduct" data-id="${p.id}">Wijzigen</button></div>
+        ${sup ? `<div class="knoppen"><button class="knop licht klein" data-actie="wijzigProduct" data-id="${p.id}">Wijzigen</button></div>` : ""}
       </div>`).join("")}</div>`
   }
-  inhoud.innerHTML = `<h1>Producten</h1>
-    <p class="zacht klein">Prijzen en geldigheid gelden voor nieuwe activaties. Bestaande toegangsrechten veranderen niet.</p>
-    ${groep("abonnement", "Abonnementen", "01")}${groep("traject", "Trajecten en volledige cursus", "02")}${groep("module", "Losse modules", "03")}`
+  inhoud.innerHTML = `
+    <h1>Instellingen</h1>
+    ${!sup ? `<div class="melding">Alleen de superadmin kan prijzen, voorwaarden en beheerders wijzigen.</div>` : ""}
+
+    <h2>01 Prijzen en toegang</h2>
+    <p class="zacht klein">Prijzen excl. btw (${getalTekst(inst.btw_pct)} % btw). Nieuwe prijzen gelden voor nieuwe aanvragen; het bedrag van bestaande aanvragen blijft.</p>
+    ${groep("traject", "Trajecten en volledige cursus")}${groep("module", "Losse modules")}${groep("abonnement", "Abonnementen")}
+
+    <h2>02 Verlenging</h2>
+    <form id="verlengform" class="paneel" style="max-width:640px">
+      <div class="velden twee">
+        <label class="veld"><span class="label">Duur per verlenging (maanden)</span><input name="verlenging_maanden" type="number" min="1" max="12" class="mono" value="${inst.verlenging_maanden}" ${sup ? "" : "disabled"}></label>
+        <label class="veld"><span class="label">Prijs per verlenging (% van de prijs)</span><input name="verlenging_prijs_pct" type="number" min="0" max="100" class="mono" value="${inst.verlenging_prijs_pct}" ${sup ? "" : "disabled"}></label>
+        <label class="veld"><span class="label">Maximaal aantal verlengingen</span><input name="verlenging_max" type="number" min="0" max="12" class="mono" value="${inst.verlenging_max}" ${sup ? "" : "disabled"}></label>
+        <label class="veld"><span class="label">Aanvragen kan tot (maanden na start)</span><input name="verlenging_venster_maanden" type="number" min="1" max="24" class="mono" value="${inst.verlenging_venster_maanden}" ${sup ? "" : "disabled"}></label>
+        <label class="veld"><span class="label">Btw (%)</span><input name="btw_pct" type="number" min="0" max="30" class="mono" value="${inst.btw_pct}" ${sup ? "" : "disabled"}></label>
+      </div>
+      <p class="klein zacht">Nu: ${inst.verlenging_maanden} maand per verlenging voor ${inst.verlenging_prijs_pct} % van de oorspronkelijke prijs, maximaal ${inst.verlenging_max} keer, aan te vragen binnen ${inst.verlenging_venster_maanden} maanden na de start.</p>
+      ${sup ? `<button class="knop" type="submit">Opslaan</button>` : ""}
+    </form>
+
+    <h2>03 Beheerders</h2>
+    <div class="lijst">${beheerders.map((b) => `<div class="rij"><div>
+      <div class="titel">${esc(b.gebruikersnaam || b.email)} <span class="tag">${b.rol}</span> ${!b.actief ? `<span class="status s-indicatief">uitgeschakeld</span>` : ""}</div>
+      <div class="meta"><span>${esc(b.email)}</span><span>laatst aangemeld <span class="mono">${tijdstip(b.laatst_aangemeld_op)}</span></span></div></div>
+      ${sup && b.id !== ik.id ? `<div class="knoppen"><button class="knop stil klein" data-actie="beheerderActief" data-id="${b.id}" data-actief="${b.actief ? "0" : "1"}">${b.actief ? "Uitschakelen" : "Inschakelen"}</button></div>` : ""}
+    </div>`).join("")}</div>
+    ${sup ? `<div class="knoppen" style="margin-top:8px"><button class="knop licht klein" data-actie="beheerderToevoegen">Beheerder toevoegen</button></div>` : ""}
+
+    <h2>04 Mijn wachtwoord</h2>
+    <form id="wwform" class="paneel" style="max-width:520px">
+      <label class="veld"><span class="label">Huidig wachtwoord</span><input type="password" name="huidig" autocomplete="current-password" required></label>
+      <label class="veld"><span class="label">Nieuw wachtwoord (minstens 12 tekens)</span><input type="password" name="nieuw" minlength="12" autocomplete="new-password" required></label>
+      <button class="knop" type="submit">Wijzigen</button>
+    </form>`
+
+  $("#verlengform").addEventListener("submit", async (e) => {
+    e.preventDefault()
+    try {
+      await api("/api/beheer/instellingen", { methode: "POST", data: Object.fromEntries(new FormData(e.target)) })
+      toast("Instellingen opgeslagen")
+      herlaad()
+    } catch (err) {
+      toast(err.message, true)
+    }
+  })
+  $("#wwform").addEventListener("submit", async (e) => {
+    e.preventDefault()
+    try {
+      await api("/api/wachtwoord", { methode: "POST", data: Object.fromEntries(new FormData(e.target)) })
+      e.target.reset()
+      toast("Wachtwoord gewijzigd")
+    } catch (err) {
+      toast(err.message, true)
+    }
+  })
 }
+const getalTekst = (n) => String(n).replace(".", ",")
 
 // =============== LOGBOEK ===============
 const actieNamen = {
@@ -465,6 +614,10 @@ const actieNamen = {
   recht_verlengd: "Toegang verlengd", recht_status: "Status gewijzigd", plaats_toegewezen: "Plaats toegewezen",
   plaats_ingetrokken: "Plaats ingetrokken", cursist_toegevoegd: "Persoon toegevoegd", plaatsen_gewijzigd: "Aantal plaatsen gewijzigd",
   product_gewijzigd: "Product gewijzigd", gebruiker_actief: "Persoon (de)geactiveerd",
+  versie_aangemaakt: "Nieuwe versie", versie_gepubliceerd: "Versie gepubliceerd", verlenging_aangevraagd: "Verlenging aangevraagd",
+  instellingen_gewijzigd: "Instellingen gewijzigd", beheerder_toegevoegd: "Beheerder toegevoegd", beheerder_actief: "Beheerder (de)geactiveerd",
+  uitnodiging_gemaakt: "Uitnodiging gemaakt", account_geactiveerd: "Account geactiveerd", wachtwoord_gewijzigd: "Wachtwoord gewijzigd",
+  locatie_toegevoegd: "Locatie toegevoegd", rol_gewijzigd: "Rol gewijzigd",
 }
 tabs.logboek = async () => {
   const { logboek } = await api("/api/beheer/logboek")
@@ -485,13 +638,13 @@ acties.aanvraagDetail = ({ id }) => {
   dialoog({
     titel: "Aanvraag",
     inhoud: `<table class="eenvoudig"><tbody>
-      ${r("Type", a.type === "centrale" ? "Centrale" : "Persoon")}
+      ${r("Type", { centrale: "Centrale", individueel: "Persoon", verlenging: "Verlenging" }[a.type])}
       ${r("Centrale", a.organisatie_naam)}${r("Btw-nummer", a.btw_nummer, true)}
       ${r("Naam", [a.voornaam, a.achternaam].filter(Boolean).join(" "))}${r("E-mail", a.email)}${r("Telefoon", a.telefoon, true)}
       ${r("Adres", a.adres)}${r("Product", a.product)}
-      ${r("Prijs", a.prijs_excl_btw !== null ? `${euro(a.prijs_excl_btw)} excl. btw · ${periodeTekst(a.periode, a.geldigheid_maanden)}` : "prijs niet ingesteld")}
+      ${a.type === "verlenging" ? r("Soort", "Verlenging van 1 maand op een bestaand toegangsrecht") : r("Prijs", a.prijs_excl_btw !== null ? `${euro(a.prijs_excl_btw)} excl. btw · ${periodeTekst(a.periode, a.geldigheid_maanden)}` : "prijs niet ingesteld")}
       ${a.type === "centrale" ? r("Plaatsen", String(a.aantal_plaatsen), true) : ""}
-      ${a.type === "centrale" && a.prijs_excl_btw !== null ? r("Totaal", `${euro(a.prijs_excl_btw * a.aantal_plaatsen)} excl. btw`, true) : ""}
+      ${r("Te factureren", a.bedrag_excl_btw !== null ? `${euro(a.bedrag_excl_btw)} excl. btw` : "", true)}
       ${r("Opmerking", a.opmerking)}${r("Ingediend", tijdstip(a.ingediend_op), true)}${r("Factuur", a.factuurnummer, true)}
     </tbody></table>`,
   })
@@ -514,17 +667,27 @@ acties.activeer = ({ id }) => {
   const a = window._aanvragen[id]
   dialoog({
     titel: "Toegang activeren",
-    inhoud: `<p><strong>${esc(a.type === "centrale" ? a.organisatie_naam : [a.voornaam, a.achternaam].join(" "))}</strong> krijgt toegang tot <strong>${esc(a.product)}</strong>${a.type === "centrale" ? ` met <span class="mono">${a.aantal_plaatsen}</span> plaatsen` : ""}.</p>
+    inhoud: a.type === "verlenging"
+      ? `<p>De toegang tot <strong>${esc(a.product)}</strong> van <strong>${esc(a.organisatie_naam || a.voornaam || a.email)}</strong> wordt met 1 maand verlengd, vanaf het huidige einde.</p>
+      <input type="hidden" name="start_datum" value="${vandaag()}">
+      <label class="veld"><span class="label">Factuurnummer</span><input name="factuurnummer" maxlength="60" class="mono" value="${esc(a.factuurnummer || "")}"></label>`
+      : `<p><strong>${esc(a.type === "centrale" ? a.organisatie_naam : [a.voornaam, a.achternaam].join(" "))}</strong> krijgt toegang tot <strong>${esc(a.product)}</strong>${a.type === "centrale" ? ` met <span class="mono">${a.aantal_plaatsen}</span> plaatsen` : ""}.</p>
       <p class="klein zacht">Geldigheid: ${esc(periodeTekst(a.periode, a.geldigheid_maanden))}.</p>
       <div class="velden twee">
         <label class="veld"><span class="label">Factuurnummer</span><input name="factuurnummer" maxlength="60" class="mono" value="${esc(a.factuurnummer || "")}"></label>
         <label class="veld"><span class="label">Startdatum</span><input name="start_datum" type="date" value="${vandaag()}" required></label>
-      </div>`,
+      </div>
+      ${a.type === "centrale" ? `<p class="klein zacht">De contactpersoon wordt beheerder van de centrale. Na activatie krijg je een uitnodigingslink om door te sturen.</p>` : `<p class="klein zacht">Na activatie krijg je een uitnodigingslink om door te sturen.</p>`}`,
     knop: "Activeren",
     bij: async (fd) => {
-      await api(`/api/beheer/aanvragen/${id}/activeer`, { methode: "POST", data: fd })
-      toast("Toegang geactiveerd")
+      const r = await api(`/api/beheer/aanvragen/${id}/activeer`, { methode: "POST", data: fd })
       herlaad()
+      if (r.uitnodiging) {
+        dialoog({ titel: "Toegang geactiveerd", inhoud: uitnodigingHtml(r.uitnodiging, r.uitnodiging.wie) })
+        koppelKopieer()
+        return false
+      }
+      toast("Toegang geactiveerd")
     },
   })
 }
@@ -580,7 +743,10 @@ acties.rechtMeer = async ({ id }) => {
     inhoud: `
       <p><strong>${esc(r.product)}</strong> · ${rechtStatus(r)}</p>
       <p class="klein">Periode <span class="mono">${datum(r.start_datum)}</span> – <span class="mono">${r.eind_datum ? datum(r.eind_datum) : "onbeperkt"}</span>${r.factuurnummer ? ` · factuur <span class="mono">${esc(r.factuurnummer)}</span>` : ""}</p>
+      ${r.product_type !== "abonnement" ? `<p class="klein">Verlengingen <span class="mono">${r.verlengingen}/${r.verlengingen_max}</span> · aan te vragen tot <span class="mono">${datum(r.aanvragen_tot)}</span> · prijs per verlenging <span class="mono">${r.verlenging_prijs === null ? "—" : euro(r.verlenging_prijs)}</span> excl. btw</p>` : ""}
       <div class="knoppen" style="margin:12px 0">
+        ${r.product_type !== "abonnement" && r.status !== "ingetrokken" && r.verlengingen < r.verlengingen_max && r.aanvragen_tot >= vandaag()
+          ? `<button type="button" class="knop licht klein" id="regverl">Verlenging registreren</button>` : ""}
         ${r.status === "actief" ? `<button type="button" class="knop stil klein" data-status="gepauzeerd">Pauzeren</button>` : ""}
         ${r.status !== "actief" ? `<button type="button" class="knop licht klein" data-status="actief">Opnieuw activeren</button>` : ""}
         ${r.status !== "ingetrokken" ? `<button type="button" class="knop gevaar klein" data-status="ingetrokken">Intrekken</button>` : ""}
@@ -590,6 +756,8 @@ acties.rechtMeer = async ({ id }) => {
         ${verlengingen.map((v) => `<tr><td class="mono">${tijdstip(v.verlengd_op)}</td><td class="mono">${datum(v.oude_eind_datum)}</td><td class="mono">${datum(v.nieuwe_eind_datum)}</td><td class="mono">${esc(v.factuurnummer || "")}</td></tr>`).join("")}
       </tbody></table>` : `<p class="zacht klein">Nog niet verlengd.</p>`}`,
   })
+  $("#regverl")?.addEventListener("click", () =>
+    acties.verlengAanvraag({ id, prijs: r.verlenging_prijs ?? "", nr: r.verlengingen + 1, max: r.verlengingen_max, tot: r.aanvragen_tot }))
   $$("#dialooginhoud [data-status]").forEach((b) =>
     b.addEventListener("click", async () => {
       const s = b.dataset.status
@@ -642,6 +810,52 @@ acties.nieuwRecht = async () => {
   $("#nr-type").addEventListener("change", (e) => $("#nr-centrale").classList.toggle("verborgen", e.target.value !== "centrale"))
 }
 
+acties.verlengAanvraag = ({ id, prijs, nr, max, tot }) =>
+  dialoog({
+    titel: "Verlenging registreren",
+    inhoud: `<p>Verlenging <span class="mono">${nr}</span> van <span class="mono">${max}</span>: 1 maand extra voor <span class="mono">${prijs ? euro(prijs) : "—"}</span> excl. btw.</p>
+      <p class="klein zacht">Dit maakt een aanvraag aan in Aanvragen. Factureer, en activeer na betaling. Aanvragen kan tot <span class="mono">${datum(tot)}</span>.</p>
+      <label class="veld"><span class="label">Opmerking</span><input name="opmerking" maxlength="300"></label>`,
+    knop: "Registreren",
+    bij: async (fd) => {
+      await api(`/api/beheer/rechten/${id}/verlenging`, { methode: "POST", data: fd })
+      toast("Verlenging geregistreerd als aanvraag")
+      herlaad()
+    },
+  })
+
+async function toonUitnodiging(pad, wie) {
+  try {
+    const r = await api(pad, { methode: "POST" })
+    dialoog({ titel: "Uitnodiging", inhoud: uitnodigingHtml(r.uitnodiging, wie) })
+    koppelKopieer()
+  } catch (err) {
+    toast(err.message, true)
+  }
+}
+acties.uitnodiging = ({ id, naam }) => toonUitnodiging(`/api/beheer/cursisten/${id}/uitnodiging`, naam)
+acties.wisselRol = async ({ id, rol }) => {
+  try {
+    await api(`/api/beheer/cursisten/${id}/rol`, { methode: "POST", data: { rol } })
+    toast("Rol gewijzigd")
+    herlaad()
+  } catch (err) {
+    toast(err.message, true)
+  }
+}
+acties.locatieToevoegen = () =>
+  dialoog({
+    titel: `Locatie toevoegen · ${window._centrale.o.naam}`,
+    inhoud: `<label class="veld"><span class="label">Naam</span><input name="naam" required maxlength="160"></label>
+      <label class="veld"><span class="label">Adres</span><input name="adres" maxlength="300"></label>`,
+    knop: "Toevoegen",
+    bij: async (fd) => {
+      await api(`/api/beheer/centrales/${window._centrale.o.id}/locatie`, { methode: "POST", data: fd })
+      toast("Locatie toegevoegd")
+      herlaad()
+    },
+  })
+
 acties.openCentrale = ({ id }) => {
   centraleOpen = id
   kiesTab("centrales")
@@ -688,15 +902,20 @@ acties.persoonToevoegen = () => {
         <label class="veld"><span class="label">Achternaam</span><input name="achternaam" maxlength="80"></label>
       </div>
       <label class="veld"><span class="label">E-mail</span><input name="email" type="email" required maxlength="254"></label>
+      ${window._centrale.locaties.length ? `<label class="veld"><span class="label">Locatie</span><select name="locatie_id"><option value="">${esc(o.naam)} (hoofdzetel)</option>
+        ${window._centrale.locaties.map((l) => `<option value="${l.id}">${esc(l.naam)}</option>`).join("")}</select></label>` : ""}
+      <label class="check"><input type="checkbox" name="verantwoordelijke"><span>Beheerder van de centrale of locatie (kan medewerkers toevoegen en opleidingen toewijzen)</span></label>
       <label class="veld"><span class="label">Meteen een plaats toewijzen</span>
         <select name="recht_id"><option value="">Nee, later</option>
           ${vrij.map((r) => `<option value="${r.id}">${esc(r.product)} (${r.aantal_plaatsen - r.gebruikt} vrij)</option>`).join("")}
         </select></label>`,
     knop: "Toevoegen",
     bij: async (fd) => {
-      await api(`/api/beheer/centrales/${o.id}/cursist`, { methode: "POST", data: fd })
-      toast("Persoon toegevoegd")
+      const r = await api(`/api/beheer/centrales/${o.id}/cursist`, { methode: "POST", data: fd })
       herlaad()
+      dialoog({ titel: "Persoon toegevoegd", inhoud: uitnodigingHtml(r.uitnodiging, fd.voornaam) })
+      koppelKopieer()
+      return false
     },
   })
 }
@@ -777,19 +996,146 @@ acties.wijzigProduct = ({ id }) => {
   })
 }
 
+// ---------- Versies ----------
+acties.openVersie = ({ id }) => {
+  versieOpen = id
+  herlaad()
+}
+acties.terugVersies = () => {
+  versieOpen = null
+  herlaad()
+}
+acties.nieuweVersie = ({ id }) => {
+  const m = window._modules[id]
+  const jaar = new Date().getFullYear()
+  dialoog({
+    titel: `Nieuwe versie · ${m.code}`,
+    inhoud: `<p class="klein">De nieuwe versie start als kopie van de actuele versie. Pas daarna lessen en vragen aan; het systeem toont wat nieuw, gewijzigd of weggevallen is.</p>
+      <label class="veld"><span class="label">Naam van de versie</span><input name="label" required maxlength="30" class="mono" value="${jaar}.${(m.versies.length || 0) + 1}"></label>
+      <label class="veld"><span class="label">Wijzigingsnota voor cursisten</span><textarea name="nota" maxlength="1000" placeholder="bv. Aangepast aan de nieuwe werfregels"></textarea></label>`,
+    knop: "Aanmaken",
+    bij: async (fd) => {
+      const r = await api("/api/beheer/versies", { methode: "POST", data: { ...fd, module_id: id } })
+      versieOpen = r.id
+      toast("Nieuwe versie aangemaakt")
+      herlaad()
+    },
+  })
+}
+acties.versieNota = () => {
+  const v = window._versie.v
+  dialoog({
+    titel: "Wijzigingsnota",
+    inhoud: `<p class="klein zacht">Cursisten zien deze nota bij "Wat is nieuw".</p>
+      <label class="veld"><span class="label">Nota</span><textarea name="nota" maxlength="1000">${esc(v.wijzigingsnota || "")}</textarea></label>`,
+    knop: "Opslaan",
+    bij: async (fd) => {
+      await api(`/api/beheer/versies/${v.id}/nota`, { methode: "POST", data: fd })
+      herlaad()
+    },
+  })
+}
+acties.beoordeel = ({ i }) => {
+  const d = window._versie.verschil[Number(i)]
+  dialoog({
+    titel: "Wijziging beoordelen",
+    inhoud: `<p><strong>${esc(d.titel)}</strong> <span class="mono zacht klein">${esc(d.sleutel)}</span></p>
+      <label class="check"><input type="radio" name="soort" value="inhoudelijk" ${d.soort === "inhoudelijk" ? "checked" : ""} required><span><strong>Inhoudelijk</strong>: andere leerstof, norm of procedure. Cursisten die dit al afrondden, moeten het opnieuw doen.</span></label>
+      <label class="check"><input type="radio" name="soort" value="redactioneel" ${d.soort === "redactioneel" ? "checked" : ""}><span><strong>Redactioneel</strong>: schrijffout, beter beeld, verduidelijking. Afgerond blijft afgerond.</span></label>
+      <label class="veld"><span class="label">Nota (zichtbaar in het wijzigingsoverzicht)</span><input name="nota" maxlength="500" value="${esc(d.nota || "")}"></label>`,
+    knop: "Opslaan",
+    bij: async (fd) => {
+      await api("/api/beheer/versies/beoordeel", { methode: "POST", data: { ...fd, onderdeel: d.onderdeel, onderdeel_id: d.nieuw_id } })
+      herlaad()
+    },
+  })
+}
+acties.proefToevoegen = async () => {
+  const { centrales, personen } = await api("/api/beheer/keuzelijsten")
+  dialoog({
+    titel: "Toevoegen aan proefgroep",
+    inhoud: `<label class="veld"><span class="label">Hele centrale</span><select name="organisatie_id"><option value="">—</option>${centrales.map((c) => `<option value="${c.id}">${esc(c.naam)}</option>`).join("")}</select></label>
+      <p class="klein zacht">of</p>
+      <label class="veld"><span class="label">Eén persoon</span><select name="gebruiker_id"><option value="">—</option>${personen.map((p) => `<option value="${p.id}">${esc(p.naam)} · ${esc(p.email)}</option>`).join("")}</select></label>`,
+    knop: "Toevoegen",
+    bij: async (fd) => {
+      await api(`/api/beheer/versies/${window._versie.v.id}/proefgroep`, { methode: "POST", data: fd })
+      herlaad()
+    },
+  })
+}
+acties.proefWeg = async ({ id }) => {
+  try {
+    await api(`/api/beheer/proefgroep/${id}/verwijder`, { methode: "POST" })
+    herlaad()
+  } catch (err) {
+    toast(err.message, true)
+  }
+}
+acties.publiceer = ({ status }) => {
+  const v = window._versie.v
+  dialoog({
+    titel: status === "actueel" ? "Publiceren als actuele versie" : "Publiceren als proefversie",
+    inhoud: status === "actueel"
+      ? `<p>Versie <span class="mono">${esc(v.label)}</span> wordt de actuele versie van <strong>${esc(v.code)}</strong>. De vorige versie gaat naar het archief en kan niet meer gewijzigd worden.</p>
+         <p class="klein">Cursisten met lopende toegang gaan mee. Afgeronde lessen die niet inhoudelijk wijzigden, blijven afgerond.</p>`
+      : `<p>Versie <span class="mono">${esc(v.label)}</span> wordt zichtbaar voor de proefgroep. De anderen blijven op de actuele versie.</p>`,
+    knop: "Publiceren",
+    bij: async () => {
+      const r = await api(`/api/beheer/versies/${v.id}/publiceer`, { methode: "POST", data: { status } })
+      toast(`Gepubliceerd · ${r.overgezet} cursist${r.overgezet === 1 ? "" : "en"} overgezet`)
+      herlaad()
+    },
+  })
+}
+
+// ---------- Beheerders ----------
+acties.beheerderToevoegen = () =>
+  dialoog({
+    titel: "Beheerder toevoegen",
+    inhoud: `<div class="velden twee">
+        <label class="veld"><span class="label">Gebruikersnaam</span><input name="gebruikersnaam" required maxlength="40" class="mono"></label>
+        <label class="veld"><span class="label">Rol</span><select name="rol"><option value="beheerder">beheerder</option><option value="superadmin">superadmin</option></select></label>
+      </div>
+      <div class="velden twee">
+        <label class="veld"><span class="label">Voornaam</span><input name="voornaam" maxlength="80"></label>
+        <label class="veld"><span class="label">Achternaam</span><input name="achternaam" maxlength="80"></label>
+      </div>
+      <label class="veld"><span class="label">E-mail</span><input name="email" type="email" required maxlength="254"></label>
+      <label class="veld"><span class="label">Startwachtwoord (minstens 12 tekens)</span><input name="wachtwoord" type="text" minlength="12" required class="mono" autocomplete="off"></label>
+      <p class="klein zacht">Een beheerder verwerkt aanvragen en beheert cursisten. Prijzen, instellingen en beheerders wijzigen kan enkel een superadmin.</p>`,
+    knop: "Toevoegen",
+    bij: async (fd) => {
+      await api("/api/beheer/beheerders", { methode: "POST", data: fd })
+      toast("Beheerder toegevoegd")
+      herlaad()
+    },
+  })
+acties.beheerderActief = async ({ id, actief }) => {
+  try {
+    await api(`/api/beheer/beheerders/${id}/actief`, { methode: "POST", data: { actief: actief === "1" } })
+    herlaad()
+  } catch (err) {
+    toast(err.message, true)
+  }
+}
+
 // ---------- Start ----------
 window.addEventListener("hashchange", () => {
   const t = location.hash.slice(1)
   if (t && t !== huidigeTab && tabs[t]) {
     if (t === "centrales") centraleOpen = null
+    if (t === "versies") versieOpen = null
     kiesTab(t)
   }
 })
 ;(async () => {
   try {
     const s = await api("/api/sessie")
-    s.aangemeld ? toonApp() : toonAanmelden()
-  } catch {
-    toonAanmelden()
-  }
+    if (!s.aangemeld) return location.replace("/aanmelden/?terug=/beheer/")
+    if (s.gebruiker.rol !== "superadmin" && s.gebruiker.rol !== "beheerder") return location.replace(s.bestemming)
+    ik = s.gebruiker
+    $("#wie").textContent = `${ik.gebruikersnaam || ik.email} · ${ik.rol === "superadmin" ? "superadmin" : "beheerder"}`
+    kiesTab(location.hash.slice(1) || "overzicht")
+  } catch {}
 })()
