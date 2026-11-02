@@ -1136,6 +1136,7 @@ window.addEventListener("hashchange", () => {
     if (s.gebruiker.rol !== "superadmin" && s.gebruiker.rol !== "beheerder") return location.replace(s.bestemming)
     ik = s.gebruiker
     $("#wie").textContent = `${ik.gebruikersnaam || ik.email} · ${ik.rol === "superadmin" ? "superadmin" : "beheerder"}`
+    $("#app").classList.remove("verborgen") // tabs en inhoud pas tonen na een geldige sessie
     kiesTab(location.hash.slice(1) || "overzicht")
   } catch {}
 })()
