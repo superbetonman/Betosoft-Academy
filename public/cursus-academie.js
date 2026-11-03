@@ -148,7 +148,7 @@
       band.className = "academie-demo"
       band.setAttribute("role", "note")
       band.innerHTML =
-        "<span><b>Demo.</b> Je bekijkt een voorproefje van deze cursus: de start en de eerste lessen. De andere modules zitten in de volledige cursus.</span>" +
+        "<span><b>Demo.</b> Je bekijkt een voorproefje van deze cursus: de start en vier lessen uit verschillende modules. De andere lessen, opdrachten en toetsen zitten in de volledige cursus.</span>" +
         (A.product ? '<a class="hoofd" href="/aanvragen/?product=' + encodeURIComponent(A.product) + '">Inschrijven</a>' : "") +
         '<a href="/#cursussen">Alle cursussen</a>'
       main.insertBefore(band, main.firstChild)

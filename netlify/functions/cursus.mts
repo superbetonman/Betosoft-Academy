@@ -9,7 +9,7 @@ import { CURSUSCODE, magCursus } from "../lib/cursustoegang.mts"
  *                            cursisten krijgen index.html (zonder opnamebriefings, AI-prompts en mediaplan),
  *                            beheerders beheer.html (met die productie-informatie)
  *   /cursus/<CODE>/m2.js     losse modulescripts van dezelfde cursus
- *   /demo/<CODE>/            publieke teaser (start + eerste lessen; de rest zit niet in het bestand)
+ *   /demo/<CODE>/            publieke teaser (start + vier lessen uit verschillende modules; de rest zit niet in het bestand)
  */
 
 function pagina(titel: string, tekst: string, link: string, linkTekst: string, status: number) {

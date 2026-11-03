@@ -13,7 +13,7 @@ Netlify (`betosoft-academy`, statische pagina's + functies in Frankfurt) en Neon
 | `/centrale/` | beheerder van een centrale of locatie | Overzicht, medewerkers, scorebord, opleidingen, locaties |
 | `/` | publiek | Startpagina: cursussen (uit `public/cursussen.js`) met prijs en demo, werkwijze, centrales, voorwaarden |
 | `/prijzen/` | publiek | Alle prijzen: abonnement, per cursus (volledig, niveaus, losse modules), centrales, voorwaarden |
-| `/demo/<CODE>/` | publiek | Teaser van een cursus: de start en de eerste lessen; de rest zit niet in het bestand |
+| `/demo/<CODE>/` | publiek | Teaser van een cursus: de start en vier lessen uit verschillende modules; de rest zit niet in het bestand |
 | `/leren/` | cursist, beheerder | Mijn opleidingen; beheerders zien alle cursussen en volgen ze als tester |
 | `/cursus/<CODE>/` | met toegang | De volledige cursusapp; voortgang in de databank (`cursus_gegevens`) |
 
@@ -50,6 +50,9 @@ Netlify (`betosoft-academy`, statische pagina's + functies in Frankfurt) en Neon
 - Twee versies per cursus: `index.html` voor cursisten (zonder opnamebriefings, AI-prompts, posterprompts en mediaplan; de
   beeldvakken staan als placeholder "Volgt binnenkort") en `beheer.html` voor beheerders (met die productie-informatie).
   De demo vertrekt van de cursistenversie. Die teksten zitten dus ook niet in de broncode die een cursist ontvangt.
+- Demo (`demo.html`): de start (module 0) en vier lessen, elk uit een ander hoofdstuk en verspreid over de cursus.
+  De keuze staat per cursus in `bouw.mjs` (`demo: ["m1-l1", "m4-l1", ...]`). Uit een los modulescript gaat enkel de
+  gekozen les mee, ingebouwd in `demo.html`. Elke module toont in de demo "1 van 7 onderdelen in de demo".
 - Bijwerken: `scripts/cursusapps/bouw.mjs` (volledige versie + demo) en `scripts/cursusapps/opladen.mjs`.
 
 ## Lichte en donkere modus
