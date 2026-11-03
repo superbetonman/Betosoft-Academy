@@ -180,7 +180,7 @@ tabs.overzicht = async () => {
       <div class="cijfer"><div class="label">Wacht op activatie</div><div class="waarde">${c.gefactureerd}</div></div>
       <div class="cijfer"><div class="label">Actieve rechten</div><div class="waarde">${c.actieve_rechten}</div></div>
       <div class="cijfer"><div class="label">Cursisten</div><div class="waarde">${c.cursisten}</div></div>
-      <div class="cijfer"><div class="label">Centrales</div><div class="waarde">${c.centrales}</div></div>
+      <div class="cijfer"><div class="label">Ondernemingen</div><div class="waarde">${c.centrales}</div></div>
     </div>
     <h2>01 Loopt binnen 14 dagen af</h2>
     ${aflopend.length
@@ -234,15 +234,19 @@ tabs.aanvragen = async () => {
   })
   window._aanvragen = Object.fromEntries(aanvragen.map((a) => [a.id, a]))
 }
+// Een onderneming heet in de databank 'centrale'. Een verlenging hoort bij een onderneming als ze een organisatie heeft.
+const isOnderneming = (a) => a.type === "centrale" || (a.type === "verlenging" && !!a.organisatie_id)
 function aanvraagRij(a) {
   const naam = [a.voornaam, a.achternaam].filter(Boolean).join(" ")
   const open = a.status === "nieuw" || a.status === "gefactureerd"
+  const org = isOnderneming(a)
   return `
   <div class="rij">
     <div>
-      <div class="titel">${a.organisatie_naam ? esc(a.organisatie_naam) : esc(naam)} <span class="tag">${a.type === "verlenging" ? "verlenging" : a.type === "centrale" ? "centrale" : "persoon"}</span></div>
+      <div class="titel">${org ? esc(a.organisatie_naam || naam) : esc(naam || a.email)} <span class="tag">${a.type === "verlenging" ? "verlenging" : org ? "onderneming" : "persoon"}</span></div>
       <div class="meta">
-        ${a.type === "centrale" ? `<span>${esc(naam)}</span>` : ""}
+        ${org ? `<span>${esc(naam)}</span>` : ""}
+        ${!org && a.organisatie_naam ? `<span>factuur op <strong>${esc(a.organisatie_naam)}</strong>${a.btw_nummer ? ` · <span class="mono">${esc(a.btw_nummer)}</span>` : ""}</span>` : ""}
         <span>${esc(a.email)}</span>
         <span>${esc(a.product)}${a.aantal_plaatsen > 1 ? ` · <span class="mono">${a.aantal_plaatsen}</span> plaatsen` : ""}</span>
         ${a.bedrag_excl_btw !== null ? `<span class="mono">${euro(a.bedrag_excl_btw)} excl. btw</span>` : `<span class="status s-aandacht">geen prijs</span>`}
@@ -295,7 +299,7 @@ function rechtRij(r) {
   return `
   <div class="rij">
     <div>
-      <div class="titel">${esc(r.klant || r.email)} <span class="tag">${centrale ? "centrale" : "persoon"}</span></div>
+      <div class="titel">${esc(r.klant || r.email)} <span class="tag">${centrale ? "onderneming" : "persoon"}</span></div>
       <div class="meta">
         <span>${esc(r.product)}</span>
         <span><span class="mono">${datum(r.start_datum)}</span> – <span class="mono">${r.eind_datum ? datum(r.eind_datum) : "onbeperkt"}</span></span>
@@ -313,14 +317,14 @@ function rechtRij(r) {
   </div>`
 }
 
-// =============== CENTRALES ===============
+// =============== ONDERNEMINGEN (in de databank: organisaties, aanvraagtype centrale) ===============
 let centraleOpen = null
 tabs.centrales = async () => {
   if (centraleOpen) return centraleDetail(centraleOpen)
   const { centrales } = await api("/api/beheer/centrales")
   inhoud.innerHTML = `
-    <h1>Centrales</h1>
-    <p class="zacht klein">Een centrale ontstaat bij de activatie van een aanvraag van een centrale of via Nieuw toegangsrecht.</p>
+    <h1>Ondernemingen</h1>
+    <p class="zacht klein">Een onderneming ontstaat bij de activatie van een aanvraag van een onderneming of via Nieuw toegangsrecht. De contactpersoon wordt beheerder en maakt zelf logins aan voor de medewerkers.</p>
     ${centrales.length ? `<div class="lijst">${centrales.map((o) => `
       <div class="rij">
         <div>
@@ -334,14 +338,14 @@ tabs.centrales = async () => {
           </div>
         </div>
         <div class="knoppen"><button class="knop klein" data-actie="openCentrale" data-id="${o.id}">Openen</button></div>
-      </div>`).join("")}</div>` : `<div class="leeg">Nog geen centrales.</div>`}`
+      </div>`).join("")}</div>` : `<div class="leeg">Nog geen ondernemingen.</div>`}`
 }
 async function centraleDetail(oid) {
   const { centrale: o, personen, rechten, locaties } = await api(`/api/beheer/centrales/${oid}`)
   window._centrale = { o, personen, rechten, locaties }
   const geldige = rechten.filter((r) => r.geldig)
   inhoud.innerHTML = `
-    <p><a href="#centrales" data-actie="terugCentrales">← Alle centrales</a></p>
+    <p><a href="#centrales" data-actie="terugCentrales">← Alle ondernemingen</a></p>
     <h1>${esc(o.naam)}</h1>
     <div class="meta klein zacht" style="display:flex;gap:6px 14px;flex-wrap:wrap;margin-top:6px">
       ${o.btw_nummer ? `<span class="mono">${esc(o.btw_nummer)}</span>` : ""}
@@ -354,7 +358,7 @@ async function centraleDetail(oid) {
       <button class="knop klein" data-actie="persoonToevoegen">Persoon toevoegen</button>
       <button class="knop licht klein" data-actie="locatieToevoegen">Locatie toevoegen</button>
     </div>
-    ${!personen.some((p) => p.rol === "centrale_verantwoordelijke") ? `<div class="melding">Deze centrale heeft nog geen beheerder. Maak een persoon beheerder, zodat de centrale zelf medewerkers kan toevoegen.</div>` : ""}
+    ${!personen.some((p) => p.rol === "centrale_verantwoordelijke") ? `<div class="melding">Deze onderneming heeft nog geen beheerder. Maak een persoon beheerder, zodat de onderneming zelf logins voor medewerkers kan aanmaken.</div>` : ""}
 
     <h2>01 Toegangsrechten en plaatsen</h2>
     ${rechten.length ? `<div class="lijst">${rechten.map((r) => `
@@ -406,7 +410,7 @@ tabs.cursisten = async () => {
   const { cursisten } = await api(`/api/beheer/cursisten${cursistZoek ? `?zoek=${encodeURIComponent(cursistZoek)}` : ""}`)
   inhoud.innerHTML = `
     <h1>Cursisten</h1>
-    <div class="balk"><input id="cursistzoek" class="groei" type="search" placeholder="Zoek op naam, e-mail of centrale" value="${esc(cursistZoek)}"></div>
+    <div class="balk"><input id="cursistzoek" class="groei" type="search" placeholder="Zoek op naam, e-mail of onderneming" value="${esc(cursistZoek)}"></div>
     ${cursisten.length ? `<div class="lijst">${cursisten.map((g) => `
       <div class="rij">
         <div>
@@ -636,7 +640,7 @@ async function versieDetail(vid) {
 
     ${bewerkbaar ? `
     <h2>02 Proefgroep</h2>
-    <p class="klein zacht">Als proefversie zien enkel deze personen of centrales de nieuwe versie. Anderen blijven op de actuele versie.</p>
+    <p class="klein zacht">Als proefversie zien enkel deze personen of ondernemingen de nieuwe versie. Anderen blijven op de actuele versie.</p>
     ${proefgroep.length ? `<div class="lijst">${proefgroep.map((p) => `<div class="rij"><div><div class="titel">${esc(p.naam)} <span class="tag">${p.soort}</span></div></div>
       <div class="knoppen"><button class="knop stil klein" data-actie="proefWeg" data-id="${p.id}">Verwijderen</button></div></div>`).join("")}</div>` : `<div class="leeg">Nog niemand in de proefgroep.</div>`}
     <div class="knoppen" style="margin-top:8px"><button class="knop licht klein" data-actie="proefToevoegen">Toevoegen aan proefgroep</button></div>
@@ -840,10 +844,10 @@ acties.aanvraagDetail = ({ id }) => {
   dialoog({
     titel: "Aanvraag",
     inhoud: `<table class="eenvoudig"><tbody>
-      ${r("Type", { centrale: "Centrale", individueel: "Persoon", verlenging: "Verlenging" }[a.type])}
-      ${r("Centrale", a.organisatie_naam)}${r("Btw-nummer", a.btw_nummer, true)}
+      ${r("Type", { centrale: "Onderneming", individueel: "Persoon", verlenging: isOnderneming(a) ? "Verlenging (onderneming)" : "Verlenging (persoon)" }[a.type])}
+      ${r(isOnderneming(a) ? "Onderneming" : "Factuur op bedrijf", a.organisatie_naam)}${r("Btw-nummer", a.btw_nummer, true)}
       ${r("Naam", [a.voornaam, a.achternaam].filter(Boolean).join(" "))}${r("E-mail", a.email)}${r("Telefoon", a.telefoon, true)}
-      ${r("Adres", a.adres)}${r("Product", a.product)}
+      ${r("Facturatieadres", a.adres)}${r("Product", a.product)}
       ${a.type === "verlenging" ? r("Soort", "Verlenging van 1 maand op een bestaand toegangsrecht") : r("Prijs", a.prijs_excl_btw !== null ? `${euro(a.prijs_excl_btw)} excl. btw · ${periodeTekst(a.periode, a.geldigheid_maanden)}` : "prijs niet ingesteld")}
       ${a.type === "centrale" ? r("Plaatsen", String(a.aantal_plaatsen), true) : ""}
       ${r("Te factureren", a.bedrag_excl_btw !== null ? `${euro(a.bedrag_excl_btw)} excl. btw` : "", true)}
@@ -873,13 +877,13 @@ acties.activeer = ({ id }) => {
       ? `<p>De toegang tot <strong>${esc(a.product)}</strong> van <strong>${esc(a.organisatie_naam || a.voornaam || a.email)}</strong> wordt met 1 maand verlengd, vanaf het huidige einde.</p>
       <input type="hidden" name="start_datum" value="${vandaag()}">
       <label class="veld"><span class="label">Factuurnummer</span><input name="factuurnummer" maxlength="60" class="mono" value="${esc(a.factuurnummer || "")}"></label>`
-      : `<p><strong>${esc(a.type === "centrale" ? a.organisatie_naam : [a.voornaam, a.achternaam].join(" "))}</strong> krijgt toegang tot <strong>${esc(a.product)}</strong>${a.type === "centrale" ? ` met <span class="mono">${a.aantal_plaatsen}</span> plaatsen` : ""}.</p>
+      : `<p><strong>${esc(a.type === "centrale" ? a.organisatie_naam : [a.voornaam, a.achternaam].join(" "))}</strong>${a.type !== "centrale" && a.organisatie_naam ? ` (factuur op ${esc(a.organisatie_naam)})` : ""} krijgt toegang tot <strong>${esc(a.product)}</strong>${a.type === "centrale" ? ` met <span class="mono">${a.aantal_plaatsen}</span> plaatsen` : ""}.</p>
       <p class="klein zacht">Geldigheid: ${esc(periodeTekst(a.periode, a.geldigheid_maanden))}.</p>
       <div class="velden twee">
         <label class="veld"><span class="label">Factuurnummer</span><input name="factuurnummer" maxlength="60" class="mono" value="${esc(a.factuurnummer || "")}"></label>
         <label class="veld"><span class="label">Startdatum</span><input name="start_datum" type="date" value="${vandaag()}" required></label>
       </div>
-      ${a.type === "centrale" ? `<p class="klein zacht">De contactpersoon wordt beheerder van de centrale. Na activatie krijg je een uitnodigingslink om door te sturen.</p>` : `<p class="klein zacht">Na activatie krijg je een uitnodigingslink om door te sturen.</p>`}`,
+      ${a.type === "centrale" ? `<p class="klein zacht">De contactpersoon wordt beheerder van de onderneming en maakt zelf logins aan voor de medewerkers. Na activatie krijg je een uitnodigingslink om door te sturen.</p>` : `<p class="klein zacht">Na activatie krijg je een uitnodigingslink om door te sturen.</p>`}`,
     knop: "Activeren",
     bij: async (fd) => {
       const r = await api(`/api/beheer/aanvragen/${id}/activeer`, { methode: "POST", data: fd })
@@ -983,13 +987,14 @@ acties.nieuwRecht = async () => {
     inhoud: `
       <p class="klein zacht">Voor een bestelling die niet via het formulier binnenkwam. Geldt meteen.</p>
       <label class="veld"><span class="label">Klant</span>
-        <select name="type" id="nr-type"><option value="individueel">Persoon</option><option value="centrale">Centrale</option></select></label>
+        <select name="type" id="nr-type"><option value="individueel">Persoon</option><option value="centrale">Onderneming</option></select></label>
+      <div class="velden twee">
+        <label class="veld"><span class="label" id="nr-bedrijf">Bedrijf (optioneel, voor de factuur)</span><input name="organisatie_naam" maxlength="160"></label>
+        <label class="veld"><span class="label">Btw-nummer</span><input name="btw_nummer" maxlength="20" class="mono" placeholder="BE0123456749"></label>
+      </div>
       <div id="nr-centrale" class="verborgen">
-        <div class="velden twee">
-          <label class="veld"><span class="label">Naam centrale</span><input name="organisatie_naam" maxlength="160"></label>
-          <label class="veld"><span class="label">Btw-nummer</span><input name="btw_nummer" maxlength="20" class="mono" placeholder="BE0123456789"></label>
-        </div>
         <label class="veld"><span class="label">Aantal plaatsen</span><input name="aantal_plaatsen" type="number" min="1" max="500" value="1" class="mono"></label>
+        <p class="klein zacht">De persoon hieronder wordt beheerder van de onderneming.</p>
       </div>
       <div class="velden twee">
         <label class="veld"><span class="label">Voornaam</span><input name="voornaam" maxlength="80"></label>
@@ -1009,7 +1014,11 @@ acties.nieuwRecht = async () => {
       herlaad()
     },
   })
-  $("#nr-type").addEventListener("change", (e) => $("#nr-centrale").classList.toggle("verborgen", e.target.value !== "centrale"))
+  $("#nr-type").addEventListener("change", (e) => {
+    const org = e.target.value === "centrale"
+    $("#nr-centrale").classList.toggle("verborgen", !org)
+    $("#nr-bedrijf").textContent = org ? "Naam onderneming" : "Bedrijf (optioneel, voor de factuur)"
+  })
 }
 
 acties.verlengAanvraag = ({ id, prijs, nr, max, tot }) =>
@@ -1071,7 +1080,7 @@ acties.wijzigCentrale = () => {
   const o = window._centrale.o
   const v = (n, l, extra = "") => `<label class="veld"><span class="label">${l}</span><input name="${n}" value="${esc(o[n] || "")}" ${extra}></label>`
   dialoog({
-    titel: "Gegevens centrale",
+    titel: "Gegevens onderneming",
     inhoud: `${v("naam", "Naam", 'required maxlength="160"')}
       <div class="velden twee">${v("btw_nummer", "Btw-nummer", 'class="mono" maxlength="20"')}${v("telefoon", "Telefoon", 'maxlength="40"')}</div>
       ${v("adres", "Adres", 'maxlength="300"')}
@@ -1106,7 +1115,7 @@ acties.persoonToevoegen = () => {
       <label class="veld"><span class="label">E-mail</span><input name="email" type="email" required maxlength="254"></label>
       ${window._centrale.locaties.length ? `<label class="veld"><span class="label">Locatie</span><select name="locatie_id"><option value="">${esc(o.naam)} (hoofdzetel)</option>
         ${window._centrale.locaties.map((l) => `<option value="${l.id}">${esc(l.naam)}</option>`).join("")}</select></label>` : ""}
-      <label class="check"><input type="checkbox" name="verantwoordelijke"><span>Beheerder van de centrale of locatie (kan medewerkers toevoegen en opleidingen toewijzen)</span></label>
+      <label class="check"><input type="checkbox" name="verantwoordelijke"><span>Beheerder van de onderneming of locatie (maakt logins aan voor medewerkers en wijst opleidingen toe)</span></label>
       <label class="veld"><span class="label">Meteen een plaats toewijzen</span>
         <select name="recht_id"><option value="">Nee, later</option>
           ${vrij.map((r) => `<option value="${r.id}">${esc(r.product)} (${r.aantal_plaatsen - r.gebruikt} vrij)</option>`).join("")}
@@ -1256,7 +1265,7 @@ acties.proefToevoegen = async () => {
   const { centrales, personen } = await api("/api/beheer/keuzelijsten")
   dialoog({
     titel: "Toevoegen aan proefgroep",
-    inhoud: `<label class="veld"><span class="label">Hele centrale</span><select name="organisatie_id"><option value="">—</option>${centrales.map((c) => `<option value="${c.id}">${esc(c.naam)}</option>`).join("")}</select></label>
+    inhoud: `<label class="veld"><span class="label">Hele onderneming</span><select name="organisatie_id"><option value="">—</option>${centrales.map((c) => `<option value="${c.id}">${esc(c.naam)}</option>`).join("")}</select></label>
       <p class="klein zacht">of</p>
       <label class="veld"><span class="label">Eén persoon</span><select name="gebruiker_id"><option value="">—</option>${personen.map((p) => `<option value="${p.id}">${esc(p.naam)} · ${esc(p.email)}</option>`).join("")}</select></label>`,
     knop: "Toevoegen",

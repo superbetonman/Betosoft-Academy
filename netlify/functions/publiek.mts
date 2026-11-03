@@ -1,5 +1,5 @@
 import type { Config, Context } from "@netlify/functions"
-import { db, json, fout, dbFout, tekst, geheel, EMAIL, UUID } from "../lib/db.mts"
+import { db, json, fout, dbFout, tekst, geheel, btwVeld, EMAIL, UUID } from "../lib/db.mts"
 
 export default async (req: Request, context: Context) => {
   const pad = new URL(req.url).pathname
@@ -43,25 +43,29 @@ export default async (req: Request, context: Context) => {
       // Valkuil voor robots: echte bezoekers zien dit veld niet.
       if (tekst(b.website)) return json({ ok: true })
 
-      const type = b.type === "centrale" ? "centrale" : b.type === "individueel" ? "individueel" : null
+      // Een onderneming heet in de databank nog 'centrale' (aanvraagtype); het formulier mag beide sturen.
+      const type = b.type === "onderneming" || b.type === "centrale" ? "centrale" : b.type === "individueel" ? "individueel" : null
       const email = tekst(b.email, 254)
       const voornaam = tekst(b.voornaam, 80)
       const achternaam = tekst(b.achternaam, 80)
       const product = tekst(b.product_id, 36)
-      if (!type) return fout("Kies of je inschrijft als persoon of als centrale.")
-      if (!voornaam || !achternaam) return fout("Vul je voornaam en achternaam in.")
+      if (!type) return fout("Kies of je inschrijft als persoon of als onderneming.")
+      if (!voornaam || !achternaam) return fout(type === "centrale" ? "Vul de voornaam en achternaam van de contactpersoon in." : "Vul je voornaam en achternaam in.")
       if (!email || !EMAIL.test(email)) return fout("Vul een geldig e-mailadres in.")
       if (!product || !UUID.test(product)) return fout("Kies een cursusonderdeel.")
       if (b.akkoord !== true) return fout("Bevestig dat je de voorwaarden en de privacyverklaring aanvaardt.")
 
-      const centrale = tekst(b.organisatie_naam, 160)
-      const btw = tekst(b.btw_nummer, 20)?.replace(/[\s.]/g, "").toUpperCase() ?? null
+      // Facturatie: een onderneming altijd op naam en btw-nummer; een persoon kan kiezen voor een factuur op een bedrijf.
+      const opBedrijf = type === "centrale" || b.factuur_bedrijf === true
+      const bedrijf = opBedrijf ? tekst(b.organisatie_naam, 160) : null
+      const { btw, fout: btwFout } = opBedrijf ? btwVeld(b.btw_nummer) : { btw: null }
       const plaatsen = type === "centrale" ? geheel(b.aantal_plaatsen, 1, 500) : 1
-      if (type === "centrale") {
-        if (!centrale) return fout("Vul de naam van de centrale in.")
-        if (!btw || !/^[A-Z]{2}[0-9A-Z]{8,12}$/.test(btw)) return fout("Vul een geldig btw-nummer in, bv. BE0123456789.")
-        if (!plaatsen) return fout("Vul het aantal plaatsen in (1 tot 500).")
+      if (opBedrijf) {
+        if (!bedrijf) return fout(type === "centrale" ? "Vul de naam van de onderneming in." : "Vul de naam van het bedrijf in voor de factuur.")
+        if (!btw) return fout("Vul het btw-nummer in, bv. BE0123456749.")
+        if (btwFout) return fout(btwFout)
       }
+      if (!plaatsen) return fout("Vul het aantal plaatsen in (1 tot 500).")
 
       const [p] = await sql`SELECT id FROM producten WHERE id = ${product} AND actief`
       if (!p) return fout("Dit cursusonderdeel is niet beschikbaar.")
@@ -73,7 +77,7 @@ export default async (req: Request, context: Context) => {
       await sql`
         INSERT INTO aanvragen (type, voornaam, achternaam, email, telefoon, organisatie_naam, btw_nummer, adres, product_id, aantal_plaatsen, opmerking)
         VALUES (${type}, ${voornaam}, ${achternaam}, ${email}, ${tekst(b.telefoon, 40)},
-                ${type === "centrale" ? centrale : null}, ${type === "centrale" ? btw : null}, ${tekst(b.adres, 300)},
+                ${bedrijf}, ${btw}, ${tekst(b.adres, 300)},
                 ${product}, ${plaatsen}, ${tekst(b.opmerking, 1000)})`
       return json({ ok: true })
     }

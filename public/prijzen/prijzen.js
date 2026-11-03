@@ -1,4 +1,4 @@
-// Prijzenpagina: abonnement, per cursus (volledige cursus, niveaus/trajecten, losse modules), centrales en voorwaarden.
+// Prijzenpagina: abonnement, per cursus (volledige cursus, niveaus/trajecten, losse modules), ondernemingen en voorwaarden.
 import { esc, euro, getal } from "/gemeen.js"
 import { CURSUSSEN } from "/cursussen.js"
 import { laadProducten, productenVan, prijsTekst, toegangTekst, heeftPrijs, voorwaardenItems } from "/prijs.js"
@@ -22,7 +22,7 @@ async function laad() {
   try {
     const { producten, regels } = await laadProducten()
     const btw = regels.btw_pct ?? 21
-    $("#inleiding").innerHTML = `<strong>Je betaalt per cursus, per niveau of per module</strong>, of je neemt een abonnement voor alle cursussen. Prijzen exclusief <span class="mono">${getal(btw)}&#8239;%</span> btw, per persoon. Een centrale betaalt per plaats.`
+    $("#inleiding").innerHTML = `<strong>Je betaalt per cursus, per niveau of per module</strong>, of je neemt een abonnement voor alle cursussen. Prijzen exclusief <span class="mono">${getal(btw)}&#8239;%</span> btw, per persoon. Een onderneming betaalt per plaats.`
 
     const abo = producten.filter((p) => p.type === "abonnement")
     $("#abonnementen").innerHTML = abo.length ? tabel(abo) : `<p class="zacht">Er is nog geen abonnement.</p>`
@@ -47,7 +47,7 @@ async function laad() {
         ? `<p class="zacht">In opbouw, prijs bij de opening: ${nogNiet.map((c) => (c.demo ? `<a href="/demo/${encodeURIComponent(c.code)}/">${esc(c.titel)}</a>` : esc(c.titel))).join(", ")}.</p>`
         : "")
 
-    // Rekenvoorbeeld voor een centrale met de eerste volledige cursus die een prijs heeft
+    // Rekenvoorbeeld voor een onderneming met de eerste volledige cursus die een prijs heeft
     const vb = producten.find((p) => p.code.startsWith("CRS-") && heeftPrijs(p))
     $("#rekenvoorbeeld").innerHTML = vb
       ? `<p class="label" style="margin:0 0 6px">Rekenvoorbeeld</p><p style="margin:0">${esc(vb.naam)} voor 5 medewerkers: <span class="mono">5 × ${esc(euro(vb.prijs_excl_btw))} = ${esc(euro(5 * Number(vb.prijs_excl_btw)))}</span> excl. btw.</p>`
@@ -67,7 +67,7 @@ async function sessie() {
     if (!s.aangemeld) return
     const k = $("#aanmeldknop")
     const rol = s.gebruiker?.rol
-    k.textContent = rol === "superadmin" || rol === "beheerder" ? "Naar beheer" : rol === "centrale_verantwoordelijke" ? "Naar mijn centrale" : "Mijn opleidingen"
+    k.textContent = rol === "superadmin" || rol === "beheerder" ? "Naar beheer" : rol === "centrale_verantwoordelijke" ? "Naar mijn onderneming" : "Mijn opleidingen"
     k.href = s.bestemming || "/leren/"
   } catch {}
 }

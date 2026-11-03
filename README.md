@@ -1,18 +1,18 @@
 # Betosoft Academie
 
-Leerplatform voor de betonsector: inschrijvingen, toegangsrechten, versies per module, centrales met eigen beheerder, verlengingen.
+Leerplatform voor de betonsector: inschrijvingen, toegangsrechten, versies per module, ondernemingen met eigen beheerder, verlengingen.
 Netlify (`betosoft-academy`, statische pagina's + functies in Frankfurt) en Neon (project `betosoft-academy`, databank `academy`, Frankfurt).
 
 ## Pagina's
 | Pad | Voor wie | Wat |
 |---|---|---|
-| `/aanvragen/` | publiek | Inschrijven als persoon of centrale |
+| `/aanvragen/` | publiek | Inschrijven als persoon (eventueel met factuur op een bedrijf) of als onderneming |
 | `/aanmelden/` | iedereen | Aanmelden met gebruikersnaam of e-mail + wachtwoord |
 | `/welkom/?t=…` | nieuwe gebruiker | Wachtwoord kiezen via uitnodigingslink (14 dagen geldig, één keer) |
-| `/beheer/` | superadmin, beheerder | Aanvragen, toegangsrechten, centrales, cursisten, leerlijn, cursussen (online/offline), versies, instellingen, logboek |
-| `/centrale/` | beheerder van een centrale of locatie | Overzicht, medewerkers, leerlijn, scorebord, opleidingen, locaties |
-| `/` | publiek | Startpagina: cursussen (uit `public/cursussen.js`) met prijs en demo, werkwijze, centrales, voorwaarden |
-| `/prijzen/` | publiek | Alle prijzen: abonnement, per cursus (volledig, niveaus, losse modules), centrales, voorwaarden |
+| `/beheer/` | superadmin, beheerder | Aanvragen, toegangsrechten, ondernemingen, cursisten, leerlijn, cursussen (online/offline), versies, instellingen, logboek |
+| `/centrale/` | beheerder van een onderneming of locatie | Overzicht, medewerkers (met eigen login), leerlijn, scorebord, opleidingen, locaties |
+| `/` | publiek | Startpagina: cursussen (uit `public/cursussen.js`) met prijs en demo, werkwijze, ondernemingen, voorwaarden |
+| `/prijzen/` | publiek | Alle prijzen: abonnement, per cursus (volledig, niveaus, losse modules), ondernemingen, voorwaarden |
 | `/demo/<CODE>/` | publiek | Teaser van een cursus: de start en vier lessen uit verschillende modules; de rest zit niet in het bestand |
 | `/leren/` | iedereen die aangemeld is | Mijn leerlijn: niveau en punten, voortgang per cursus en module, volgende stap, attesten, badges; beheerders zien alle cursussen (tester) |
 | `/scores/` | iedereen die aangemeld is | Klassement algemeen, per bedrijf en binnen het eigen bedrijf; zo verdien je punten |
@@ -23,14 +23,26 @@ Netlify (`betosoft-academy`, statische pagina's + functies in Frankfurt) en Neon
 ## Rollen
 - **superadmin** (`superbetonman`): alles, plus prijzen, voorwaarden, verlengingsregels en beheerders.
 - **beheerder**: dagelijks beheer (aanvragen, activeren, verlengen, centrales, versies).
-- **centrale_verantwoordelijke**: beheert de eigen centrale; op hoofdniveau ook alle locaties.
+- **centrale_verantwoordelijke** (op het scherm: beheerder van de onderneming): de contactpersoon uit de inschrijving.
+  Maakt logins aan voor de eigen medewerkers, wijst plaatsen toe en kan collega's beheerder maken; op hoofdniveau ook alle locaties.
 - **cursist**.
 
 ## Werkwijze
-1. Aanvraag komt binnen (formulier, bestelling van een centrale of verlengingsaanvraag). Het bedrag wordt vastgelegd.
+1. Aanvraag komt binnen (formulier, bestelling van een onderneming of verlengingsaanvraag). Het bedrag wordt vastgelegd.
 2. Factureren in de eigen boekhoudtool → factuurnummer noteren.
 3. Na betaling **Activeren**. Je krijgt een uitnodigingslink om door te sturen.
-4. Een centrale voegt zelf medewerkers toe, wijst plaatsen toe en ziet voortgang en scorebord.
+4. De beheerder van een onderneming voegt zelf medewerkers toe (elk een eigen login via een uitnodigingslink), wijst plaatsen toe en ziet voortgang en scorebord.
+
+## Ondernemingen en facturatie
+- Op het scherm heet een klant met meerdere medewerkers een **onderneming** (vroeger: centrale). In de code en de databank blijven
+  de namen `centrale` (aanvraagtype, `/centrale/`, `/api/centrale/`) en `centrale_verantwoordelijke` (rol) ongewijzigd.
+- Onderneming: naam en btw-nummer verplicht. De contactpersoon wordt bij activatie beheerder van de onderneming.
+- Persoon: kan met een vinkje een factuur op naam van een bedrijf vragen (naam en btw-nummer, in `aanvragen.organisatie_naam`
+  en `aanvragen.btw_nummer`). Er komt dan géén organisatie bij; de persoon blijft een gewone cursist.
+- Btw-nummer: spaties en punten worden weggelaten, een Belgisch nummer zonder landcode krijgt `BE`, en een Belgisch nummer moet de
+  controle modulo 97 doorstaan (`btwVeld` in `netlify/lib/db.mts`).
+- Een verlenging neemt bedrijf, btw-nummer en facturatieadres over (onderneming: uit `organisaties`; persoon: uit de oorspronkelijke aanvraag).
+- Oude links `/aanvragen/?type=centrale` blijven werken; nieuwe links gebruiken `?type=onderneming`.
 
 ## Toegang en verlenging
 - Modules en trajecten: 3 maanden toegang vanaf de start. Updates in die periode zijn inbegrepen.
@@ -98,6 +110,7 @@ Netlify (`betosoft-academy`, statische pagina's + functies in Frankfurt) en Neon
 - `migraties/004_online_leerlijn_scores_attesten.sql`: modules en producten voor VRK, PLM, CSC, BT1, BT2; alle cursussen online;
   `cursus_structuur`; attesten met momentopname en mailteller; de haak in de opgeslagen cursusapps.
   De basis (stap 1) werd rechtstreeks in Neon aangemaakt.
+- `migraties/005_ondernemingen_facturatie.sql`: verlenging neemt de facturatiegegevens mee; meldingen zeggen "onderneming" i.p.v. "centrale".
 - Bedrijfsregels zitten in databankfuncties: `activeer_aanvraag`, `verleng_recht`, `vraag_verlenging`, `wijs_plaats_toe`,
   `voeg_cursist_toe`, `nieuwe_versie`, `beoordeel_wijziging`, `publiceer_versie`, `zet_op_versie`. Elke actie komt in `auditlog`.
 

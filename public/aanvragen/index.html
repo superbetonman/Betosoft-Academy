@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Inschrijven · Betosoft Academie</title>
-  <meta name="description" content="Schrijf je in voor een opleiding van de Betosoft Academie, als persoon of als betoncentrale.">
+  <meta name="description" content="Schrijf je in voor een opleiding van de Betosoft Academie, als persoon of als onderneming.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -22,6 +22,9 @@
     .keuze strong { display: block; }
     .val { position: absolute; left: -9999px; width: 1px; height: 1px; overflow: hidden; }
     .prijsregel { font-family: var(--mono); font-size: 14px; margin: -4px 0 12px; }
+    fieldset { border: 0; padding: 0; margin: 0; min-width: 0; }
+    .melding.info p { margin: 0; }
+    .melding.info p + p { margin-top: 6px; }
   </style>
 </head>
 <body>
@@ -32,7 +35,7 @@
       <a href="/#cursussen">Cursussen</a>
       <a href="/#werkwijze">Werkwijze</a>
       <a href="/prijzen/">Prijzen</a>
-      <a href="/#centrales">Centrales</a>
+      <a href="/#ondernemingen">Ondernemingen</a>
       <a href="/#voorwaarden">Voorwaarden</a>
     </nav>
     <div class="rechts"><a class="bknop" id="aanmeldknop" href="/aanmelden/">Aanmelden</a></div>
@@ -46,39 +49,52 @@
     <form id="form" novalidate>
       <h2>01 Wie schrijft in?</h2>
       <div class="keuze" role="radiogroup" aria-label="Wie schrijft in">
-        <label><input type="radio" name="type" value="individueel" checked><strong>Ik als persoon</strong><span class="klein zacht">Eén cursist, factuur op naam of op je bedrijf</span></label>
-        <label><input type="radio" name="type" value="centrale"><strong>Een centrale</strong><span class="klein zacht">Plaatsen voor meerdere medewerkers</span></label>
+        <label><input type="radio" name="type" value="individueel" checked><strong>Ik als persoon</strong><span class="klein zacht">Eén cursist. Factuur op je eigen naam of op je bedrijf.</span></label>
+        <label><input type="radio" name="type" value="onderneming"><strong>Een onderneming</strong><span class="klein zacht">Plaatsen voor meerdere medewerkers, met een eigen beheerder</span></label>
       </div>
 
-      <div id="centraleblok" class="verborgen">
-        <h2>02 Gegevens centrale</h2>
-        <div class="velden twee">
-          <label class="veld"><span class="label">Naam centrale</span><input name="organisatie_naam" maxlength="160" autocomplete="organization"></label>
-          <label class="veld"><span class="label">Btw-nummer</span><input name="btw_nummer" maxlength="20" class="mono" placeholder="BE0123456789"></label>
+      <section id="sec-contact">
+        <h2><span class="nr">02</span> <span id="titel-contact">Jouw gegevens</span></h2>
+        <div id="beheerinfo" class="melding info verborgen">
+          <p>De contactpersoon wordt de <strong>beheerder</strong> van de onderneming op het leerplatform.</p>
+          <p class="klein">Na activatie maakt de beheerder zelf de logins aan voor de eigen medewerkers, wijst de plaatsen toe en volgt de voortgang. Later kan de beheerder ook collega's beheerder maken.</p>
         </div>
-        <label class="veld"><span class="label">Aantal plaatsen</span><input name="aantal_plaatsen" type="number" min="1" max="500" value="5" class="mono" inputmode="numeric"></label>
-        <p class="klein zacht">Na activatie wijs je de plaatsen toe aan je medewerkers. Plaatsen kun je later uitbreiden.</p>
-      </div>
+        <div class="velden twee">
+          <label class="veld"><span class="label">Voornaam</span><input name="voornaam" required maxlength="80" autocomplete="given-name"></label>
+          <label class="veld"><span class="label">Achternaam</span><input name="achternaam" required maxlength="80" autocomplete="family-name"></label>
+        </div>
+        <div class="velden twee">
+          <label class="veld"><span class="label">E-mail</span><input name="email" type="email" required maxlength="254" autocomplete="email"></label>
+          <label class="veld"><span class="label">Telefoon (optioneel)</span><input name="telefoon" type="tel" maxlength="40" autocomplete="tel"></label>
+        </div>
+      </section>
 
-      <h2><span id="nr-contact">02</span> <span id="titel-contact">Jouw gegevens</span></h2>
-      <div class="velden twee">
-        <label class="veld"><span class="label">Voornaam</span><input name="voornaam" required maxlength="80" autocomplete="given-name"></label>
-        <label class="veld"><span class="label">Achternaam</span><input name="achternaam" required maxlength="80" autocomplete="family-name"></label>
-      </div>
-      <div class="velden twee">
-        <label class="veld"><span class="label">E-mail</span><input name="email" type="email" required maxlength="254" autocomplete="email"></label>
-        <label class="veld"><span class="label">Telefoon (optioneel)</span><input name="telefoon" type="tel" maxlength="40" autocomplete="tel"></label>
-      </div>
-      <label class="veld"><span class="label">Facturatieadres</span><input name="adres" maxlength="300" autocomplete="street-address" placeholder="Straat nr, postcode gemeente"></label>
+      <section id="sec-facturatie">
+        <h2><span class="nr">03</span> <span id="titel-facturatie">Facturatie</span></h2>
+        <label class="check" id="bedrijfkeuze"><input type="checkbox" name="factuur_bedrijf" id="factuur_bedrijf"><span>Factuur op naam van een bedrijf, met btw-nummer</span></label>
+        <fieldset id="bedrijfblok" class="verborgen" disabled>
+          <div class="velden twee">
+            <label class="veld"><span class="label" id="label-bedrijf">Naam bedrijf</span><input name="organisatie_naam" required maxlength="160" autocomplete="organization"></label>
+            <label class="veld"><span class="label">Btw-nummer</span><input name="btw_nummer" required maxlength="20" class="mono" placeholder="BE0123456749" autocapitalize="characters" spellcheck="false"></label>
+          </div>
+        </fieldset>
+        <label class="veld"><span class="label">Facturatieadres</span><input name="adres" maxlength="300" autocomplete="street-address" placeholder="Straat nr, postcode gemeente"></label>
+      </section>
 
-      <h2><span id="nr-product">03</span> Opleiding</h2>
-      <label class="veld"><span class="label">Kies wat je wilt volgen</span><select name="product_id" id="product" required><option value="">Laden…</option></select></label>
-      <p class="prijsregel" id="prijs"></p>
-      <label class="veld"><span class="label">Opmerking (optioneel)</span><textarea name="opmerking" maxlength="1000"></textarea></label>
+      <section id="sec-opleiding">
+        <h2><span class="nr">04</span> Opleiding</h2>
+        <label class="veld"><span class="label">Kies wat je wilt volgen</span><select name="product_id" id="product" required><option value="">Laden…</option></select></label>
+        <div id="plaatsenblok" class="verborgen">
+          <label class="veld"><span class="label">Aantal plaatsen</span><input name="aantal_plaatsen" type="number" min="1" max="500" value="5" class="mono" inputmode="numeric"></label>
+          <p class="klein zacht">Eén plaats per medewerker. De beheerder wijst de plaatsen na activatie zelf toe. Extra plaatsen bestel je later bij.</p>
+        </div>
+        <p class="prijsregel" id="prijs"></p>
+        <label class="veld"><span class="label">Opmerking (optioneel)</span><textarea name="opmerking" maxlength="1000"></textarea></label>
+      </section>
 
       <div class="val" aria-hidden="true"><label>Website<input name="website" tabindex="-1" autocomplete="off"></label></div>
 
-      <label class="check"><input type="checkbox" name="akkoord" required><span class="klein">Ik aanvaard de <a href="/#voorwaarden" target="_blank" rel="noopener">voorwaarden en de privacyverklaring</a>. Bij een inschrijving door een centrale kan de centrale de voortgang en resultaten van haar eigen medewerkers bekijken.</span></label>
+      <label class="check"><input type="checkbox" name="akkoord" required><span class="klein">Ik aanvaard de <a href="/#voorwaarden" target="_blank" rel="noopener">voorwaarden en de privacyverklaring</a>. Bij een inschrijving door een onderneming kan de beheerder van de onderneming de voortgang en resultaten van de eigen medewerkers bekijken.</span></label>
 
       <div id="melding" class="melding verborgen" role="alert"></div>
       <button class="knop" type="submit" id="verstuur">Aanvraag versturen</button>
@@ -86,7 +102,7 @@
 
     <div id="bedankt" class="paneel verborgen" style="margin-top:24px">
       <h2 style="margin-top:0">Aanvraag ontvangen</h2>
-      <p>Bedankt. We bezorgen je zo snel mogelijk de factuur. Na betaling krijg je per e-mail toegang.</p>
+      <p id="bedankt-tekst">Bedankt. We bezorgen je zo snel mogelijk de factuur. Na betaling krijg je per e-mail toegang.</p>
     </div>
   </main>
   <script src="/aanvragen/aanvragen.js" type="module"></script>

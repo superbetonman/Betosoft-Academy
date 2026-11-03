@@ -72,7 +72,7 @@ export function voorwaardenItems(producten, regels) {
       ],
       ["Na de einddatum", "De toegang stopt. Je voortgang en resultaten blijven bewaard."],
       ["Betalen", `Toegang na betaling van de factuur. De prijs ligt vast op het moment van je aanvraag. Prijzen exclusief ${m(regels.btw_pct ?? 21)}&#8239;% btw.`],
-      ["Centrales", "Prijs per plaats. Elke plaats wordt toegewezen aan één medewerker."],
+      ["Ondernemingen", "Prijs per plaats. Elke plaats wordt toegewezen aan één medewerker. Een persoon kan ook op naam van een bedrijf gefactureerd worden."],
       ["Nieuwe versies", "Wijzigt een module tijdens je toegang, dan krijg je de nieuwe versie. Afgeronde lessen en geslaagde toetsen blijven gelden, tenzij de inhoud ervan wezenlijk wijzigde."],
       ["Inhoud", "De cursussen zijn met de grootste zorg samengesteld. Raadpleeg in geval van twijfel altijd de normatieve documenten en reglementen; die blijven de referentie."],
     ],

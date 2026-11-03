@@ -54,7 +54,7 @@ tabs.overzicht = async () => {
   inhoud.innerHTML = `
     <p class="label" style="margin:4px 0 8px">${datum(vandaag())}</p>
     <h1>${esc(ov.organisatie.naam)}</h1>
-    <p>${c.medewerkers ? `<strong>${c.medewerkers} medewerker${c.medewerkers === 1 ? "" : "s"}</strong>, waarvan ${c.met_opleiding} met een opleiding en ${c.aangemeld} met een actief account.` : "<strong>Nog geen medewerkers.</strong> Voeg ze toe in het tabblad Medewerkers."}
+    <p>${c.medewerkers ? `<strong>${c.medewerkers} medewerker${c.medewerkers === 1 ? "" : "s"}</strong>, waarvan ${c.met_opleiding} met een opleiding en ${c.aangemeld} met een actief account.` : "<strong>Nog geen medewerkers.</strong> Voeg ze toe in het tabblad Medewerkers; elke medewerker krijgt een eigen login."}
       ${aflopend.length ? ` ${aflopend.length} opleiding${aflopend.length === 1 ? " loopt" : "en lopen"} binnen 14 dagen af.` : ""}</p>
     <div class="cijfers" style="margin-top:16px">
       <div class="cijfer"><div class="label">Medewerkers</div><div class="waarde">${c.medewerkers}</div></div>
@@ -284,6 +284,7 @@ acties.nieuw = () => {
   dialoog({
     titel: "Medewerker toevoegen",
     inhoud: `
+      <p class="klein zacht">Elke medewerker krijgt een eigen login. Na het toevoegen krijg je een uitnodigingslink om door te sturen; daarmee kiest de medewerker een wachtwoord.</p>
       <div class="velden twee">
         <label class="veld"><span class="label">Voornaam</span><input name="voornaam" required maxlength="80"></label>
         <label class="veld"><span class="label">Achternaam</span><input name="achternaam" maxlength="80"></label>
@@ -430,7 +431,7 @@ acties.bestel = async () => {
 acties.locatie = () =>
   dialoog({
     titel: "Locatie toevoegen",
-    inhoud: `<label class="veld"><span class="label">Naam</span><input name="naam" required maxlength="160" placeholder="bv. Centrale Gent"></label>
+    inhoud: `<label class="veld"><span class="label">Naam</span><input name="naam" required maxlength="160" placeholder="bv. Vestiging Gent"></label>
       <label class="veld"><span class="label">Adres</span><input name="adres" maxlength="300"></label>
       <p class="klein zacht">Daarna voeg je medewerkers toe aan deze locatie en maak je er één beheerder van.</p>`,
     knop: "Toevoegen",

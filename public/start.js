@@ -15,7 +15,7 @@ async function sessie() {
     if (!s.aangemeld) return
     const knop = $("#aanmeldknop")
     const rol = s.gebruiker?.rol
-    knop.textContent = rol === "superadmin" || rol === "beheerder" ? "Naar beheer" : rol === "centrale_verantwoordelijke" ? "Naar mijn centrale" : "Mijn leerlijn"
+    knop.textContent = rol === "superadmin" || rol === "beheerder" ? "Naar beheer" : rol === "centrale_verantwoordelijke" ? "Naar mijn onderneming" : "Mijn leerlijn"
     knop.href = s.bestemming || "/leren/"
     const extra = rol === "cursist" ? [["/scores/", "Scores"]] : [["/leren/", "Mijn leerlijn"], ["/scores/", "Scores"]]
     knop.insertAdjacentHTML("beforebegin", extra.map(([h, t]) => `<a class="kop-link" href="${h}">${t}</a>`).join(""))
@@ -131,7 +131,7 @@ function prijsoverzicht(producten, regels) {
   }
   const abo = producten.filter((p) => p.type === "abonnement")
   const perCursus = CURSUSSEN.map((c) => [c, productenVan(producten, c.code)]).filter(([, l]) => l.length)
-  $("#prijsinleiding").innerHTML = `Alle prijzen zijn exclusief <span class="mono">${getal(btw)}&#8239;%</span> btw en gelden per persoon; een centrale betaalt per plaats. Voor de cursussen in opbouw volgt de prijs bij de opening.`
+  $("#prijsinleiding").innerHTML = `Alle prijzen zijn exclusief <span class="mono">${getal(btw)}&#8239;%</span> btw en gelden per persoon; een onderneming betaalt per plaats. Voor de cursussen in opbouw volgt de prijs bij de opening.`
   $("#prijstabellen").innerHTML = `<div class="scroll-x"><table class="prijzen">
     <colgroup><col class="c-product"><col class="c-toegang"><col class="c-prijs"></colgroup>
     <thead><tr><th>Cursus</th><th class="num">Volledige cursus</th><th class="num"></th></tr></thead>

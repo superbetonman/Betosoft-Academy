@@ -5,7 +5,7 @@ import { maakUitnodiging } from "../lib/uitnodiging.mts"
 import { laadDeelnemers, leerlijn, volleNaam } from "../lib/leerlijn.mts"
 
 /**
- * Portaal voor de beheerder van een centrale of locatie.
+ * Portaal voor de beheerder van een onderneming (in de code: centrale) of van een locatie.
  * Bereik: de eigen organisatie, plus alle locaties als het een hoofdbedrijf is.
  */
 
@@ -130,7 +130,7 @@ const routes: Record<string, Handler> = {
     if (!voornaam) return fout("Vul minstens de voornaam in.")
     if (!email || !EMAIL.test(email)) return fout("Vul een geldig e-mailadres in.")
     const locatie = uuid(b.locatie_id) ?? ik.organisatie_id!
-    if (!bereik.includes(locatie)) return fout("Je kunt enkel medewerkers toevoegen aan je eigen centrale of locaties.", 403)
+    if (!bereik.includes(locatie)) return fout("Je kunt enkel medewerkers toevoegen aan je eigen onderneming of locaties.", 403)
     const [g] = await sql()`SELECT voeg_cursist_toe(${locatie}::uuid, ${email}, ${voornaam}, ${tekst(b.achternaam, 80)}) AS id`
     const recht = uuid(b.recht_id)
     if (recht) {
@@ -225,7 +225,7 @@ const routes: Record<string, Handler> = {
     await sql()`
       INSERT INTO aanvragen (type, voornaam, achternaam, email, organisatie_naam, btw_nummer, adres, product_id, aantal_plaatsen, opmerking, organisatie_id, gebruiker_id)
       VALUES ('centrale', ${ik.voornaam}, ${ik.achternaam}, ${ik.email}, ${o.naam}, ${o.btw_nummer}, ${o.adres}, ${product}, ${n},
-              ${["Bestelling via centraleportaal", tekst(b.opmerking, 500)].filter(Boolean).join(" · ")}, ${hoofd}, ${ik.id})`
+              ${["Bestelling via het portaal van de onderneming", tekst(b.opmerking, 500)].filter(Boolean).join(" · ")}, ${hoofd}, ${ik.id})`
     return json({ ok: true })
   },
 

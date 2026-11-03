@@ -58,7 +58,7 @@
         document.querySelectorAll("#keuze button").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.k === keuze)))
         const el = $("#klassement")
         if (keuze === "bedrijven") {
-          el.innerHTML = `<p class="klein zacht">Bedrijven gerangschikt op het gemiddelde aantal punten per deelnemer (medewerkers met een opleiding), zodat kleine en grote centrales eerlijk vergelijken.</p>` +
+          el.innerHTML = `<p class="klein zacht">Bedrijven gerangschikt op het gemiddelde aantal punten per deelnemer (medewerkers met een opleiding), zodat kleine en grote ondernemingen eerlijk vergelijken.</p>` +
             (d.bedrijven.length ? tabel(`<th>#</th><th>Bedrijf</th><th class="num">Deelnemers</th><th class="num">Gem. punten</th><th class="num">Punten totaal</th><th class="num">Cursussen af</th><th class="num">Attesten</th>`,
               d.bedrijven.map((b) => `<tr class="${b.ik ? "ik" : ""}">${rangCel(b.rang)}<td><strong>${esc(b.bedrijf)}</strong>${b.ik ? ` <span class="tag">jouw bedrijf</span>` : ""}</td>
                 <td class="num mono">${b.deelnemers}</td><td class="num mono"><strong>${getal(b.gemiddeld)}</strong></td><td class="num mono">${getal(b.punten)}</td>
@@ -101,7 +101,7 @@
           ].filter(Boolean).join(" · ")
           $("#ik").innerHTML = niveauBlok(t, rang) + `<details><summary class="klein" style="cursor:pointer;color:var(--petrol)">Mijn badges (${t.aantal_badges} van ${t.badges.length})</summary><div style="margin-top:8px">${badgeLijst(t.badges)}</div></details>`
         } else if (d.beheer) {
-          $("#ik").innerHTML = `<div class="melding">Als beheerder sta je niet in het klassement. Je ziet alle deelnemers; kies onder <em>Mijn bedrijf</em> een centrale.</div>`
+          $("#ik").innerHTML = `<div class="melding">Als beheerder sta je niet in het klassement. Je ziet alle deelnemers; kies onder <em>Mijn bedrijf</em> een onderneming.</div>`
           $("#kbedrijf").textContent = "Per bedrijf"
         }
         if (d.bedrijf?.naam && !d.beheer) $("#kbedrijf").textContent = d.bedrijf.naam

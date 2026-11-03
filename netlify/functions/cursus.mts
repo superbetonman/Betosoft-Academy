@@ -51,7 +51,7 @@ export default async (req: Request, context: Context) => {
         return pagina("Tijdelijk offline", "Deze cursus staat tijdelijk offline. Je voortgang blijft bewaard.", "/leren/", "Naar mijn leerlijn", 403)
       return pagina(
         "Geen toegang tot deze cursus",
-        "Je hebt nog geen toegang tot de volledige cursus. Bekijk de demo, of vraag toegang via je centrale of via een inschrijving.",
+        "Je hebt nog geen toegang tot de volledige cursus. Bekijk de demo, of vraag toegang via je onderneming of via een inschrijving.",
         `/demo/${code}/`,
         "Naar de demo",
         403,

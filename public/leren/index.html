@@ -74,7 +74,7 @@
         const lijst = [...d.cursussen].sort((a, b) => rang(a) - rang(b) || (b.laatst || "").localeCompare(a.laatst || ""))
         $("#lijst").innerHTML = lijst.length
           ? lijst.map((c) => cursusKaart(c, { eigen: true, beheer: d.beheer })).join("")
-          : `<div class="leeg">Je hebt nog geen opleidingen. <a href="/#cursussen">Bekijk de cursussen</a> of vraag je centrale om je een plaats toe te wijzen.</div>`
+          : `<div class="leeg">Je hebt nog geen opleidingen. <a href="/#cursussen">Bekijk de cursussen</a> of vraag de beheerder van je onderneming om je een plaats toe te wijzen.</div>`
         if (d.attesten.length) {
           $("#attestsectie").classList.remove("verborgen")
           $("#attesten").innerHTML = d.attesten.map((a) => {

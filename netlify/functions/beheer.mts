@@ -1,5 +1,5 @@
 import type { Config, Context } from "@netlify/functions"
-import { db, json, fout, dbFout, tekst, geheel, UUID, EMAIL, DATUM } from "../lib/db.mts"
+import { db, json, fout, dbFout, tekst, geheel, btwVeld, UUID, EMAIL, DATUM } from "../lib/db.mts"
 import { aangemeld, eigenAanvraag, isBeheer, type Gebruiker } from "../lib/sessie.mts"
 import { maakUitnodiging } from "../lib/uitnodiging.mts"
 import { hashWachtwoord, wachtwoordFout } from "../lib/wachtwoord.mts"
@@ -44,7 +44,7 @@ const routes: Record<string, Handler> = {
     const status = ["nieuw", "gefactureerd", "geactiveerd", "geweigerd"].includes(st ?? "") ? st : null
     const rijen = await sql()`
       SELECT a.id, a.type, a.status, a.voornaam, a.achternaam, a.email, a.telefoon, a.organisatie_naam, a.btw_nummer,
-             a.adres, a.aantal_plaatsen, a.opmerking, a.factuurnummer, a.ingediend_op, a.verwerkt_op, a.bedrag_excl_btw, a.toegangsrecht_id,
+             a.adres, a.aantal_plaatsen, a.opmerking, a.factuurnummer, a.ingediend_op, a.verwerkt_op, a.bedrag_excl_btw, a.toegangsrecht_id, a.organisatie_id,
              p.naam AS product, p.prijs_excl_btw, p.periode, p.geldigheid_maanden
       FROM aanvragen a LEFT JOIN producten p ON p.id = a.product_id
       WHERE (${status}::text IS NULL AND a.status IN ('nieuw','gefactureerd')) OR a.status::text = ${status}::text
@@ -148,7 +148,7 @@ const routes: Record<string, Handler> = {
     const n = geheel(b.aantal_plaatsen, 1, 500)
     if (!n) return fout("Aantal plaatsen moet tussen 1 en 500 liggen.")
     const [vp] = await sql()`SELECT gebruikt::int FROM v_plaatsen WHERE toegangsrecht_id = ${rid}`
-    if (!vp) return fout("Dit is geen toegangsrecht van een centrale.")
+    if (!vp) return fout("Dit is geen toegangsrecht van een onderneming.")
     if (n < vp.gebruikt) return fout(`Er zijn al ${vp.gebruikt} plaatsen toegewezen. Trek eerst plaatsen in.`)
     await sql()`UPDATE toegangsrechten SET aantal_plaatsen = ${n} WHERE id = ${rid}`
     await sql()`SELECT log_actie('plaatsen_gewijzigd', 'toegangsrecht', ${rid}::uuid, ${JSON.stringify({ aantal: n, factuur: tekst(b.factuurnummer, 60) })}::jsonb)`
@@ -157,22 +157,27 @@ const routes: Record<string, Handler> = {
 
   /** Rechtstreeks een toegangsrecht toekennen (bv. na een telefonische bestelling). Loopt via een aanvraag, zodat dezelfde regels gelden. */
   "POST rechten": async ({ b }) => {
-    const type = b.type === "centrale" ? "centrale" : "individueel"
+    // Onderneming = aanvraagtype 'centrale' in de databank
+    const type = b.type === "centrale" || b.type === "onderneming" ? "centrale" : "individueel"
     const email = tekst(b.email, 254)
     const product = id(b.product_id)
     if (!email || !EMAIL.test(email)) return fout("Vul een geldig e-mailadres in.")
     if (!product) return fout("Kies een product.")
     const plaatsen = type === "centrale" ? geheel(b.aantal_plaatsen, 1, 500) : 1
     if (!plaatsen) return fout("Vul het aantal plaatsen in.")
-    const btw = tekst(b.btw_nummer, 20)?.replace(/[\s.]/g, "").toUpperCase() ?? null
-    if (type === "centrale" && !tekst(b.organisatie_naam, 160)) return fout("Vul de naam van de centrale in.")
+    // Een persoon kan op naam van een bedrijf gefactureerd worden; een onderneming heeft altijd een naam.
+    const bedrijf = tekst(b.organisatie_naam, 160)
+    const { btw, fout: btwFout } = btwVeld(b.btw_nummer)
+    if (type === "centrale" && !bedrijf) return fout("Vul de naam van de onderneming in.")
+    if (btwFout) return fout(btwFout)
+    if (btw && !bedrijf) return fout("Vul ook de naam van het bedrijf in.")
     const aid = crypto.randomUUID()
     const f = tekst(b.factuurnummer, 60)
     const start = datum(b.start_datum)
     const [, [r]] = await sql().transaction([
       sql()`INSERT INTO aanvragen (id, type, voornaam, achternaam, email, telefoon, organisatie_naam, btw_nummer, adres, product_id, aantal_plaatsen, opmerking, factuurnummer)
             VALUES (${aid}, ${type}, ${tekst(b.voornaam, 80)}, ${tekst(b.achternaam, 80)}, ${email}, ${tekst(b.telefoon, 40)},
-                    ${type === "centrale" ? tekst(b.organisatie_naam, 160) : null}, ${type === "centrale" ? btw : null},
+                    ${bedrijf}, ${btw},
                     ${tekst(b.adres, 300)}, ${product}, ${plaatsen}, ${"Rechtstreeks toegekend door beheerder"}, ${f})`,
       sql()`SELECT activeer_aanvraag(${aid}::uuid, ${f}, COALESCE(${start}::date, current_date)) AS recht`,
     ])
@@ -194,7 +199,7 @@ const routes: Record<string, Handler> = {
 
   "GET centrales/detail": async ({ id: oid }) => {
     const [centrale] = await sql()`SELECT * FROM organisaties WHERE id = ${oid}`
-    if (!centrale) return fout("Centrale niet gevonden.", 404)
+    if (!centrale) return fout("Onderneming niet gevonden.", 404)
     const personen = await sql()`
       SELECT g.id, g.email, g.voornaam, g.achternaam, g.rol, g.actief, g.aangemaakt_op, g.organisatie_id,
              (g.wachtwoord_hash IS NOT NULL) AS account_actief, lo.naam AS locatie,
@@ -220,12 +225,14 @@ const routes: Record<string, Handler> = {
   "POST centrales/wijzig": async ({ b, id: oid }) => {
     const naam = tekst(b.naam, 160)
     if (!naam) return fout("Naam is verplicht.")
+    const { btw, fout: btwFout } = btwVeld(b.btw_nummer)
+    if (btwFout) return fout(btwFout)
     const r = await sql()`
-      UPDATE organisaties SET naam = ${naam}, btw_nummer = ${tekst(b.btw_nummer, 20)?.replace(/[\s.]/g, "").toUpperCase() ?? null},
+      UPDATE organisaties SET naam = ${naam}, btw_nummer = ${btw},
              adres = ${tekst(b.adres, 300)}, contact_naam = ${tekst(b.contact_naam, 160)}, contact_email = ${tekst(b.contact_email, 254)},
              telefoon = ${tekst(b.telefoon, 40)}, opmerking = ${tekst(b.opmerking, 1000)}
       WHERE id = ${oid} RETURNING id`
-    if (!r.length) return fout("Centrale niet gevonden.", 404)
+    if (!r.length) return fout("Onderneming niet gevonden.", 404)
     return json({ ok: true })
   },
 
@@ -337,7 +344,7 @@ const routes: Record<string, Handler> = {
     const rol = b.rol === "centrale_verantwoordelijke" ? "centrale_verantwoordelijke" : b.rol === "cursist" ? "cursist" : null
     if (!rol) return fout("Ongeldige rol.")
     const r = await sql()`UPDATE gebruikers SET rol = ${rol}::gebruiker_rol WHERE id = ${gid} AND organisatie_id IS NOT NULL AND rol IN ('cursist','centrale_verantwoordelijke') RETURNING id`
-    if (!r.length) return fout("Persoon niet gevonden of niet verbonden aan een centrale.")
+    if (!r.length) return fout("Persoon niet gevonden of niet verbonden aan een onderneming.")
     await sql()`SELECT log_actie('rol_gewijzigd', 'gebruiker', ${gid}::uuid, ${JSON.stringify({ rol })}::jsonb)`
     return json({ ok: true })
   },
@@ -388,7 +395,7 @@ const routes: Record<string, Handler> = {
     const [{ ongewijzigd }] = await sql()`SELECT count(*)::int AS ongewijzigd FROM v_versie_verschil WHERE versie_id = ${vid} AND soort = 'ongewijzigd'`
     const proefgroep = await sql()`
       SELECT pg.id, coalesce(o.naam, nullif(concat_ws(' ', g.voornaam, g.achternaam), ''), g.email::text) AS naam,
-             CASE WHEN pg.organisatie_id IS NOT NULL THEN 'centrale' ELSE 'persoon' END AS soort
+             CASE WHEN pg.organisatie_id IS NOT NULL THEN 'onderneming' ELSE 'persoon' END AS soort
       FROM versie_proefgroep pg LEFT JOIN organisaties o ON o.id = pg.organisatie_id LEFT JOIN gebruikers g ON g.id = pg.gebruiker_id
       WHERE pg.module_versie_id = ${vid} ORDER BY naam`
     const [actueel] = await sql()`SELECT * FROM versie_impact(${vid}::uuid, 'actueel')`
@@ -427,7 +434,7 @@ const routes: Record<string, Handler> = {
   "POST versies/proefgroep": async ({ b, id: vid }) => {
     const gebruiker = id(b.gebruiker_id)
     const organisatie = id(b.organisatie_id)
-    if (!gebruiker === !organisatie) return fout("Kies een persoon of een centrale.")
+    if (!gebruiker === !organisatie) return fout("Kies een persoon of een onderneming.")
     await sql()`INSERT INTO versie_proefgroep (module_versie_id, gebruiker_id, organisatie_id) VALUES (${vid}, ${gebruiker}, ${organisatie}) ON CONFLICT DO NOTHING`
     return json({ ok: true })
   },
