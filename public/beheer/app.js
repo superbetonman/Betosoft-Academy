@@ -1,5 +1,6 @@
 // Betosoft Academie — beheerscherm
 import { uitnodigingHtml, koppelKopieer } from "/gemeen.js"
+import { matrix, deelnemerDetail } from "/leerlijn.js"
 const $ = (s, el = document) => el.querySelector(s)
 const $$ = (s, el = document) => [...el.querySelectorAll(s)]
 
@@ -86,7 +87,8 @@ function toast(tekst, isFout = false) {
 // ---------- Dialoog ----------
 const dlg = $("#dialoog")
 let dlgHandler = null
-function dialoog({ titel, inhoud, knop = "Bevestigen", klasse = "knop", bij }) {
+function dialoog({ titel, inhoud, knop = "Bevestigen", klasse = "knop", bij, breed = false }) {
+  dlg.style.width = breed ? "min(900px, calc(100vw - 24px))" : ""
   $("#dialoogtitel").textContent = titel
   $("#dialooginhoud").innerHTML = inhoud
   $("#dialoogvoet").innerHTML = `
@@ -427,6 +429,134 @@ tabs.cursisten = async () => {
     clearTimeout(t)
     t = setTimeout(() => { cursistZoek = e.target.value.trim(); herlaad().then(() => { const z = $("#cursistzoek"); z.focus(); z.setSelectionRange(z.value.length, z.value.length) }) }, 350)
   })
+}
+
+// =============== LEERLIJN ===============
+let leerFilter = { organisatie: "", zoek: "" }
+let leerData = []
+tabs.leerlijn = async () => {
+  const q = new URLSearchParams(Object.entries(leerFilter).filter(([, v]) => v))
+  const d = await api(`/api/beheer/leerlijn${q.toString() ? "?" + q : ""}`)
+  leerData = d.deelnemers
+  const actief = d.deelnemers.filter((m) => m.cursussen.some((c) => c.toegang || c.deels || c.af))
+  const geldig = d.deelnemers.flatMap((m) => m.attesten.filter((a) => !a.ingetrokken_op))
+  const gestart = d.deelnemers.filter((m) => m.totaal.lessen_af > 0).length
+  inhoud.innerHTML = `
+    <h1>Leerlijn</h1>
+    <p class="zacht klein">Voortgang van alle deelnemers per cursus, uit de cursusapps. Klik op een deelnemer voor modules, toetsscores, badges en attesten (intrekken of handmatig uitreiken).</p>
+    <div class="cijfers" style="margin:12px 0">
+      <div class="cijfer"><div class="label">Deelnemers</div><div class="waarde">${d.deelnemers.length}</div></div>
+      <div class="cijfer"><div class="label">Met opleiding</div><div class="waarde">${actief.length}</div></div>
+      <div class="cijfer"><div class="label">Gestart</div><div class="waarde">${gestart}</div></div>
+      <div class="cijfer"><div class="label">Cursussen af</div><div class="waarde">${d.deelnemers.reduce((t, m) => t + m.totaal.cursussen_af, 0)}</div></div>
+      <div class="cijfer ${geldig.length ? "koper" : ""}"><div class="label">Attesten</div><div class="waarde">${geldig.length}</div></div>
+    </div>
+    <div class="balk">
+      <select id="leerorg" style="max-width:300px" aria-label="Bedrijf"><option value="">Alle bedrijven en personen</option>
+        ${d.bedrijven.map((b) => `<option value="${b.id}" ${b.id === leerFilter.organisatie ? "selected" : ""}>${esc(b.naam)}</option>`).join("")}</select>
+      <input id="leerzoek" class="groei" type="search" placeholder="Zoek op naam, e-mail of bedrijf" value="${esc(leerFilter.zoek)}">
+    </div>
+    ${d.meer ? `<div class="melding">Meer dan 400 deelnemers: kies een bedrijf of zoek om de lijst te verkleinen.</div>` : ""}
+    ${actief.length ? matrix(actief, { bedrijf: true }) : `<div class="leeg">Nog geen deelnemers met een opleiding.</div>`}`
+  $("#leerorg").addEventListener("change", (e) => { leerFilter.organisatie = e.target.value; herlaad() })
+  let t
+  $("#leerzoek").addEventListener("input", (e) => {
+    clearTimeout(t)
+    t = setTimeout(() => { leerFilter.zoek = e.target.value.trim(); herlaad().then(() => { const z = $("#leerzoek"); z.focus(); z.setSelectionRange(z.value.length, z.value.length) }) }, 350)
+  })
+}
+function toonDeelnemer(id) {
+  const m = leerData.find((x) => x.id === id)
+  if (!m) return
+  const zonder = m.cursussen.filter((c) => !c.attest && (c.toegang || c.deels || c.af))
+  dialoog({
+    titel: m.naam,
+    breed: true,
+    inhoud: deelnemerDetail(m, { beheer: true }) + (zonder.length ? `
+      <h3 style="margin:16px 0 6px">Attest handmatig uitreiken</h3>
+      <p class="klein zacht">Bijvoorbeeld na een examen buiten de academie, of opnieuw na intrekken. Het attest vermeldt de voortgang zoals ze nu is.</p>
+      <div class="balk"><select id="uitreikcursus" style="max-width:340px">${zonder.map((c) => `<option value="${esc(c.code)}">${esc(c.code)} · ${esc(c.titel)} (${c.pct === null ? c.af + " lessen" : c.pct + " %"})</option>`).join("")}</select>
+      <button class="knop licht" type="button" id="uitreiken" data-gebruiker="${m.id}">Uitreiken</button></div>` : ""),
+  })
+}
+inhoud.addEventListener("click", (e) => {
+  const tr = e.target.closest("tr[data-deelnemer]")
+  if (tr && !e.target.closest("a")) toonDeelnemer(tr.dataset.deelnemer)
+})
+inhoud.addEventListener("keydown", (e) => {
+  const tr = e.target.closest("tr[data-deelnemer]")
+  if (tr && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); toonDeelnemer(tr.dataset.deelnemer) }
+})
+$("#dialooginhoud").addEventListener("click", async (e) => {
+  const intrek = e.target.closest("[data-intrek]")
+  if (intrek) {
+    const reden = prompt(`Attest ${intrek.dataset.nummer} intrekken. Reden (verplicht):`)
+    if (!reden || !reden.trim()) return
+    try {
+      await api(`/api/beheer/attesten/${intrek.dataset.intrek}/intrek`, { methode: "POST", data: { reden } })
+      toast("Attest ingetrokken")
+      dlg.close()
+      herlaad()
+    } catch (err) { toast(err.message, true) }
+    return
+  }
+  const uit = e.target.closest("#uitreiken")
+  if (uit) {
+    uit.disabled = true
+    try {
+      const r = await api("/api/beheer/attesten", { methode: "POST", data: { gebruiker_id: uit.dataset.gebruiker, cursus: $("#uitreikcursus").value } })
+      toast(`Attest ${r.attest.nummer} uitgereikt`)
+      dlg.close()
+      herlaad()
+    } catch (err) { toast(err.message, true); uit.disabled = false }
+  }
+})
+
+// =============== CURSUSSEN ===============
+tabs.cursussen = async () => {
+  const { cursussen } = await api("/api/beheer/cursussen")
+  const struct = (c) => {
+    const s = c.structuur
+    if (!s) return `<span class="status s-aandacht">nog niet gemeld</span><div class="klein zacht">open de cursus één keer</div>`
+    return `${s.bevestigd ? `<span class="status s-conform">bevestigd</span>` : `<span class="status s-aandacht">voorlopig</span>`}
+      <div class="klein"><span class="mono">${s.modules}</span> modules · <span class="mono">${s.lessen}</span> lessen · <span class="mono">${s.toetsen}</span> toetsen</div>
+      ${s.verouderd ? `<div class="klein" style="color:var(--aandacht)">cursus gewijzigd: open ze opnieuw</div>` : `<div class="klein zacht">${esc(tijdstip(s.bijgewerkt_op))}</div>`}`
+  }
+  const prijs = (c) => (c.producten || []).filter((p) => p.code.startsWith("CRS-")).map((p) => `${esc(p.code)} <span class="mono">${p.prijs === null ? "prijs volgt" : esc(euro(p.prijs))}</span>${p.actief ? "" : " (inactief)"}`).join("<br>") || `<span class="zacht">geen</span>`
+  inhoud.innerHTML = `
+    <h1>Cursussen</h1>
+    <p class="zacht klein">Online: cursisten met toegang kunnen de cursus openen. Offline: enkel beheerders (als tester). De <em>lessenlijst</em> komt uit de cursusapp zelf:
+      open de cursus als beheerder om ze te bevestigen (nodig voor voortgang in procent en voor attesten). Doe dat opnieuw na elke nieuwe versie van de app.</p>
+    <div class="scroll-x paneel" style="padding:0"><table class="eenvoudig">
+      <thead><tr><th>Cursus</th><th>Online</th><th>Lessenlijst</th><th class="num">Modules klaar</th><th>Product</th><th class="num">Met toegang</th><th class="num">Gestart</th><th class="num">Attesten</th><th></th></tr></thead>
+      <tbody>${cursussen.map((c) => `<tr>
+        <td><span class="tag">${esc(c.code)}</span><div><strong>${esc(c.titel)}</strong></div><div class="klein zacht">${esc(c.bestanden || "geen app")}</div></td>
+        <td><label class="check" style="margin:0"><input type="checkbox" data-online="${c.id}" ${c.gepubliceerd ? "checked" : ""}><span>${c.gepubliceerd ? "online" : "offline"}</span></label></td>
+        <td>${struct(c)}</td>
+        <td class="num mono">${c.modules_klaar ?? 0}/${c.modules ?? 0}</td>
+        <td class="klein">${prijs(c)}</td>
+        <td class="num mono">${c.met_toegang ?? 0}</td>
+        <td class="num mono">${c.gestart ?? 0}</td>
+        <td class="num mono">${c.attesten ?? 0}</td>
+        <td><div class="knoppen">
+          ${c.app ? `<a class="knop klein" style="text-decoration:none;display:inline-flex;align-items:center" href="/cursus/${encodeURIComponent(c.code)}/" target="_blank" rel="noopener">Openen</a>` : ""}
+          ${c.demo ? `<a class="knop licht klein" style="text-decoration:none;display:inline-flex;align-items:center" href="/demo/${encodeURIComponent(c.code)}/" target="_blank" rel="noopener">Demo</a>` : ""}
+          <a class="knop stil klein" style="text-decoration:none;display:inline-flex;align-items:center" href="/attest/voorbeeld/${encodeURIComponent(c.code)}" target="_blank" rel="noopener">Voorbeeldattest</a>
+        </div></td>
+      </tr>`).join("")}</tbody></table></div>
+    <p class="klein zacht" style="margin-top:12px">Prijzen stel je in via Instellingen. Een cursus zonder prijs toont op de startpagina "prijs volgt"; inschrijven kan, de prijs leg je vast bij de facturatie.</p>`
+  inhoud.querySelectorAll("[data-online]").forEach((el) =>
+    el.addEventListener("change", async () => {
+      try {
+        await api(`/api/beheer/cursussen/${el.dataset.online}/online`, { methode: "POST", data: { online: el.checked } })
+        toast(el.checked ? "Cursus staat online" : "Cursus staat offline")
+        herlaad()
+      } catch (err) {
+        el.checked = !el.checked
+        toast(err.message, true)
+      }
+    }),
+  )
 }
 
 // =============== VERSIES ===============

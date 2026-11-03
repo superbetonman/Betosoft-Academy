@@ -11,11 +11,8 @@
   <link rel="icon" href="/favicon.svg" type="image/svg+xml">
   <script src="/thema.js"></script>
   <link rel="stylesheet" href="/stijl.css">
+  <link rel="stylesheet" href="/leerlijn.css">
   <style>
-    .balkje { height: 6px; background: var(--petrol-licht); border-radius: 2px; overflow: hidden; min-width: 80px; }
-    .balkje > span { display: block; height: 100%; background: var(--petrol); }
-    .rang { font: 600 15px var(--mono); width: 2.2em; color: var(--inkt-zacht); }
-    .rang.top { color: var(--petrol); }
     table.eenvoudig td { vertical-align: middle; }
   </style>
 </head>
@@ -23,12 +20,13 @@
   <header class="kop">
   <div class="kop-in vol">
     <a class="logo" href="/centrale/" aria-label="Betosoft Academie, centrale"><img src="/logo.svg" alt="" width="34" height="30"><span class="logo-tekst">Betosoft <em>Academie</em></span><span class="kop-context" id="orgnaam"></span></a>
-    <div class="rechts"><span class="klein zacht" id="wie"></span><button id="afmelden" class="knop stil klein" type="button">Afmelden</button></div>
+    <div class="rechts"><a class="kop-link" href="/leren/">Mijn leerlijn</a><a class="kop-link" href="/scores/">Scores</a><span class="klein zacht" id="wie"></span><button id="afmelden" class="knop stil klein" type="button">Afmelden</button></div>
   </div>
 </header>
   <nav class="tabs" role="tablist" aria-label="Onderdelen">
     <button class="tab" role="tab" data-tab="overzicht">Overzicht</button>
     <button class="tab" role="tab" data-tab="medewerkers">Medewerkers</button>
+    <button class="tab" role="tab" data-tab="leerlijn">Leerlijn</button>
     <button class="tab" role="tab" data-tab="scorebord">Scorebord</button>
     <button class="tab" role="tab" data-tab="opleidingen">Opleidingen</button>
     <button class="tab verborgen" role="tab" data-tab="locaties" id="tab-locaties">Locaties</button>

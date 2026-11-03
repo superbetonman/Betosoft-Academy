@@ -32,6 +32,20 @@ const CURSUSSEN = [
   { code: "BT2", bron: "artifact-64340363-1793540992-38ab.html", url: "DNfWM52JYcJrsW3xDNET5P", geenDemo: true },
 ]
 
+// Haak: de app geeft haar lessenlijst (COURSE) door aan de academie; cursus-academie.js leest window.ACADEMIE_COURSE()
+// en meldt modules en lessen aan /api/leren/structuur (leerlijn, scores, attesten). COURSE zit in een afgesloten functie,
+// dus de haak komt vooraan in die functie (na "use strict";). BT1 en BT2 hebben geen COURSE: de brug leest de pagina.
+// Dezelfde haak werd in migratie 004 in de opgeslagen bestanden gezet.
+const HAAK = "window.ACADEMIE_COURSE = function () { try { return COURSE; } catch (e) { return null; } };"
+function metHaak(html, c) {
+  const pc = html.indexOf("const COURSE")
+  if (pc < 0 || html.includes("ACADEMIE_COURSE")) return html
+  const begin = '(function () {\n"use strict";'
+  const pi = html.lastIndexOf(begin, pc)
+  if (pi < 0 || html.slice(pi, pc).includes("})();")) throw new Error(c.code + ": functie rond COURSE niet gevonden")
+  return html.slice(0, pi + begin.length) + "\n" + HAAK + html.slice(pi + begin.length)
+}
+
 function injecteer(html, c, { demo = false, beheer = false } = {}) {
   const cfg = JSON.stringify({ cursus: c.code, demo, beheer, product: c.product || null })
   const tag = `<script>window.ACADEMIE=${cfg};</script><script src="/cursus-academie.js"></script>`
@@ -357,7 +371,7 @@ const enkel = process.env.ENKEL ? process.env.ENKEL.split(",") : null
 const gekozen = CURSUSSEN.filter((c) => !enkel || enkel.includes(c.code))
 const overzicht = []
 for (const c of gekozen) {
-  const bronHtml = fs.readFileSync(path.join(T, c.bron), "utf8")
+  const bronHtml = metHaak(fs.readFileSync(path.join(T, c.bron), "utf8"), c)
   const map = path.join(uit, c.code)
   fs.mkdirSync(map, { recursive: true })
   fs.writeFileSync(path.join(map, "beheer.html"), injecteer(bronHtml, c, { beheer: true }))

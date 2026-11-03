@@ -15,8 +15,10 @@ async function sessie() {
     if (!s.aangemeld) return
     const knop = $("#aanmeldknop")
     const rol = s.gebruiker?.rol
-    knop.textContent = rol === "superadmin" || rol === "beheerder" ? "Naar beheer" : rol === "centrale_verantwoordelijke" ? "Naar mijn centrale" : "Mijn opleidingen"
+    knop.textContent = rol === "superadmin" || rol === "beheerder" ? "Naar beheer" : rol === "centrale_verantwoordelijke" ? "Naar mijn centrale" : "Mijn leerlijn"
     knop.href = s.bestemming || "/leren/"
+    const extra = rol === "cursist" ? [["/scores/", "Scores"]] : [["/leren/", "Mijn leerlijn"], ["/scores/", "Scores"]]
+    knop.insertAdjacentHTML("beforebegin", extra.map(([h, t]) => `<a class="kop-link" href="${h}">${t}</a>`).join(""))
   } catch {}
 }
 
@@ -51,15 +53,19 @@ function filterknoppen() {
 
 const STATUS = {
   open: `<span class="status s-conform">inschrijven mogelijk</span>`,
+  deels: `<span class="status s-aandacht">eerste modules online · inschrijven mogelijk</span>`,
   binnenkort: `<span class="status s-indicatief">inhoud klaar · opent binnenkort</span>`,
   voorbereiding: `<span class="status s-concept">in opbouw</span>`,
 }
-const VOLGORDE = { open: 0, binnenkort: 1, voorbereiding: 2 }
+const VOLGORDE = { open: 0, deels: 1, binnenkort: 2, voorbereiding: 3 }
+const kanInschrijven = (st) => st === "open" || st === "deels"
 let PRODUCTEN = []
 
-// Open = er is een actief product voor deze cursus in de databank (anders de status uit de catalogus)
+// Open = er is een actief product voor deze cursus in de databank (anders de status uit de catalogus).
+// Deels = er is een product, maar een deel van de modules is nog in opbouw.
 function status(c) {
-  return productenVan(PRODUCTEN, c.code).length ? "open" : c.status === "open" ? "binnenkort" : c.status
+  if (productenVan(PRODUCTEN, c.code).length) return c.modules?.some((m) => m.klaar === false) ? "deels" : "open"
+  return c.status === "open" ? "binnenkort" : c.status
 }
 
 function modulelijst(c) {
@@ -85,12 +91,12 @@ function kaart(c) {
     [c.toetsen, "toetsen"],
     [c.studieminuten ? `±${uren(c.studieminuten)}` : "—", "uur"],
   ]
-  const tp = st === "open" ? tegelPrijs(PRODUCTEN, c.code) : null
+  const tp = kanInschrijven(st) ? tegelPrijs(PRODUCTEN, c.code) : null
   const knoppen = [
-    st === "open" && tp ? `<a class="knop" href="/aanvragen/?product=${encodeURIComponent(tp.product.code)}">Inschrijven</a>` : "",
+    kanInschrijven(st) && tp ? `<a class="knop" href="/aanvragen/?product=${encodeURIComponent(tp.product.code)}">Inschrijven</a>` : "",
     c.demo ? `<a class="knop licht" href="/demo/${encodeURIComponent(c.code)}/">Bekijk de demo</a>` : "",
   ].join("")
-  return `<article class="cursus${st === "open" ? " uitgelicht" : ""}" data-groep="${esc(c.groep)}">
+  return `<article class="cursus${kanInschrijven(st) ? " uitgelicht" : ""}" data-groep="${esc(c.groep)}">
     <div class="ckop"><span class="tag">${esc(c.code)}</span>${STATUS[st] || ""}</div>
     <h3>${esc(c.titel)}</h3>
     <p class="voor">${esc(c.doelgroep)}</p>
@@ -98,7 +104,7 @@ function kaart(c) {
     ${c.opmerking ? `<p class="opm">${esc(c.opmerking)}</p>` : ""}
     <div class="cijferrij">${cijfers.map(([v, l]) => `<div><b>${esc(v)}</b><span>${l}</span></div>`).join("")}</div>
     ${c.modules?.length ? `<details><summary>Bekijk de modules</summary><ol class="modlijst">${modulelijst(c)}</ol></details>` : ""}
-    <div class="tegelprijs">${tp ? `${tp.tekst}${tp.prijs ? ` <span class="zacht">excl. btw</span>` : ""}` : `<span class="zacht">${st === "open" ? "" : "Prijs bij de opening"}</span>`}</div>
+    <div class="tegelprijs">${tp ? `${tp.tekst}${tp.prijs ? ` <span class="zacht">excl. btw</span>` : ""}` : `<span class="zacht">${kanInschrijven(st) ? "" : "Prijs bij de opening"}</span>`}</div>
     <div class="cvoet">${knoppen || `<span class="zacht">Inschrijven kan bij de opening.</span>`}</div>
   </article>`
 }

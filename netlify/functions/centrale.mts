@@ -2,6 +2,7 @@ import type { Config, Context } from "@netlify/functions"
 import { db, json, fout, dbFout, tekst, UUID, EMAIL } from "../lib/db.mts"
 import { aangemeld, eigenAanvraag, type Gebruiker } from "../lib/sessie.mts"
 import { maakUitnodiging } from "../lib/uitnodiging.mts"
+import { laadDeelnemers, leerlijn, volleNaam } from "../lib/leerlijn.mts"
 
 /**
  * Portaal voor de beheerder van een centrale of locatie.
@@ -45,12 +46,18 @@ const routes: Record<string, Handler> = {
     const [cijfers] = await sql()`
       SELECT count(*)::int AS medewerkers,
              count(*) FILTER (WHERE modules_toegang > 0)::int AS met_opleiding,
-             count(*) FILTER (WHERE account_actief)::int AS aangemeld,
-             coalesce(sum(modules_af), 0)::int AS modules_af,
-             coalesce(sum(attesten), 0)::int AS attesten,
-             round(avg(gem_score), 1) AS gem_score,
-             round(avg(voortgang_pct)) AS gem_voortgang
+             count(*) FILTER (WHERE account_actief)::int AS aangemeld
       FROM v_medewerker_stand WHERE organisatie_id = ANY(${bereik}::uuid[]) AND actief`
+    // voortgang, score en attesten uit de cursusapps (leerlijn)
+    const lijnen = await leerlijn(await laadDeelnemers({ orgs: bereik, enkelActief: true }))
+    const lopend = lijnen.flatMap((d) => d.cursussen).filter((c) => c.pct !== null && (c.toegang || c.deels))
+    const scores = lijnen.map((d) => d.totaal.gem_score).filter((x): x is number => x !== null)
+    Object.assign(cijfers, {
+      modules_af: lijnen.reduce((t, d) => t + d.totaal.modules_af, 0),
+      attesten: lijnen.reduce((t, d) => t + d.attesten.filter((a) => !a.ingetrokken_op).length, 0),
+      gem_score: scores.length ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length) : null,
+      gem_voortgang: lopend.length ? Math.round(lopend.reduce((t, c) => t + (c.pct ?? 0), 0) / lopend.length) : null,
+    })
     return json({ organisatie: org, isHoofd, locaties, rechten, cijfers })
   },
 
@@ -63,21 +70,58 @@ const routes: Record<string, Handler> = {
       FROM v_medewerker_stand s JOIN organisaties o ON o.id = s.organisatie_id
       WHERE s.organisatie_id = ANY(${bereik}::uuid[])
       ORDER BY s.actief DESC, s.achternaam, s.voornaam`
-    return json({ medewerkers: rijen })
+    // voortgang, score en attesten uit de cursusapps
+    const lijnen = new Map((await leerlijn(await laadDeelnemers({ orgs: bereik }))).map((d) => [d.id, d]))
+    return json({
+      medewerkers: rijen.map((r: any) => {
+        const d = lijnen.get(r.gebruiker_id)
+        if (!d) return r
+        const lopend = d.cursussen.filter((c) => c.pct !== null && (c.toegang || c.deels))
+        const laatst = [r.laatste_activiteit, d.totaal.laatst].filter(Boolean).map((x) => new Date(x).getTime())
+        return {
+          ...r,
+          voortgang_pct: lopend.length ? Math.round(lopend.reduce((t, c) => t + (c.pct ?? 0), 0) / lopend.length) : null,
+          gem_score: d.totaal.gem_score,
+          attesten: d.attesten.filter((a) => !a.ingetrokken_op).length,
+          punten: d.totaal.punten,
+          laatste_activiteit: laatst.length ? new Date(Math.max(...laatst)).toISOString() : null,
+        }
+      }),
+    })
   },
 
   "GET scorebord": async ({ bereik, q }) => {
     const locatie = uuid(q.get("locatie"))
     const filter = locatie && bereik.includes(locatie) ? [locatie] : bereik
-    const rijen = await sql()`
-      SELECT s.gebruiker_id, s.voornaam, s.achternaam, o.naam AS locatie, s.punten, s.modules_af, s.attesten,
-             s.voortgang_pct, s.gem_score,
-             (SELECT count(*)::int FROM gebruiker_badges gb WHERE gb.gebruiker_id = s.gebruiker_id) AS badges
-      FROM v_medewerker_stand s JOIN organisaties o ON o.id = s.organisatie_id
-      WHERE s.organisatie_id = ANY(${filter}::uuid[]) AND s.actief AND s.modules_toegang > 0
-      ORDER BY s.punten DESC, s.modules_af DESC, s.voortgang_pct DESC NULLS LAST, s.gem_score DESC NULLS LAST
-      LIMIT 200`
+    const lijnen = await leerlijn(await laadDeelnemers({ orgs: filter, enkelActief: true }))
+    const rijen = lijnen
+      .filter((d) => d.cursussen.some((c) => c.toegang || c.deels) || d.totaal.punten > 0)
+      .map((d) => {
+        const lopend = d.cursussen.filter((c) => c.pct !== null && (c.toegang || c.deels))
+        return {
+          gebruiker_id: d.id, voornaam: d.voornaam, achternaam: d.achternaam, locatie: d.locatie,
+          punten: d.totaal.punten, niveau: d.totaal.niveau.naam, modules_af: d.totaal.modules_af, lessen_af: d.totaal.lessen_af,
+          cursussen_af: d.totaal.cursussen_af, attesten: d.attesten.filter((a) => !a.ingetrokken_op).length,
+          voortgang_pct: lopend.length ? Math.round(lopend.reduce((t, c) => t + (c.pct ?? 0), 0) / lopend.length) : null,
+          gem_score: d.totaal.gem_score, badges: d.totaal.aantal_badges,
+        }
+      })
+      .sort((a, b) => b.punten - a.punten || b.modules_af - a.modules_af || (b.voortgang_pct ?? -1) - (a.voortgang_pct ?? -1))
     return json({ scorebord: rijen })
+  },
+
+  "GET leerlijn": async ({ bereik, q }) => {
+    const locatie = uuid(q.get("locatie"))
+    const filter = locatie && bereik.includes(locatie) ? [locatie] : bereik
+    const lijnen = await leerlijn(await laadDeelnemers({ orgs: filter }))
+    return json({
+      medewerkers: lijnen.map((d) => ({
+        id: d.id, naam: volleNaam(d), email: d.email, locatie: d.locatie, actief: d.actief,
+        totaal: { punten: d.totaal.punten, niveau: d.totaal.niveau, lessen_af: d.totaal.lessen_af, modules_af: d.totaal.modules_af, cursussen_af: d.totaal.cursussen_af, gem_score: d.totaal.gem_score, laatst: d.totaal.laatst, badges: d.totaal.badges },
+        cursussen: d.cursussen.map(({ dagen, ...c }) => c),
+        attesten: d.attesten,
+      })),
+    })
   },
 
   "POST medewerkers": async ({ b, bereik, ik, req, hoofd }) => {

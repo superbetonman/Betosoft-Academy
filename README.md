@@ -9,13 +9,16 @@ Netlify (`betosoft-academy`, statische pagina's + functies in Frankfurt) en Neon
 | `/aanvragen/` | publiek | Inschrijven als persoon of centrale |
 | `/aanmelden/` | iedereen | Aanmelden met gebruikersnaam of e-mail + wachtwoord |
 | `/welkom/?t=…` | nieuwe gebruiker | Wachtwoord kiezen via uitnodigingslink (14 dagen geldig, één keer) |
-| `/beheer/` | superadmin, beheerder | Aanvragen, toegangsrechten, centrales, cursisten, versies, instellingen, logboek |
-| `/centrale/` | beheerder van een centrale of locatie | Overzicht, medewerkers, scorebord, opleidingen, locaties |
+| `/beheer/` | superadmin, beheerder | Aanvragen, toegangsrechten, centrales, cursisten, leerlijn, cursussen (online/offline), versies, instellingen, logboek |
+| `/centrale/` | beheerder van een centrale of locatie | Overzicht, medewerkers, leerlijn, scorebord, opleidingen, locaties |
 | `/` | publiek | Startpagina: cursussen (uit `public/cursussen.js`) met prijs en demo, werkwijze, centrales, voorwaarden |
 | `/prijzen/` | publiek | Alle prijzen: abonnement, per cursus (volledig, niveaus, losse modules), centrales, voorwaarden |
 | `/demo/<CODE>/` | publiek | Teaser van een cursus: de start en vier lessen uit verschillende modules; de rest zit niet in het bestand |
-| `/leren/` | cursist, beheerder | Mijn opleidingen; beheerders zien alle cursussen en volgen ze als tester |
-| `/cursus/<CODE>/` | met toegang | De volledige cursusapp; voortgang in de databank (`cursus_gegevens`) |
+| `/leren/` | iedereen die aangemeld is | Mijn leerlijn: niveau en punten, voortgang per cursus en module, volgende stap, attesten, badges; beheerders zien alle cursussen (tester) |
+| `/scores/` | iedereen die aangemeld is | Klassement algemeen, per bedrijf en binnen het eigen bedrijf; zo verdien je punten |
+| `/cursus/<CODE>/` | met toegang | De volledige cursusapp met menubalk (startpagina, leerlijn, scores); voortgang in de databank (`cursus_gegevens`) |
+| `/attest/<id>` | wie de link heeft | Attest (A4 liggend) afdrukken of als PDF bewaren, mailen, en controleren of het geldig is |
+| `/attest/voorbeeld/<CODE>` | beheerder | Voorbeeldattest van een cursus |
 
 ## Rollen
 - **superadmin** (`superbetonman`): alles, plus prijzen, voorwaarden, verlengingsregels en beheerders.
@@ -55,6 +58,31 @@ Netlify (`betosoft-academy`, statische pagina's + functies in Frankfurt) en Neon
   gekozen les mee, ingebouwd in `demo.html`. Elke module toont in de demo "1 van 7 onderdelen in de demo".
 - Bijwerken: `scripts/cursusapps/bouw.mjs` (volledige versie + demo) en `scripts/cursusapps/opladen.mjs`.
 
+## Cursussen online
+- Alle tien cursussen staan online (`cursussen.gepubliceerd`). Aan- en uitzetten in **Beheer → Cursussen**. Offline: enkel beheerders (tester).
+- Elke cursus heeft modules en een product `CRS-<CODE>` (VRK, PLM, CSC, BT1, BT2 sinds migratie 004, nog zonder prijs).
+  Modules in voorbereiding staan met `gepubliceerd = false`; op de startpagina heten die cursussen "eerste modules online".
+- Boven elke cursus (en demo) staat een menubalk: startpagina, mijn leerlijn, scores (en beheer of mijn centrale). In de bovenbalk van
+  de app zit een knop terug naar de leerlijn (in een demo: naar de cursussen).
+
+## Leerlijn, scores en attesten
+- **Lessenlijst.** De apps houden hun modules en lessen in `COURSE`, binnen een afgesloten functie. Een haak (`window.ACADEMIE_COURSE`,
+  ingevoegd door `bouw.mjs` en voor de bestaande bestanden door migratie 004) geeft ze door; `cursus-academie.js` stuurt ze naar
+  `/api/leren/structuur/<CODE>` (tabel `cursus_structuur`). BT1 en BT2 hebben geen `COURSE`: de brug leest de modules uit de pagina.
+  Een beheerder die de cursus opent, **bevestigt** de lessenlijst (ook na elke nieuwe versie van de app: *Beheer → Cursussen* toont het).
+  Een cursist kan enkel een eerste, voorlopige lijst aanleveren. Attesten komen er alleen met een bevestigde lijst.
+- **Voortgang.** Uit het voortgangsdocument van de app (`data/users/<id>/progress`: `done`, `quiz`). Een toets telt als afgerond zodra
+  ze geslaagd is. BT1 en BT2 bewaren enkel in de browser; de brug synchroniseert dat met het account (ook naar een ander toestel).
+- **Wie ziet wat.** Deelnemer: *Mijn leerlijn*. Bedrijf: *Centrale → Leerlijn* (matrix medewerkers × cursussen, detail per medewerker)
+  en *Scorebord*. Superadmin en beheerders: *Beheer → Leerlijn* (alle bedrijven, filter en zoeken; attest intrekken of handmatig uitreiken).
+- **Punten** (`netlify/lib/leerlijn.mts`): les 10, praktijkopdracht 15, toets 20, toets zonder fouten +10, module af +25, cursus af +100,
+  badge +20. Zes niveaus (Starter tot Meester) en elf badges. Klassement: alle deelnemers (voornaam en initiaal), bedrijven (gemiddelde
+  per deelnemer met een opleiding) en het eigen bedrijf. Beheerders (testers) tellen niet mee.
+- **Attest.** Vanzelf bij een volledig afgeronde cursus (alle lessen in de modules die online staan, alle toetsen geslaagd), één per
+  persoon en cursus, met nummer `BSA-<jaar>-<volgnummer>`. Een ingetrokken attest komt niet vanzelf terug (wel handmatig).
+  Afdrukken of als PDF bewaren vanuit de attestpagina. **Mailen**: de deelnemer, zijn centrale of een beheerder; via Brevo als
+  `BREVO_API_KEY` en `MAIL_AFZENDER` ingesteld zijn, anders opent het eigen mailprogramma met het bericht klaar. Maximaal 10 mails per attest per dag.
+
 ## Lichte en donkere modus
 - Knop met zon of maan in de kopbalk van elke pagina (`public/thema.js`, in `<head>`) en in de bovenbalk van elke cursus (`cursus-academie.js`).
 - Zonder keuze volgt de site het toestel; de keuze wordt in de browser bewaard (`academie-thema`) en geldt op de site en in de cursussen.
@@ -67,6 +95,8 @@ Netlify (`betosoft-academy`, statische pagina's + functies in Frankfurt) en Neon
 ## Databank
 - `migraties/002_versies.sql`: versies, instellingen, verlengingen, locaties, uitnodigingen, medewerkerstand.
 - `migraties/003_cursusapps_meldingen.sql`: cursusbestanden, voortgang per cursusapp, meldingen; cursussen LAB, DSP, MENG, AI open met modules en producten.
+- `migraties/004_online_leerlijn_scores_attesten.sql`: modules en producten voor VRK, PLM, CSC, BT1, BT2; alle cursussen online;
+  `cursus_structuur`; attesten met momentopname en mailteller; de haak in de opgeslagen cursusapps.
   De basis (stap 1) werd rechtstreeks in Neon aangemaakt.
 - Bedrijfsregels zitten in databankfuncties: `activeer_aanvraag`, `verleng_recht`, `vraag_verlenging`, `wijs_plaats_toe`,
   `voeg_cursist_toe`, `nieuwe_versie`, `beoordeel_wijziging`, `publiceer_versie`, `zet_op_versie`. Elke actie komt in `auditlog`.
@@ -74,6 +104,7 @@ Netlify (`betosoft-academy`, statische pagina's + functies in Frankfurt) en Neon
 ## Omgevingsvariabelen (Netlify, productie)
 - `DATABASE_URL` – verbinding met Neon
 - `SESSIE_GEHEIM` – sleutel voor de aanmeldsessie
+- `BREVO_API_KEY`, `MAIL_AFZENDER` (geverifieerd in Brevo), optioneel `MAIL_AFZENDER_NAAM` – attesten mailen (zonder: eigen mailprogramma)
 
 ## Lokaal controleren
 ```
@@ -82,4 +113,5 @@ npx tsc -p .
 ```
 
 ## Volgende stappen
-Inhoudseditor en cursusspeler · toetsen afnemen · attesten met verificatiepagina · punten en badges toekennen · e-mails via Brevo (uitnodiging, herinnering voor het einde, verlenging).
+Inhoudseditor en cursusspeler · toetsen op de server afnemen (nu beoordeelt de app zelf) · PDF als bijlage bij het attest ·
+e-mails via Brevo ook voor uitnodiging, herinnering voor het einde en verlenging · klassement cachen als het aantal deelnemers groeit.

@@ -1,4 +1,5 @@
 import { $, $$, esc, euro, getal, datum, tijdstip, vandaag, naam, api, toast, maakDialoog, uitnodigingHtml, koppelKopieer, afmelden } from "/gemeen.js"
+import { matrix, deelnemerDetail } from "/leerlijn.js"
 
 const dialoog = maakDialoog()
 const inhoud = $("#inhoud")
@@ -14,6 +15,7 @@ function rechtStatus(r) {
   return `<span class="status s-conform">actief</span>`
 }
 const balkje = (pct) => `<div class="balkje" title="${pct ?? 0} %"><span style="width:${Math.max(0, Math.min(100, pct ?? 0))}%"></span></div>`
+const rangCel = (r) => `<td class="rang r${r <= 3 ? r : ""}">${r <= 3 ? `<span class="med">${r}</span>` : r}</td>`
 
 // ---------- Tabs ----------
 const tabs = {}
@@ -58,7 +60,7 @@ tabs.overzicht = async () => {
       <div class="cijfer"><div class="label">Medewerkers</div><div class="waarde">${c.medewerkers}</div></div>
       <div class="cijfer"><div class="label">Vrije plaatsen</div><div class="waarde">${vrij}</div></div>
       <div class="cijfer"><div class="label">Gem. voortgang</div><div class="waarde">${c.gem_voortgang === null ? "—" : getal(c.gem_voortgang) + " %"}</div></div>
-      <div class="cijfer"><div class="label">Gem. score</div><div class="waarde">${c.gem_score === null ? "—" : getal(c.gem_score, 1)}</div></div>
+      <div class="cijfer"><div class="label">Gem. score</div><div class="waarde">${c.gem_score === null ? "—" : getal(c.gem_score) + " %"}</div></div>
       <div class="cijfer"><div class="label">Attesten</div><div class="waarde">${c.attesten}</div></div>
     </div>
     <h2>01 Opleidingen en plaatsen</h2>
@@ -67,7 +69,7 @@ tabs.overzicht = async () => {
     <ol class="klein">
       <li>Voeg je medewerkers toe. Elke medewerker krijgt een uitnodigingslink om een wachtwoord te kiezen.</li>
       <li>Wijs een plaats in een opleiding toe. De medewerker ziet de opleiding meteen na aanmelden.</li>
-      <li>Volg voortgang en resultaten in Medewerkers en Scorebord.</li>
+      <li>Volg voortgang en resultaten in Leerlijn en Scorebord. Een afgeronde cursus geeft vanzelf een attest dat je kunt afdrukken of mailen.</li>
       <li>Niet klaar op tijd? Vraag een verlenging aan bij de opleiding (${esc(verlengTekst(geldig[0]))}).</li>
     </ol>`
 }
@@ -116,7 +118,7 @@ tabs.medewerkers = async () => {
         ${metLocaties ? `<td>${esc(m.locatie)}</td>` : ""}
         <td class="klein">${m.opleidingen.length ? m.opleidingen.map((o) => esc(o.product)).join("<br>") : `<span class="zacht">geen</span>`}</td>
         <td>${m.voortgang_pct === null ? `<span class="zacht">—</span>` : `${balkje(m.voortgang_pct)}<span class="mono klein">${m.voortgang_pct} %</span>`}</td>
-        <td class="num mono">${m.gem_score === null ? "—" : getal(m.gem_score, 1)}</td>
+        <td class="num mono">${m.gem_score === null || m.gem_score === undefined ? "—" : getal(m.gem_score) + "&#8239;%"}</td>
         <td class="num mono">${m.attesten}</td>
         <td class="mono klein">${m.laatste_activiteit ? tijdstip(m.laatste_activiteit) : "—"}</td>
         <td><button class="knop stil klein" data-actie="beheer" data-id="${m.gebruiker_id}">Beheren</button></td>
@@ -135,26 +137,71 @@ tabs.medewerkers = async () => {
   })
 }
 
+// ---------- Leerlijn ----------
+let leerLocatie = ""
+let leerData = []
+tabs.leerlijn = async () => {
+  const { medewerkers } = await api(`/api/centrale/leerlijn${leerLocatie ? `?locatie=${leerLocatie}` : ""}`)
+  leerData = medewerkers
+  const actief = medewerkers.filter((m) => m.cursussen.some((c) => c.toegang || c.deels || c.af))
+  const attesten = medewerkers.flatMap((m) => m.attesten.filter((a) => !a.ingetrokken_op).map((a) => ({ ...a, naam: m.naam })))
+  inhoud.innerHTML = `
+    <h1>Leerlijn</h1>
+    <p class="zacht klein">Voortgang per medewerker en per cursus. Klik op een medewerker voor de modules, toetsscores, badges en attesten. Een ✓ is een behaald attest.</p>
+    ${ov.locaties.length ? `<div class="balk"><select id="leerloc" style="max-width:280px" aria-label="Locatie">
+      <option value="">Alle locaties</option>${ov.locaties.map((l) => `<option value="${l.id}">${esc(l.naam)}</option>`).join("")}</select></div>` : ""}
+    ${actief.length ? matrix(actief) : `<div class="leeg">Nog geen medewerkers met een opleiding. Wijs plaatsen toe in Medewerkers.</div>`}
+    <h2>Attesten</h2>
+    ${attesten.length ? `<div class="lijst">${attesten.map((a) => `<div class="rij"><div><div class="titel">${esc(a.naam)} · ${esc(a.cursus)}</div>
+      <div class="meta"><span class="mono">${esc(a.nummer)}</span><span>uitgereikt ${esc(datum(a.uitgereikt_op))}</span>${a.gemaild_op ? `<span>gemaild ${esc(datum(a.gemaild_op))}</span>` : ""}</div></div>
+      <div class="knoppen"><a class="knop licht klein" style="text-decoration:none;display:inline-flex;align-items:center" href="/attest/${a.id}" target="_blank" rel="noopener">Afdrukken</a>
+      <a class="knop licht klein" style="text-decoration:none;display:inline-flex;align-items:center" href="/attest/${a.id}#mail" target="_blank" rel="noopener">Mailen</a></div></div>`).join("")}</div>`
+      : `<div class="leeg">Nog geen attesten. Een attest verschijnt vanzelf zodra een medewerker een cursus volledig afrondt.</div>`}`
+  const sel = $("#leerloc")
+  if (sel) {
+    sel.value = leerLocatie
+    sel.addEventListener("change", () => { leerLocatie = sel.value; tabs.leerlijn() })
+  }
+}
+function toonDeelnemer(id) {
+  const m = leerData.find((x) => x.id === id)
+  if (!m) return
+  dialoog({ titel: m.naam, inhoud: deelnemerDetail(m), sluitTekst: "Sluiten" })
+  const dlg = $("#dialoog")
+  dlg.style.width = "min(860px, calc(100vw - 24px))"
+  dlg.addEventListener("close", () => (dlg.style.width = ""), { once: true })
+}
+inhoud.addEventListener("click", (e) => {
+  const tr = e.target.closest("tr[data-deelnemer]")
+  if (tr && !e.target.closest("a")) toonDeelnemer(tr.dataset.deelnemer)
+})
+inhoud.addEventListener("keydown", (e) => {
+  const tr = e.target.closest("tr[data-deelnemer]")
+  if (tr && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); toonDeelnemer(tr.dataset.deelnemer) }
+})
+
 // ---------- Scorebord ----------
 let scoreLocatie = ""
 tabs.scorebord = async () => {
   const { scorebord } = await api(`/api/centrale/scorebord${scoreLocatie ? `?locatie=${scoreLocatie}` : ""}`)
   inhoud.innerHTML = `
     <h1>Scorebord</h1>
-    <p class="zacht klein">Enkel medewerkers van ${esc(ov.organisatie.naam)} met een opleiding. Rangschikking op punten, daarna afgeronde modules en voortgang.</p>
+    <p class="zacht klein">Medewerkers van ${esc(ov.organisatie.naam)} met een opleiding, gerangschikt op punten (lessen, toetsen, modules, cursussen en badges). Het klassement van alle centrales staat op <a href="/scores/">Scores</a>.</p>
     ${ov.locaties.length ? `<div class="balk"><select id="loc" style="max-width:280px" aria-label="Locatie">
       <option value="">Alle locaties</option>${ov.locaties.map((l) => `<option value="${l.id}">${esc(l.naam)}</option>`).join("")}</select></div>` : ""}
-    ${scorebord.length ? `<div class="scroll-x paneel" style="padding:0"><table class="eenvoudig">
-      <thead><tr><th>#</th><th>Naam</th>${ov.locaties.length ? "<th>Locatie</th>" : ""}<th class="num">Punten</th><th class="num">Modules af</th><th>Voortgang</th><th class="num">Gem. score</th><th class="num">Badges</th></tr></thead>
+    ${scorebord.length ? `<div class="scroll-x paneel" style="padding:0"><table class="eenvoudig klas">
+      <thead><tr><th>#</th><th>Naam</th>${ov.locaties.length ? "<th>Locatie</th>" : ""}<th>Niveau</th><th class="num">Punten</th><th class="num">Modules af</th><th>Voortgang</th><th class="num">Gem. score</th><th class="num">Badges</th><th class="num">Attesten</th></tr></thead>
       <tbody>${scorebord.map((s, i) => `<tr>
-        <td class="rang ${i < 3 ? "top" : ""}">${i + 1}</td>
+        ${rangCel(i + 1)}
         <td><strong>${esc(naam(s))}</strong></td>
         ${ov.locaties.length ? `<td>${esc(s.locatie)}</td>` : ""}
-        <td class="num mono">${getal(s.punten)}</td>
+        <td class="klein">${esc(s.niveau)}</td>
+        <td class="num mono"><strong>${getal(s.punten)}</strong></td>
         <td class="num mono">${s.modules_af}</td>
         <td>${s.voortgang_pct === null ? "—" : `${balkje(s.voortgang_pct)}<span class="mono klein">${s.voortgang_pct} %</span>`}</td>
-        <td class="num mono">${s.gem_score === null ? "—" : getal(s.gem_score, 1)}</td>
+        <td class="num mono">${s.gem_score === null ? "—" : getal(s.gem_score) + "&#8239;%"}</td>
         <td class="num mono">${s.badges}</td>
+        <td class="num mono">${s.attesten}</td>
       </tr>`).join("")}</tbody></table></div>` : `<div class="leeg">Nog geen resultaten. Het scorebord vult zich zodra medewerkers lessen en toetsen afwerken.</div>`}`
   const sel = $("#loc")
   if (sel) {

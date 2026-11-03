@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="nl-BE">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Scores · Betosoft Academie</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <script src="/thema.js"></script>
+  <link rel="stylesheet" href="/stijl.css">
+  <link rel="stylesheet" href="/leerlijn.css">
+</head>
+<body>
+  <header class="kop">
+  <div class="kop-in">
+    <a class="logo" href="/" aria-label="Betosoft Academie, startpagina"><img src="/logo.svg" alt="" width="34" height="30"><span class="logo-tekst">Betosoft <em>Academie</em></span></a>
+    <nav class="navlinks" aria-label="Mijn academie" id="nav">
+      <a href="/leren/">Mijn leerlijn</a><a href="/scores/" aria-current="page">Scores</a><a href="/">Startpagina</a>
+    </nav>
+    <div class="rechts"><span class="klein zacht" id="wie"></span><button id="afmelden" class="knop stil klein" type="button">Afmelden</button></div>
+  </div>
+</header>
+  <main style="max-width:1040px">
+    <p class="label" style="margin-top:8px">Scores</p>
+    <h1>Klassement</h1>
+    <div id="ik"></div>
+    <div class="knoppenbalk" role="group" aria-label="Klassement" id="keuze">
+      <button type="button" data-k="algemeen" aria-pressed="true">Algemeen</button>
+      <button type="button" data-k="bedrijven" aria-pressed="false">Bedrijven</button>
+      <button type="button" data-k="bedrijf" aria-pressed="false" id="kbedrijf">Mijn bedrijf</button>
+    </div>
+    <div id="klassement"><p class="zacht">Laden…</p></div>
+    <h2>Zo verdien je punten</h2>
+    <div id="regels"></div>
+  </main>
+  <script type="module">
+    import { api, esc, naam, getal, afmelden } from "/gemeen.js"
+    import { badgeLijst, niveauBlok } from "/leerlijn.js"
+    const $ = (s) => document.querySelector(s)
+    document.getElementById("afmelden").addEventListener("click", afmelden)
+    const s = await api("/api/sessie")
+    if (!s.aangemeld) location.replace("/aanmelden/?terug=/scores/")
+    else {
+      const rol = s.gebruiker.rol
+      $("#wie").textContent = naam(s.gebruiker)
+      if (rol === "centrale_verantwoordelijke") $("#nav").insertAdjacentHTML("beforeend", `<a href="/centrale/">Mijn centrale</a>`)
+      if (rol === "beheerder" || rol === "superadmin") $("#nav").insertAdjacentHTML("beforeend", `<a href="/beheer/">Beheer</a>`)
+      let keuze = location.hash.slice(1) || "algemeen"
+      let bedrijfKeuze = ""
+      let d = null
+      const rangCel = (r) => `<td class="rang r${r <= 3 ? r : ""}">${r <= 3 ? `<span class="med">${r}</span>` : r}</td>`
+      const tabel = (kop, rijen) => `<div class="scroll-x paneel" style="padding:0"><table class="eenvoudig klas"><thead><tr>${kop}</tr></thead><tbody>${rijen}</tbody></table></div>`
+
+      function toon() {
+        document.querySelectorAll("#keuze button").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.k === keuze)))
+        const el = $("#klassement")
+        if (keuze === "bedrijven") {
+          el.innerHTML = `<p class="klein zacht">Bedrijven gerangschikt op het gemiddelde aantal punten per deelnemer (medewerkers met een opleiding), zodat kleine en grote centrales eerlijk vergelijken.</p>` +
+            (d.bedrijven.length ? tabel(`<th>#</th><th>Bedrijf</th><th class="num">Deelnemers</th><th class="num">Gem. punten</th><th class="num">Punten totaal</th><th class="num">Cursussen af</th><th class="num">Attesten</th>`,
+              d.bedrijven.map((b) => `<tr class="${b.ik ? "ik" : ""}">${rangCel(b.rang)}<td><strong>${esc(b.bedrijf)}</strong>${b.ik ? ` <span class="tag">jouw bedrijf</span>` : ""}</td>
+                <td class="num mono">${b.deelnemers}</td><td class="num mono"><strong>${getal(b.gemiddeld)}</strong></td><td class="num mono">${getal(b.punten)}</td>
+                <td class="num mono">${b.cursussen_af}</td><td class="num mono">${b.attesten}</td></tr>`).join(""))
+              : `<div class="leeg">Nog geen bedrijven met punten.</div>`)
+          return
+        }
+        const lijst = keuze === "bedrijf" ? d.bedrijf?.deelnemers ?? [] : d.algemeen
+        const metLocatie = keuze === "bedrijf" && lijst.some((r) => r.locatie && r.locatie !== d.bedrijf?.naam)
+        let kop = ""
+        if (keuze === "bedrijf") {
+          kop = d.beheer
+            ? `<div class="balk"><select id="bedrijfkeuze" style="max-width:320px" aria-label="Bedrijf"><option value="">Kies een bedrijf</option>${d.keuze.map((b) => `<option value="${b.id}" ${b.id === bedrijfKeuze ? "selected" : ""}>${esc(b.naam)}</option>`).join("")}</select></div>`
+            : d.bedrijf ? `<p class="klein zacht">Alle medewerkers van ${esc(d.bedrijf.naam)} met een opleiding.</p>` : ""
+          if (!d.bedrijf) { el.innerHTML = kop + `<div class="leeg">${d.beheer ? "Kies een bedrijf." : "Je hoort niet bij een bedrijf. Het algemene klassement geldt voor iedereen."}</div>`; koppelKeuze(); return }
+        } else kop = `<p class="klein zacht">Alle deelnemers van de academie met punten. Je ziet de voornaam en de eerste letter van de achternaam.</p>`
+        el.innerHTML = kop + (lijst.length
+          ? tabel(`<th>#</th><th>Naam</th>${keuze === "algemeen" ? "<th>Bedrijf</th>" : metLocatie ? "<th>Locatie</th>" : ""}<th>Niveau</th><th class="num">Punten</th><th class="num">Badges</th><th class="num">Lessen af</th><th class="num">Cursussen af</th>`,
+              lijst.map((r) => `<tr class="${r.ik ? "ik" : ""}">${rangCel(r.rang)}<td><strong>${esc(r.naam)}</strong>${r.ik ? ` <span class="tag">jij</span>` : ""}</td>
+                ${keuze === "algemeen" ? `<td class="klein">${esc(r.bedrijf || "—")}</td>` : metLocatie ? `<td class="klein">${esc(r.locatie || "")}</td>` : ""}
+                <td class="klein">${esc(r.niveau)}</td><td class="num mono"><strong>${getal(r.punten)}</strong></td><td class="num mono">${r.badges}</td>
+                <td class="num mono">${r.lessen_af}</td><td class="num mono">${r.cursussen_af}</td></tr>`).join(""))
+          : `<div class="leeg">Nog geen punten. Het klassement vult zich zodra er lessen en toetsen worden afgewerkt.</div>`)
+        koppelKeuze()
+      }
+      function koppelKeuze() {
+        const sel = $("#bedrijfkeuze")
+        if (sel) sel.addEventListener("change", async () => { bedrijfKeuze = sel.value; await laad(); toon() })
+      }
+      async function laad() {
+        d = await api(`/api/leren/scores${bedrijfKeuze ? `?bedrijf=${encodeURIComponent(bedrijfKeuze)}` : ""}`)
+      }
+      try {
+        await laad()
+        if (d.ik) {
+          const t = d.ik.totaal
+          const rang = [
+            d.ik.rang_algemeen ? `plaats <strong class="mono">${d.ik.rang_algemeen}</strong> van <span class="mono">${d.ik.deelnemers_algemeen}</span> in de academie` : "nog niet in het klassement",
+            d.ik.rang_bedrijf && d.ik.bedrijf ? `plaats <strong class="mono">${d.ik.rang_bedrijf}</strong> bij ${esc(d.ik.bedrijf)}` : "",
+          ].filter(Boolean).join(" · ")
+          $("#ik").innerHTML = niveauBlok(t, rang) + `<details><summary class="klein" style="cursor:pointer;color:var(--petrol)">Mijn badges (${t.aantal_badges} van ${t.badges.length})</summary><div style="margin-top:8px">${badgeLijst(t.badges)}</div></details>`
+        } else if (d.beheer) {
+          $("#ik").innerHTML = `<div class="melding">Als beheerder sta je niet in het klassement. Je ziet alle deelnemers; kies onder <em>Mijn bedrijf</em> een centrale.</div>`
+          $("#kbedrijf").textContent = "Per bedrijf"
+        }
+        if (d.bedrijf?.naam && !d.beheer) $("#kbedrijf").textContent = d.bedrijf.naam
+        if (!d.bedrijf && !d.beheer) $("#kbedrijf").remove()
+        if (!["algemeen", "bedrijven", "bedrijf"].includes(keuze) || (keuze === "bedrijf" && !$("#kbedrijf"))) keuze = "algemeen"
+        $("#keuze").addEventListener("click", (e) => {
+          const b = e.target.closest("button[data-k]")
+          if (!b) return
+          keuze = b.dataset.k
+          history.replaceState(null, "", "#" + keuze)
+          toon()
+        })
+        toon()
+        const p = d.regels.punten
+        $("#regels").innerHTML = `<div class="scroll-x"><table class="eenvoudig" style="max-width:640px">
+          <tbody>
+            <tr><td>Les afgerond</td><td class="num mono">${p.les}</td></tr>
+            <tr><td>Praktijkopdracht afgerond</td><td class="num mono">${p.opdracht}</td></tr>
+            <tr><td>Toets geslaagd</td><td class="num mono">${p.toets}</td></tr>
+            <tr><td>Toets zonder fouten (extra)</td><td class="num mono">+${p.foutloos}</td></tr>
+            <tr><td>Module volledig afgerond</td><td class="num mono">+${p.module}</td></tr>
+            <tr><td>Cursus volledig afgerond</td><td class="num mono">+${p.cursus}</td></tr>
+            <tr><td>Per badge</td><td class="num mono">+${p.badge}</td></tr>
+          </tbody></table></div>
+          <h3 style="margin:18px 0 8px">Niveaus</h3>
+          <p class="klein">${d.regels.niveaus.map((n, i) => `<span class="mono">${i + 1}</span> ${esc(n.naam)} <span class="zacht">(vanaf <span class="mono">${getal(n.min)}</span>)</span>`).join(" · ")}</p>
+          <h3 style="margin:18px 0 8px">Badges</h3>
+          ${badgeLijst((d.ik?.totaal.badges) || d.regels.badges.map((b) => ({ ...b, behaald: false })))}
+          <p class="klein zacht" style="margin-top:12px">Punten komen uit je voortgang in de cursussen. Beheerders (testers) tellen niet mee.</p>`
+      } catch (e) {
+        $("#klassement").innerHTML = `<div class="melding fout">${esc(e.message)}</div>`
+      }
+    }
+  </script>
+  <footer class="voet">
+    <p class="disclaimer">De cursussen zijn met de grootste zorg samengesteld. Raadpleeg in geval van twijfel altijd de normatieve documenten en reglementen; die blijven de referentie.</p>
+    <p>Betosoft Academie · <a href="/">startpagina</a> · <a href="/prijzen/">prijzen</a> · <a href="https://betosoft.be">betosoft.be</a></p>
+  </footer>
+  <script src="/fout.js" type="module"></script>
+</body>
+</html>

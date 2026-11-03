@@ -1,0 +1,79 @@
+/* Leerlijn, scores en attesten (Mijn leerlijn, Scores, centrale en beheer) */
+.navlinks { display: flex; gap: 4px 18px; flex-wrap: wrap; }
+.navlinks a { color: var(--b-zacht); text-decoration: none; font-size: 14px; padding: 4px 0; border-bottom: 1px solid transparent; white-space: nowrap; }
+.navlinks a:hover, .navlinks a:focus-visible { color: var(--b-inkt); border-bottom-color: var(--b-zacht); }
+.navlinks a[aria-current="page"] { color: var(--b-inkt); border-bottom-color: var(--b-accent); }
+@media (max-width: 700px) { .navlinks { order: 3; width: 100%; } }
+
+.balkje { height: 6px; background: var(--petrol-licht); border-radius: 2px; overflow: hidden; min-width: 60px; }
+.balkje > span { display: block; height: 100%; background: var(--petrol); }
+.balkje.af > span { background: var(--conform); }
+.balkje.groot { height: 10px; }
+
+/* Niveau en punten */
+.niveaublok { display: grid; gap: 10px 24px; grid-template-columns: 1fr; align-items: center; background: var(--wit); border: 1px solid var(--lijn); border-left: 4px solid var(--koper); border-radius: var(--r); padding: 14px 16px; margin: 16px 0; }
+@media (min-width: 720px) { .niveaublok { grid-template-columns: auto 1fr auto; } }
+.niveaublok .nv { font: 600 13px var(--sans); letter-spacing: .06em; text-transform: uppercase; color: var(--koper); }
+.niveaublok .nvnaam { font-size: 22px; font-weight: 600; }
+.niveaublok .pt { font: 500 28px var(--mono); }
+.niveaublok .pt small { font: 400 13px var(--sans); color: var(--inkt-zacht); margin-left: 4px; }
+.niveaublok .zin { font-size: 13px; color: var(--inkt-zacht); margin-top: 4px; }
+
+/* Cursuskaart in de leerlijn */
+.lkaarten { display: grid; gap: 12px; }
+.lkaart { background: var(--wit); border: 1px solid var(--lijn); border-radius: var(--r); padding: 14px 16px; display: grid; gap: 8px; }
+.lkaart.af { border-left: 4px solid var(--conform); }
+.lkaart .lkop { display: flex; gap: 8px 12px; align-items: center; flex-wrap: wrap; }
+.lkaart h3 { font-size: 17px; margin: 0; flex: 1 1 240px; }
+.lkaart .lcijfers { display: flex; gap: 4px 16px; flex-wrap: wrap; font-size: 13px; color: var(--inkt-zacht); align-items: center; }
+.lkaart .lcijfers .mono { color: var(--inkt); }
+.lkaart .lbalk { display: flex; gap: 10px; align-items: center; }
+.lkaart .lbalk .balkje { flex: 1; }
+.lkaart .lbalk b { font: 500 15px var(--mono); min-width: 3.5em; text-align: right; }
+.lkaart .volgende { font-size: 14px; }
+.lkaart .knoppen a.knop { text-decoration: none; display: inline-flex; align-items: center; }
+.lkaart details summary { cursor: pointer; font-size: 13px; color: var(--petrol); }
+.attestband { display: flex; gap: 8px 14px; flex-wrap: wrap; align-items: center; padding: 8px 10px; background: var(--petrol-licht); border-radius: var(--r); font-size: 14px; }
+.attestband a.knop { text-decoration: none; display: inline-flex; align-items: center; }
+
+.modlijst2 { list-style: none; margin: 8px 0 0; padding: 0; border-top: 1px solid var(--lijn); }
+.modlijst2 li { display: grid; grid-template-columns: 1.4em 2.6em 1fr auto; gap: 4px 8px; padding: 6px 0; border-bottom: 1px solid var(--lijn); font-size: 14px; align-items: center; }
+.modlijst2 .st { font-size: 13px; text-align: center; }
+.modlijst2 .st.af { color: var(--conform); } .modlijst2 .st.bezig { color: var(--aandacht); } .modlijst2 .st.nog { color: var(--inkt-zacht); }
+.modlijst2 .n { font-family: var(--mono); color: var(--petrol); font-size: 13px; }
+.modlijst2 .r { font-size: 12px; color: var(--inkt-zacht); text-align: right; white-space: nowrap; }
+.modlijst2 .r .mono { color: var(--inkt); }
+
+/* Badges */
+.badges { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 170px), 1fr)); gap: 8px; }
+.badge { display: flex; gap: 10px; align-items: center; background: var(--wit); border: 1px solid var(--lijn); border-radius: var(--r); padding: 8px 10px; }
+.badge .ic { width: 34px; height: 34px; border-radius: 50%; display: grid; place-items: center; flex: none; background: var(--petrol-licht); color: var(--inkt-zacht); }
+.badge .ic svg { width: 18px; height: 18px; }
+.badge.ja .ic { background: var(--koper); color: #fff; }
+.badge.nee { opacity: .62; }
+.badge b { display: block; font-size: 14px; }
+.badge span { font-size: 12px; color: var(--inkt-zacht); }
+
+/* Klassement */
+table.klas td, table.klas th { vertical-align: middle; }
+table.klas tr.ik td { background: var(--petrol-licht); }
+table.klas tr.ik td:first-child { box-shadow: inset 3px 0 0 var(--koper); }
+.rang { font: 600 15px var(--mono); width: 2.4em; color: var(--inkt-zacht); }
+.rang.r1, .rang.r2, .rang.r3 { color: var(--inkt); }
+.rang .med { display: inline-grid; place-items: center; width: 24px; height: 24px; border-radius: 50%; font-size: 12px; color: #fff; }
+.rang.r1 .med { background: #B8902E; } .rang.r2 .med { background: #8C969A; } .rang.r3 .med { background: #A1653F; }
+.knoppenbalk { display: flex; gap: 0; border: 1px solid var(--lijn); border-radius: var(--r); overflow: hidden; width: max-content; max-width: 100%; overflow-x: auto; margin: 12px 0; }
+.knoppenbalk button { appearance: none; border: 0; border-right: 1px solid var(--lijn); background: var(--wit); color: var(--inkt); font: 500 14px var(--sans); padding: 8px 14px; cursor: pointer; white-space: nowrap; min-height: 38px; }
+.knoppenbalk button:last-child { border-right: 0; }
+.knoppenbalk button[aria-pressed="true"] { background: var(--petrol); color: #fff; }
+
+/* Matrix medewerkers x cursussen */
+table.matrix th.c { text-align: center; font-family: var(--mono); font-size: 11px; }
+table.matrix td.c { text-align: center; min-width: 74px; }
+table.matrix td.c .balkje { margin: 0 auto 2px; width: 56px; min-width: 0; }
+table.matrix td.c .p { font: 500 12px var(--mono); }
+table.matrix td.c .geen { color: var(--inkt-zacht); }
+table.matrix td.c a { text-decoration: none; }
+table.matrix tbody tr { cursor: pointer; }
+table.matrix tbody tr:hover td { background: var(--petrol-licht); }
+.attesticoon { color: var(--conform); font-weight: 600; }

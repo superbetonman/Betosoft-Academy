@@ -3,6 +3,7 @@ import { db, json, fout, dbFout, tekst, geheel, UUID, EMAIL, DATUM } from "../li
 import { aangemeld, eigenAanvraag, isBeheer, type Gebruiker } from "../lib/sessie.mts"
 import { maakUitnodiging } from "../lib/uitnodiging.mts"
 import { hashWachtwoord, wachtwoordFout } from "../lib/wachtwoord.mts"
+import { laadDeelnemers, laadCursussen, laadStructuren, leerlijn, stand, reikAttestUit, volleNaam } from "../lib/leerlijn.mts"
 
 type Handler = (p: { b: any; q: URLSearchParams; id?: string; ik: Gebruiker; req: Request }) => Promise<Response>
 
@@ -272,14 +273,16 @@ const routes: Record<string, Handler> = {
     const rijen = await sql()`
       SELECT g.id, g.email, g.voornaam, g.achternaam, g.rol, g.actief, g.aangemaakt_op, o.naam AS centrale,
              (SELECT count(DISTINCT module_id)::int FROM v_module_toegang v WHERE v.gebruiker_id = g.id) AS modules_toegang,
-             (SELECT count(*)::int FROM voortgang vg WHERE vg.gebruiker_id = g.id) AS lessen_af,
-             (SELECT count(*)::int FROM attesten a WHERE a.gebruiker_id = g.id AND a.ingetrokken_op IS NULL) AS attesten,
-             (SELECT COALESCE(sum(punten), 0)::int FROM punten pt WHERE pt.gebruiker_id = g.id) AS punten
+             (SELECT count(*)::int FROM attesten a WHERE a.gebruiker_id = g.id AND a.ingetrokken_op IS NULL) AS attesten
       FROM gebruikers g LEFT JOIN organisaties o ON o.id = g.organisatie_id
       WHERE g.rol IN ('cursist','centrale_verantwoordelijke')
         AND (${patroon}::text IS NULL OR g.email ILIKE ${patroon} OR concat_ws(' ', g.voornaam, g.achternaam) ILIKE ${patroon} OR o.naam ILIKE ${patroon})
       ORDER BY g.aangemaakt_op DESC LIMIT 500`
-    return json({ cursisten: rijen })
+    // lessen en punten uit de cursusapps
+    const lijnen = new Map((await leerlijn(await laadDeelnemers({ ids: rijen.map((r: any) => r.id) }))).map((d) => [d.id, d]))
+    return json({
+      cursisten: rijen.map((r: any) => ({ ...r, lessen_af: lijnen.get(r.id)?.totaal.lessen_af ?? 0, punten: lijnen.get(r.id)?.totaal.punten ?? 0 })),
+    })
   },
 
   "POST cursisten/actief": async ({ b, id: gid }) => {
@@ -499,6 +502,88 @@ const routes: Record<string, Handler> = {
     const r = await sql()`UPDATE gebruikers SET actief = ${b.actief === true} WHERE id = ${gid} AND rol IN ('beheerder','superadmin') RETURNING id`
     if (!r.length) return fout("Beheerder niet gevonden.", 404)
     await sql()`SELECT log_actie('beheerder_actief', 'gebruiker', ${gid}::uuid, ${JSON.stringify({ actief: b.actief === true })}::jsonb)`
+    return json({ ok: true })
+  },
+
+  // ---------- Cursussen: online, structuur, cijfers ----------
+  "GET cursussen": async () => {
+    const [cursussen, structuren] = await Promise.all([laadCursussen(), laadStructuren()])
+    const cijfers = await sql()`
+      SELECT c.code,
+             (SELECT count(*)::int FROM modules m WHERE m.cursus_id = c.id) AS modules,
+             (SELECT count(*)::int FROM modules m WHERE m.cursus_id = c.id AND m.gepubliceerd) AS modules_klaar,
+             (SELECT string_agg(b.pad, ', ' ORDER BY b.pad) FROM cursus_bestanden b WHERE b.cursus = c.code AND b.pad LIKE '%.html') AS bestanden,
+             (SELECT max(b.bijgewerkt_op) FROM cursus_bestanden b WHERE b.cursus = c.code) AS bestanden_op,
+             (SELECT json_agg(json_build_object('code', p.code, 'prijs', p.prijs_excl_btw, 'actief', p.actief) ORDER BY p.code)
+                FROM producten p WHERE p.id IN (SELECT pm.product_id FROM product_modules pm JOIN modules m ON m.id = pm.module_id WHERE m.cursus_id = c.id)) AS producten,
+             (SELECT count(DISTINCT mt.gebruiker_id)::int FROM v_module_toegang mt JOIN modules m ON m.id = mt.module_id WHERE m.cursus_id = c.id) AS met_toegang,
+             (SELECT count(*)::int FROM cursus_gegevens cg WHERE cg.cursus = c.code AND cg.pad LIKE 'data/users/%/progress') AS gestart,
+             (SELECT count(*)::int FROM attesten a WHERE a.cursus_id = c.id AND a.ingetrokken_op IS NULL) AS attesten
+      FROM cursussen c`
+    const per = new Map(cijfers.map((r: any) => [r.code, r]))
+    return json({
+      cursussen: cursussen.map((c) => {
+        const s = structuren.get(c.code)
+        const x: any = per.get(c.code) ?? {}
+        return {
+          ...c, ...x,
+          structuur: s ? { bevestigd: s.bevestigd, bijgewerkt_op: s.bijgewerkt_op, lessen: s.structuur.modules.filter((m) => m.avail).reduce((t, m) => t + m.lessen.length, 0),
+            toetsen: s.structuur.modules.filter((m) => m.avail).reduce((t, m) => t + m.lessen.filter((l) => l.soort === "toets").length, 0),
+            modules: s.structuur.modules.filter((m) => m.avail && m.lessen.length).length, verouderd: !!(x.bestanden_op && s.bijgewerkt_op && new Date(x.bestanden_op) > new Date(s.bijgewerkt_op)) } : null,
+        }
+      }),
+    })
+  },
+
+  "POST cursussen/online": async ({ b, id: cid, ik }) => {
+    const online = b.online === true
+    const r = await sql()`UPDATE cursussen SET gepubliceerd = ${online} WHERE id = ${cid} RETURNING code`
+    if (!r.length) return fout("Cursus niet gevonden.", 404)
+    await sql()`SELECT log_actie(${online ? "cursus_online" : "cursus_offline"}, 'cursus', ${cid}::uuid, ${JSON.stringify({ cursus: r[0].code, door: ik.id })}::jsonb)`
+    return json({ ok: true })
+  },
+
+  // ---------- Leerlijn van alle deelnemers ----------
+  "GET leerlijn": async ({ q }) => {
+    const org = id(q.get("organisatie"))
+    const orgs = org ? (await sql()`SELECT id FROM organisaties WHERE id = ${org} OR ouder_id = ${org}`).map((r: any) => r.id) : undefined
+    const zoek = (tekst(q.get("zoek"), 80) || "").toLowerCase()
+    let deelnemers = await laadDeelnemers({ orgs })
+    if (zoek) deelnemers = deelnemers.filter((d) => `${volleNaam(d)} ${d.email} ${d.bedrijf ?? ""} ${d.locatie ?? ""}`.toLowerCase().includes(zoek))
+    const lijnen = await leerlijn(deelnemers.slice(0, 400))
+    const bedrijven = await sql()`SELECT id, naam FROM organisaties WHERE ouder_id IS NULL ORDER BY naam`
+    return json({
+      bedrijven,
+      meer: deelnemers.length > 400,
+      deelnemers: lijnen.map((d) => ({
+        id: d.id, naam: volleNaam(d), email: d.email, bedrijf: d.bedrijf, locatie: d.locatie, actief: d.actief,
+        totaal: { punten: d.totaal.punten, niveau: d.totaal.niveau, lessen_af: d.totaal.lessen_af, modules_af: d.totaal.modules_af, cursussen_af: d.totaal.cursussen_af, gem_score: d.totaal.gem_score, laatst: d.totaal.laatst, badges: d.totaal.badges },
+        cursussen: d.cursussen.map(({ dagen, ...c }) => c),
+        attesten: d.attesten,
+      })),
+    })
+  },
+
+  // ---------- Attesten ----------
+  "POST attesten": async ({ b, ik }) => {
+    // handmatig uitreiken (bv. na een examen buiten de academie, of opnieuw na intrekken)
+    const gid = id(b.gebruiker_id)
+    const code = tekst(b.cursus, 20)
+    if (!gid || !code) return fout("Kies een deelnemer en een cursus.")
+    const [d] = await laadDeelnemers({ ids: [gid] })
+    const c = (await laadCursussen()).find((x) => x.code === code)
+    if (!d || !c) return fout("Deelnemer of cursus niet gevonden.", 404)
+    const [v] = await sql()`SELECT data FROM cursus_gegevens WHERE gebruiker_id = ${gid} AND cursus = ${code} AND pad = ${"data/users/" + gid + "/progress"}`
+    const s = stand(c.code, c.titel, (await laadStructuren()).get(code) ?? null, v?.data ?? null)
+    const a = await reikAttestUit(d, c, s, ik.id)
+    if (!a) return fout("Deze deelnemer heeft al een geldig attest voor deze cursus.")
+    return json({ ok: true, attest: a })
+  },
+
+  "POST attesten/intrek": async ({ b, id: aid, ik }) => {
+    const r = await sql()`UPDATE attesten SET ingetrokken_op = now() WHERE id = ${aid} AND ingetrokken_op IS NULL RETURNING id, nummer`
+    if (!r.length) return fout("Attest niet gevonden of al ingetrokken.", 404)
+    await sql()`SELECT log_actie('attest_ingetrokken', 'attest', ${aid}::uuid, ${JSON.stringify({ nummer: r[0].nummer, reden: tekst(b.reden, 300), door: ik.id })}::jsonb)`
     return json({ ok: true })
   },
 

@@ -45,7 +45,10 @@ export default async (req: Request, context: Context) => {
       return Response.redirect(new URL(`/aanmelden/?terug=${encodeURIComponent(`/cursus/${code}/`)}`, url).toString(), 302)
     }
     beheer = isBeheer(g)
-    if (!(await magCursus(g, code)))
+    if (!(await magCursus(g, code))) {
+      const [c] = await db()`SELECT gepubliceerd FROM cursussen WHERE code = ${code}`
+      if (c && !c.gepubliceerd)
+        return pagina("Tijdelijk offline", "Deze cursus staat tijdelijk offline. Je voortgang blijft bewaard.", "/leren/", "Naar mijn leerlijn", 403)
       return pagina(
         "Geen toegang tot deze cursus",
         "Je hebt nog geen toegang tot de volledige cursus. Bekijk de demo, of vraag toegang via je centrale of via een inschrijving.",
@@ -53,6 +56,7 @@ export default async (req: Request, context: Context) => {
         "Naar de demo",
         403,
       )
+    }
   }
 
   // beheerders: de versie met briefings en prompts, als die bestaat

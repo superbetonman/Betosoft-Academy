@@ -4,65 +4,90 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="robots" content="noindex, nofollow">
-  <title>Mijn opleidingen · Betosoft Academie</title>
+  <title>Mijn leerlijn · Betosoft Academie</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
   <link rel="icon" href="/favicon.svg" type="image/svg+xml">
   <script src="/thema.js"></script>
   <link rel="stylesheet" href="/stijl.css">
+  <link rel="stylesheet" href="/leerlijn.css">
 </head>
 <body>
   <header class="kop">
   <div class="kop-in">
-    <a class="logo" href="/leren/" aria-label="Betosoft Academie, mijn opleidingen"><img src="/logo.svg" alt="" width="34" height="30"><span class="logo-tekst">Betosoft <em>Academie</em></span><span class="kop-context">· mijn opleidingen</span></a>
+    <a class="logo" href="/" aria-label="Betosoft Academie, startpagina"><img src="/logo.svg" alt="" width="34" height="30"><span class="logo-tekst">Betosoft <em>Academie</em></span></a>
+    <nav class="navlinks" aria-label="Mijn academie" id="nav">
+      <a href="/leren/" aria-current="page">Mijn leerlijn</a><a href="/scores/">Scores</a><a href="/">Startpagina</a>
+    </nav>
     <div class="rechts"><span class="klein zacht" id="wie"></span><button id="afmelden" class="knop stil klein" type="button">Afmelden</button></div>
   </div>
 </header>
-  <main style="max-width:960px">
-    <p class="label" style="margin-top:8px">Mijn opleidingen</p>
+  <main style="max-width:980px">
+    <p class="label" style="margin-top:8px">Mijn leerlijn</p>
     <h1 id="titel">Welkom</h1>
     <div id="tester" class="melding verborgen"></div>
-    <div id="lijst" class="leerlijst"><p class="zacht">Laden…</p></div>
+    <div id="niveau"></div>
+    <div id="cijfers"></div>
+    <h2>01 Mijn opleidingen</h2>
+    <div id="lijst" class="lkaarten"><p class="zacht">Laden…</p></div>
+    <section id="attestsectie" class="verborgen">
+      <h2>02 Mijn attesten</h2>
+      <p class="klein zacht">Een attest verschijnt vanzelf zodra je een cursus volledig afrondt: alle lessen doorlopen en alle toetsen geslaagd. Druk het af, bewaar het als PDF of mail het.</p>
+      <div id="attesten" class="lijst"></div>
+    </section>
+    <h2 id="badgekop">03 Badges</h2>
+    <div id="badges"></div>
+    <p class="klein" style="margin-top:16px"><a href="/scores/">Bekijk het klassement en hoe je punten verdient</a></p>
   </main>
-  <style>
-    .leerlijst { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 280px), 1fr)); gap: 12px; margin-top: 16px; }
-    .leerkaart { background: var(--wit); border: 1px solid var(--lijn); border-radius: var(--r); padding: 14px 16px; display: flex; flex-direction: column; gap: 6px; }
-    .leerkaart h2 { border: 0; padding: 0; margin: 0; font-size: 17px; color: var(--inkt); }
-    .leerkaart .knoppen { margin-top: auto; padding-top: 8px; }
-    .leerkaart a.knop { text-decoration: none; display: inline-flex; align-items: center; }
-  </style>
   <script type="module">
-    import { api, esc, naam, datum, afmelden } from "/gemeen.js"
+    import { api, esc, naam, datum, getal, afmelden } from "/gemeen.js"
+    import { cursusKaart, badgeLijst, niveauBlok } from "/leerlijn.js"
     document.getElementById("afmelden").addEventListener("click", afmelden)
+    const $ = (s) => document.querySelector(s)
     const s = await api("/api/sessie")
     if (!s.aangemeld) location.replace("/aanmelden/?terug=/leren/")
     else {
-      document.getElementById("wie").textContent = naam(s.gebruiker)
-      document.getElementById("titel").textContent = `Welkom, ${s.gebruiker.voornaam || ""}`.trim()
-      const d = await api("/api/leren/cursussen")
-      if (d.beheer) {
-        const t = document.getElementById("tester")
-        t.classList.remove("verborgen")
-        t.innerHTML = `<strong>Testermodus.</strong> Als beheerder kun je elke cursus openen en volgen. Je voortgang wordt in je account bewaard. Meld wat je vaststelt met de knop <em>Fout melden</em> rechts op het scherm. <a href="/beheer/">Naar beheer</a>`
+      const rol = s.gebruiker.rol
+      $("#wie").textContent = naam(s.gebruiker)
+      if (rol === "centrale_verantwoordelijke") $("#nav").insertAdjacentHTML("beforeend", `<a href="/centrale/">Mijn centrale</a>`)
+      if (rol === "beheerder" || rol === "superadmin") $("#nav").insertAdjacentHTML("beforeend", `<a href="/beheer/">Beheer</a>`)
+      $("#titel").textContent = `Welkom, ${s.gebruiker.voornaam || ""}`.trim()
+      try {
+        const d = await api("/api/leren/leerlijn")
+        if (d.beheer) {
+          $("#tester").classList.remove("verborgen")
+          $("#tester").innerHTML = `<strong>Testermodus.</strong> Als beheerder kun je elke cursus openen en volgen. Je voortgang wordt in je account bewaard, maar telt niet mee in het klassement. Open je een cursus, dan bevestig je meteen de lessenlijst ervan (nodig voor voortgang en attesten). Meld wat je vaststelt met de knop <em>Fout melden</em> rechts op het scherm. <a href="/beheer/">Naar beheer</a>`
+        }
+        const t = d.totaal
+        $("#niveau").innerHTML = niveauBlok(t, `<a href="/scores/">klassement</a>`)
+        const attesten = d.attesten.filter((a) => !a.ingetrokken_op)
+        $("#cijfers").innerHTML = `<div class="cijfers">
+          <div class="cijfer"><div class="label">Lessen af</div><div class="waarde">${getal(t.lessen_af)}</div></div>
+          <div class="cijfer"><div class="label">Toetsen geslaagd</div><div class="waarde">${getal(t.toetsen_geslaagd)}</div></div>
+          <div class="cijfer"><div class="label">Modules af</div><div class="waarde">${getal(t.modules_af)}</div></div>
+          <div class="cijfer"><div class="label">Cursussen af</div><div class="waarde">${getal(t.cursussen_af)}</div></div>
+          <div class="cijfer ${attesten.length ? "koper" : ""}"><div class="label">Attesten</div><div class="waarde">${getal(attesten.length)}</div></div>
+        </div>`
+        // eerst wat bezig is, dan nog niet gestart, dan afgerond
+        const rang = (c) => (!c.toegang && !c.deels ? 4 : c.afgerond ? 3 : c.af > 0 ? 0 : c.toegang ? 1 : 2)
+        const lijst = [...d.cursussen].sort((a, b) => rang(a) - rang(b) || (b.laatst || "").localeCompare(a.laatst || ""))
+        $("#lijst").innerHTML = lijst.length
+          ? lijst.map((c) => cursusKaart(c, { eigen: true, beheer: d.beheer })).join("")
+          : `<div class="leeg">Je hebt nog geen opleidingen. <a href="/#cursussen">Bekijk de cursussen</a> of vraag je centrale om je een plaats toe te wijzen.</div>`
+        if (d.attesten.length) {
+          $("#attestsectie").classList.remove("verborgen")
+          $("#attesten").innerHTML = d.attesten.map((a) => {
+            const c = d.cursussen.find((x) => x.code === a.cursus)
+            return `<div class="rij"><div><div class="titel">${esc(c ? c.titel : a.cursus)}</div>
+              <div class="meta"><span class="mono">${esc(a.nummer)}</span><span>uitgereikt ${esc(datum(a.uitgereikt_op))}</span>${a.gemaild_op ? `<span>gemaild ${esc(datum(a.gemaild_op))}</span>` : ""}${a.ingetrokken_op ? `<span class="status s-afwijking">ingetrokken</span>` : ""}</div></div>
+              <div class="knoppen">${a.ingetrokken_op ? "" : `<a class="knop klein" href="/attest/${a.id}" style="text-decoration:none;display:inline-flex;align-items:center">Bekijken en afdrukken</a><a class="knop licht klein" href="/attest/${a.id}#mail" style="text-decoration:none;display:inline-flex;align-items:center">Mailen</a>`}</div></div>`
+          }).join("")
+        } else $("#badgekop").textContent = "02 Badges"
+        $("#badges").innerHTML = badgeLijst(t.badges)
+      } catch (e) {
+        $("#lijst").innerHTML = `<div class="melding fout">${esc(e.message)}</div>`
       }
-      const lijst = document.getElementById("lijst")
-      lijst.innerHTML = d.cursussen.length
-        ? d.cursussen.map((c) => `<article class="leerkaart">
-            <span class="tag" style="align-self:flex-start">${esc(c.code)}</span>
-            <h2>${esc(c.titel)}</h2>
-            <p class="klein zacht" style="margin:0">${
-              c.toegang
-                ? c.als_tester ? "Als tester (beheerder)" : c.eind_datum ? `Toegang tot ${esc(datum(c.eind_datum))}` : "Toegang"
-                : "Je hebt toegang tot een deel van deze cursus. De volledige cursus opent zodra je toegang hebt tot alle modules."
-            }</p>
-            <p class="klein" style="margin:0">${c.lessen_af ? `<span class="mono">${c.lessen_af}</span> ${c.lessen_af === 1 ? "les" : "lessen"} afgerond` : "Nog niet gestart"}</p>
-            <div class="knoppen">
-              ${c.toegang ? `<a class="knop" href="/cursus/${encodeURIComponent(c.code)}/">${c.lessen_af ? "Verder leren" : "Openen"}</a>` : ""}
-              ${c.demo ? `<a class="knop licht" href="/demo/${encodeURIComponent(c.code)}/">Demo</a>` : ""}
-            </div>
-          </article>`).join("")
-        : `<p>Je hebt nog geen opleidingen. <a href="/#cursussen">Bekijk de cursussen</a> of vraag je centrale om je een plaats toe te wijzen.</p>`
     }
   </script>
   <footer class="voet">
