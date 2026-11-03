@@ -25,11 +25,11 @@ const CURSUSSEN = [
   { code: "DSP", bron: "artifact-8ab271c4-1793442580-7f98.html", url: "J8MuGWkqX4ni5uPrkxdvAL", product: "CRS-DSP", extra: `${S}/catalogus/src/disp1`, demo: ["m1-l1", "m4-l1", "m8-l1", "m11-l1"] },
   { code: "MENG", bron: "artifact-547fde33-1793613707-f46c.html", url: "BSCBBERNUMJyooSUPWd2GE", product: "CRS-MENG", demo: ["m1-l1", "m3-l1", "m5-l1", "m7-l1"] },
   { code: "AI", bron: "artifact-98c62fa3-1793375140-79bc.html", url: "KsBYuRJkqZWpfnDsuPwZLV", product: "CRS-AI", extra: `${S}/catalogus-b/ai-files`, demo: ["m1-l1", "m3-l1", "m4-l1", "m6-l1"] },
-  { code: "VRK", bron: "artifact-8b3a1d5d-1793520934-ff36.html", url: "JCA3nRWgGv6EijjX6f38tV", demo: ["m1-l1", "g1-l1", "g2-l1", "g4-l1"] },
-  { code: "PLM", bron: "artifact-f01e8662-1793520932-eb9b.html", url: "WekncP6rDyR8oodKmCPyKs", demo: ["m1-l1", "g1-l1", "g3-l1", "g5-l1"] },
-  { code: "CSC", bron: "artifact-e15fd538-1793518100-8161.html", url: "Uq9k6jXZzjhKuLKRa1Pndt", demo: ["m1-l1", "m2-l1", "m4-l1", "m5-l1"] },
-  { code: "BT1", bron: "artifact-08dad6d7-1793529805-b0cb.html", url: "26RJzcCHX37ZgetFiXgW4N", geenDemo: true },
-  { code: "BT2", bron: "artifact-64340363-1793540992-38ab.html", url: "DNfWM52JYcJrsW3xDNET5P", geenDemo: true },
+  { code: "VRK", bron: "artifact-8b3a1d5d-1793520934-ff36.html", url: "JCA3nRWgGv6EijjX6f38tV", product: "CRS-VRK", demo: ["m1-l1", "g1-l1", "g2-l1", "g4-l1"] },
+  { code: "PLM", bron: "artifact-f01e8662-1793520932-eb9b.html", url: "WekncP6rDyR8oodKmCPyKs", product: "CRS-PLM", demo: ["m1-l1", "g1-l1", "g3-l1", "g5-l1"] },
+  { code: "CSC", bron: "artifact-e15fd538-1793518100-8161.html", url: "Uq9k6jXZzjhKuLKRa1Pndt", product: "CRS-CSC", demo: ["m1-l1", "m2-l1", "m4-l1", "m5-l1"] },
+  { code: "BT1", bron: "artifact-08dad6d7-1793529805-b0cb.html", url: "26RJzcCHX37ZgetFiXgW4N", product: "CRS-BT1", geenDemo: true },
+  { code: "BT2", bron: "artifact-64340363-1793540992-38ab.html", url: "DNfWM52JYcJrsW3xDNET5P", product: "CRS-BT2", geenDemo: true },
 ]
 
 // Haak: de app geeft haar lessenlijst (COURSE) door aan de academie; cursus-academie.js leest window.ACADEMIE_COURSE()

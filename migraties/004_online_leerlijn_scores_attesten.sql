@@ -146,3 +146,8 @@ SET inhoud = overlay(b.inhoud PLACING E'\nwindow.ACADEMIE_COURSE = function () {
     bijgewerkt_op = now()
 FROM y
 WHERE b.cursus = y.cursus AND b.pad = y.pad AND substr(y.inhoud, y.pi, 28) = E'(function () {\n"use strict";';
+
+-- Productcode in de cursusapps van VRK, PLM, CSC, BT1 en BT2 (knop "Inschrijven" in de demo). bouw.mjs zet ze voortaan zelf.
+UPDATE cursus_bestanden
+SET inhoud = regexp_replace(inhoud, '(window\.ACADEMIE=\{"cursus":"' || cursus || '","demo":(true|false),"beheer":(true|false),"product":)null\}', '\1"CRS-' || cursus || '"}')
+WHERE cursus IN ('VRK', 'PLM', 'CSC', 'BT1', 'BT2') AND pad IN ('index.html', 'beheer.html', 'demo.html') AND strpos(inhoud, '"product":null}') > 0;
