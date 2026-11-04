@@ -131,6 +131,24 @@ input:focus, select:focus, textarea:focus, .knop:focus-visible, .tab:focus-visib
 textarea { min-height: 80px; resize: vertical; }
 label.veld { display: block; margin-bottom: 12px; }
 label.veld > span { display: block; margin-bottom: 4px; }
+div.veld { margin-bottom: 12px; }
+div.veld > label.label { display: block; margin-bottom: 4px; }
+/* Wachtwoordveld met oogknop (toon-wachtwoord.js) */
+.ww { position: relative; display: block; }
+.ww > input { padding-right: 48px; }
+.ww-oog {
+  appearance: none; position: absolute; top: 0; right: 0; bottom: 0; width: 44px; padding: 0; margin: 0;
+  display: grid; place-items: center; border: 0; background: transparent; color: var(--inkt-zacht);
+  border-radius: 0 var(--r) var(--r) 0; cursor: pointer; touch-action: manipulation; -webkit-tap-highlight-color: transparent;
+}
+.aanmeldscherm input[readonly] { background: var(--papier); color: var(--inkt-zacht); }
+.ww-oog:hover { color: var(--inkt); }
+.ww-oog:focus-visible { outline: 2px solid var(--petrol); outline-offset: -2px; }
+.ww-oog[aria-pressed="true"] { color: var(--petrol); }
+input::-ms-reveal, input::-ms-clear { display: none; }
+/* iPhone: vanaf 16px zoomt de pagina niet in wanneer je een veld aantikt */
+@media (pointer: coarse) { input, select, textarea { font-size: 16px; } }
+.aanmeldscherm .onder { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; margin-top: 4px; }
 .velden { display: grid; grid-template-columns: 1fr; gap: 0 12px; }
 @media (min-width: 640px) { .velden.twee { grid-template-columns: 1fr 1fr; } }
 .check { display: flex; gap: 8px; align-items: flex-start; margin: 12px 0; }

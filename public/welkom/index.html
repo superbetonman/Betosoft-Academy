@@ -23,11 +23,14 @@
     <h1 id="titel">Welkom</h1>
     <p id="intro" class="zacht">Even geduld…</p>
     <form id="form" class="paneel verborgen">
-      <label class="veld"><span class="label">E-mail</span><input id="email" readonly autocomplete="username"></label>
-      <label class="veld"><span class="label">Kies een wachtwoord (minstens 12 tekens)</span><input type="password" name="wachtwoord" minlength="12" autocomplete="new-password" required></label>
-      <label class="veld"><span class="label">Herhaal het wachtwoord</span><input type="password" name="herhaal" minlength="12" autocomplete="new-password" required></label>
+      <div class="veld"><label class="label" for="email">E-mail</label>
+        <input id="email" name="email" type="email" readonly autocomplete="username"></div>
+      <div class="veld"><label class="label" for="nieuw" id="nieuwLabel">Kies een wachtwoord (minstens 12 tekens)</label>
+        <input id="nieuw" name="wachtwoord" type="password" minlength="12" autocomplete="new-password" required></div>
+      <div class="veld"><label class="label" for="herhaal">Herhaal het wachtwoord</label>
+        <input id="herhaal" name="herhaal" type="password" minlength="12" autocomplete="new-password" required></div>
       <div id="fout" class="melding fout verborgen" role="alert"></div>
-      <button class="knop" type="submit">Account activeren</button>
+      <button class="knop" type="submit" id="bevestig">Account activeren</button>
     </form>
     <div id="probleem" class="melding fout verborgen"></div>
   </section>
@@ -39,17 +42,26 @@
     const probleem = (t) => {
       document.getElementById("intro").classList.add("verborgen")
       const p = document.getElementById("probleem")
-      p.innerHTML = `${esc(t)} <a href="/aanmelden/">Naar aanmelden</a>`
+      p.innerHTML = `${esc(t)} <a href="/aanmelden/">Naar aanmelden</a> · <a href="/wachtwoord-vergeten/">Nieuwe link vragen</a>`
       p.classList.remove("verborgen")
     }
     if (!token) probleem("Deze link is onvolledig.")
     else {
       try {
         const u = await api(`/api/uitnodiging?t=${encodeURIComponent(token)}`)
-        document.getElementById("titel").textContent = `Welkom${u.voornaam ? ", " + u.voornaam : ""}`
-        document.getElementById("intro").textContent = u.organisatie
-          ? `Je bent uitgenodigd voor de Betosoft Academie via ${u.organisatie}. Kies een wachtwoord om je account te activeren.`
-          : "Kies een wachtwoord om je account te activeren."
+        if (u.herstel) {
+          // herstellink (wachtwoord vergeten of nieuwe aanmeldlink): het account bestaat al
+          document.title = "Nieuw wachtwoord · Betosoft Academie"
+          document.getElementById("titel").textContent = `Nieuw wachtwoord${u.voornaam ? " voor " + u.voornaam : ""}`
+          document.getElementById("intro").textContent = "Kies een nieuw wachtwoord voor je account."
+          document.getElementById("nieuwLabel").textContent = "Nieuw wachtwoord (minstens 12 tekens)"
+          document.getElementById("bevestig").textContent = "Wachtwoord opslaan"
+        } else {
+          document.getElementById("titel").textContent = `Welkom${u.voornaam ? ", " + u.voornaam : ""}`
+          document.getElementById("intro").textContent = u.organisatie
+            ? `Je bent uitgenodigd voor de Betosoft Academie via ${u.organisatie}. Kies een wachtwoord om je account te activeren.`
+            : "Kies een wachtwoord om je account te activeren."
+        }
         document.getElementById("email").value = u.email
         document.getElementById("form").classList.remove("verborgen")
       } catch (err) {
@@ -65,12 +77,15 @@
         f.textContent = "De twee wachtwoorden zijn niet gelijk."
         return f.classList.remove("verborgen")
       }
+      const knop = document.getElementById("bevestig")
+      knop.disabled = true
       try {
         const r = await api("/api/uitnodiging", { methode: "POST", data: { token, wachtwoord } })
         location.replace(r.bestemming)
       } catch (err) {
         f.textContent = err.message
         f.classList.remove("verborgen")
+        knop.disabled = false
       }
     })
   </script>
@@ -78,6 +93,7 @@
     <p class="disclaimer">De cursussen zijn met de grootste zorg samengesteld. Raadpleeg in geval van twijfel altijd de normatieve documenten en reglementen; die blijven de referentie.</p>
     <p>Betosoft Academie · <a href="/">startpagina</a> · <a href="/prijzen/">prijzen</a> · <a href="https://betosoft.be">betosoft.be</a></p>
   </footer>
+  <script src="/toon-wachtwoord.js" type="module"></script>
   <script src="/fout.js" type="module"></script>
 </body>
 </html>

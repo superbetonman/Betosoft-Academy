@@ -279,6 +279,7 @@ const routes: Record<string, Handler> = {
     const patroon = zoek ? `%${zoek}%` : null
     const rijen = await sql()`
       SELECT g.id, g.email, g.voornaam, g.achternaam, g.rol, g.actief, g.aangemaakt_op, o.naam AS centrale,
+             (g.wachtwoord_hash IS NOT NULL) AS account_actief,
              (SELECT count(DISTINCT module_id)::int FROM v_module_toegang v WHERE v.gebruiker_id = g.id) AS modules_toegang,
              (SELECT count(*)::int FROM attesten a WHERE a.gebruiker_id = g.id AND a.ingetrokken_op IS NULL) AS attesten
       FROM gebruikers g LEFT JOIN organisaties o ON o.id = g.organisatie_id

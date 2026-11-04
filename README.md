@@ -8,7 +8,8 @@ Netlify (`betosoft-academy`, statische pagina's + functies in Frankfurt) en Neon
 |---|---|---|
 | `/aanvragen/` | publiek | Inschrijven als persoon (eventueel met factuur op een bedrijf) of als onderneming |
 | `/aanmelden/` | iedereen | Aanmelden met gebruikersnaam of e-mail + wachtwoord |
-| `/welkom/?t=…` | nieuwe gebruiker | Wachtwoord kiezen via uitnodigingslink (14 dagen geldig, één keer) |
+| `/welkom/?t=…` | nieuwe gebruiker | Wachtwoord kiezen via uitnodigingslink (14 dagen geldig, één keer) of herstellink (1 uur geldig, één keer) |
+| `/wachtwoord-vergeten/` | iedereen | Nieuwe link vragen om een wachtwoord te kiezen |
 | `/beheer/` | superadmin, beheerder | Aanvragen, toegangsrechten, ondernemingen, cursisten, leerlijn, cursussen (online/offline), versies, instellingen, logboek |
 | `/centrale/` | beheerder van een onderneming of locatie | Overzicht, medewerkers (met eigen login), leerlijn, scorebord, opleidingen, locaties |
 | `/` | publiek | Startpagina: cursussen (uit `public/cursussen.js`) met prijs en demo, werkwijze, ondernemingen, voorwaarden |
@@ -19,6 +20,21 @@ Netlify (`betosoft-academy`, statische pagina's + functies in Frankfurt) en Neon
 | `/cursus/<CODE>/` | met toegang | De volledige cursusapp met menubalk (startpagina, leerlijn, scores); voortgang in de databank (`cursus_gegevens`) |
 | `/attest/<id>` | wie de link heeft | Attest (A4 liggend) afdrukken of als PDF bewaren, mailen, en controleren of het geldig is |
 | `/attest/voorbeeld/<CODE>` | beheerder | Voorbeeldattest van een cursus |
+
+## Aanmelden en wachtwoord
+- **Wachtwoordbeheerder van de browser** (Chrome, Safari, iCloud-sleutelhanger): de formulieren gebruiken `autocomplete="username"`,
+  `current-password` en `new-password`. Op `/welkom/` staat het e-mailadres als gebruikersnaam in het formulier, zodat de browser
+  wachtwoord en e-mail samen bewaart. Op een gsm krijgt het eerste veld géén automatische focus: een veld dat al focus heeft,
+  krijgt in Chrome op de iPhone geen voorstel om het bewaarde wachtwoord in te vullen.
+- **Oogknop** bij elk wachtwoordveld (`public/toon-wachtwoord.js`, ook voor formulieren die later verschijnen). Bij het versturen
+  staat elk veld terug op `password`, zodat de browser het wachtwoord kan bewaren.
+- **Aanmelden zonder script**: wordt het formulier verstuurd voor het script geladen is, dan komt het als gewoon formulier binnen
+  op `/api/aanmelden` (alleen van de eigen site) en volgt een doorverwijzing. Het wachtwoord komt nooit in de adresbalk.
+- **Wachtwoord vergeten** (`/api/wachtwoord-vergeten`, e-mail of gebruikersnaam). Het antwoord is altijd hetzelfde, of het account
+  bestaat of niet. Met mail (`BREVO_API_KEY` en `MAIL_AFZENDER`): een herstellink van 1 uur naar het e-mailadres van het account,
+  max. 3 per uur. Zonder mail: een melding in **Beheer → Meldingen** (max. 1 per dag per persoon); maak dan een link met
+  **Beheer → Cursisten → Aanmeldlink** of laat de beheerder van de onderneming dat doen (**Medewerkers → Nieuwe aanmeldlink**).
+- Logboek: `wachtwoord_herstel_gevraagd`, `herstellink_gemaakt`, `wachtwoord_hersteld`.
 
 ## Rollen
 - **superadmin** (`superbetonman`): alles, plus prijzen, voorwaarden, verlengingsregels en beheerders.
@@ -118,6 +134,7 @@ Netlify (`betosoft-academy`, statische pagina's + functies in Frankfurt) en Neon
 - `DATABASE_URL` – verbinding met Neon
 - `SESSIE_GEHEIM` – sleutel voor de aanmeldsessie
 - `BREVO_API_KEY`, `MAIL_AFZENDER` (geverifieerd in Brevo), optioneel `MAIL_AFZENDER_NAAM` – attesten mailen (zonder: eigen mailprogramma)
+  en herstellinks bij "wachtwoord vergeten" (zonder: melding voor de beheerders)
 
 ## Lokaal controleren
 ```

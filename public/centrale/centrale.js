@@ -252,8 +252,9 @@ tabs.account = async () => {
       <p><strong>${esc(naam(g))}</strong><br><span class="zacht">${esc(g.email)} · beheerder van ${esc(g.organisatie?.naam || "")}</span></p>
       <form id="ww">
         <h3 style="margin:12px 0 8px">Wachtwoord wijzigen</h3>
-        <label class="veld"><span class="label">Huidig wachtwoord</span><input type="password" name="huidig" autocomplete="current-password" required></label>
-        <label class="veld"><span class="label">Nieuw wachtwoord (minstens 12 tekens)</span><input type="password" name="nieuw" minlength="12" autocomplete="new-password" required></label>
+        <input type="text" name="gebruiker" autocomplete="username" value="${esc(g.email)}" hidden>
+        <div class="veld"><label class="label" for="ww-huidig">Huidig wachtwoord</label><input id="ww-huidig" type="password" name="huidig" autocomplete="current-password" required></div>
+        <div class="veld"><label class="label" for="ww-nieuw">Nieuw wachtwoord (minstens 12 tekens)</label><input id="ww-nieuw" type="password" name="nieuw" minlength="12" autocomplete="new-password" required></div>
         <button class="knop" type="submit">Wijzigen</button>
       </form>
     </div>`

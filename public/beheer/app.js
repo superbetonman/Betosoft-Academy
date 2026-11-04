@@ -426,7 +426,10 @@ tabs.cursisten = async () => {
             <span>sinds <span class="mono">${datum(g.aangemaakt_op)}</span></span>
           </div>
         </div>
-        <div class="knoppen"><button class="knop stil klein" data-actie="cursistActief" data-id="${g.id}" data-actief="${g.actief ? "0" : "1"}">${g.actief ? "Deactiveren" : "Activeren"}</button></div>
+        <div class="knoppen">
+          ${g.actief ? `<button class="knop stil klein" data-actie="uitnodiging" data-id="${g.id}" data-naam="${esc(g.voornaam || g.email)}">${g.account_actief ? "Aanmeldlink" : "Uitnodiging"}</button>` : ""}
+          <button class="knop stil klein" data-actie="cursistActief" data-id="${g.id}" data-actief="${g.actief ? "0" : "1"}">${g.actief ? "Deactiveren" : "Activeren"}</button>
+        </div>
       </div>`).join("")}</div>` : `<div class="leeg">Geen cursisten gevonden.</div>`}`
   let t
   $("#cursistzoek").addEventListener("input", (e) => {
@@ -714,8 +717,9 @@ tabs.instellingen = async () => {
 
     <h2>04 Mijn wachtwoord</h2>
     <form id="wwform" class="paneel" style="max-width:520px">
-      <label class="veld"><span class="label">Huidig wachtwoord</span><input type="password" name="huidig" autocomplete="current-password" required></label>
-      <label class="veld"><span class="label">Nieuw wachtwoord (minstens 12 tekens)</span><input type="password" name="nieuw" minlength="12" autocomplete="new-password" required></label>
+      <input type="text" name="gebruiker" autocomplete="username" value="${esc(ik.email)}" hidden>
+      <div class="veld"><label class="label" for="ww-huidig">Huidig wachtwoord</label><input id="ww-huidig" type="password" name="huidig" autocomplete="current-password" required></div>
+      <div class="veld"><label class="label" for="ww-nieuw">Nieuw wachtwoord (minstens 12 tekens)</label><input id="ww-nieuw" type="password" name="nieuw" minlength="12" autocomplete="new-password" required></div>
       <button class="knop" type="submit">Wijzigen</button>
     </form>`
 
@@ -751,6 +755,7 @@ const actieNamen = {
   versie_aangemaakt: "Nieuwe versie", versie_gepubliceerd: "Versie gepubliceerd", verlenging_aangevraagd: "Verlenging aangevraagd",
   instellingen_gewijzigd: "Instellingen gewijzigd", beheerder_toegevoegd: "Beheerder toegevoegd", beheerder_actief: "Beheerder (de)geactiveerd",
   uitnodiging_gemaakt: "Uitnodiging gemaakt", account_geactiveerd: "Account geactiveerd", wachtwoord_gewijzigd: "Wachtwoord gewijzigd",
+  wachtwoord_herstel_gevraagd: "Wachtwoord vergeten", herstellink_gemaakt: "Herstellink gemaild", wachtwoord_hersteld: "Nieuw wachtwoord gekozen",
   locatie_toegevoegd: "Locatie toegevoegd", rol_gewijzigd: "Rol gewijzigd",
 }
 tabs.logboek = async () => {

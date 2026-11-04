@@ -28,43 +28,75 @@
   <section class="aanmeldscherm">
     <h1>Aanmelden</h1>
     <p class="zacht">Voor cursisten, ondernemingen en beheerders.</p>
-    <form id="form" class="paneel">
-      <label class="veld"><span class="label">Gebruikersnaam of e-mail</span><input name="login" autocomplete="username" required autofocus></label>
-      <label class="veld"><span class="label">Wachtwoord</span><input type="password" name="wachtwoord" autocomplete="current-password" required></label>
+    <form id="form" class="paneel" method="post" action="/api/aanmelden">
+      <div class="veld"><label class="label" for="login">Gebruikersnaam of e-mail</label>
+        <input id="login" name="login" type="text" inputmode="email" autocomplete="username" autocapitalize="none" autocorrect="off" spellcheck="false" required></div>
+      <div class="veld"><label class="label" for="wachtwoord">Wachtwoord</label>
+        <input id="wachtwoord" name="wachtwoord" type="password" autocomplete="current-password" required></div>
+      <input type="hidden" name="terug" id="terug">
       <div id="fout" class="melding fout verborgen" role="alert"></div>
-      <button class="knop" type="submit">Aanmelden</button>
+      <div class="onder">
+        <button class="knop" type="submit">Aanmelden</button>
+        <a class="klein" href="/wachtwoord-vergeten/" id="vergeten">Wachtwoord vergeten?</a>
+      </div>
     </form>
     <p class="klein zacht">Nog geen wachtwoord? Gebruik de uitnodigingslink die je kreeg van Betosoft of van de beheerder van je onderneming.</p>
   </section>
   <script type="module">
     import { api } from "/gemeen.js"
-    const terug = new URLSearchParams(location.search).get("terug")
-    const veilig = (p) => (p && p.startsWith("/") && !p.startsWith("//") ? p : null)
-    try {
-      const s = await api("/api/sessie")
-      if (s.aangemeld) location.replace(veilig(terug) || s.bestemming)
-    } catch {}
-    document.getElementById("form").addEventListener("submit", async (e) => {
-      e.preventDefault()
+    const form = document.getElementById("form")
+    const login = document.getElementById("login")
+    const params = new URLSearchParams(location.search)
+    const veilig = (p) => (p && p.startsWith("/") && !p.startsWith("//") && !p.includes("\\") ? p : null)
+    const terug = veilig(params.get("terug"))
+    if (terug) document.getElementById("terug").value = terug
+    const toonFout = (t) => {
       const f = document.getElementById("fout")
-      f.classList.add("verborgen")
-      const knop = e.target.querySelector("button")
+      f.textContent = t
+      f.classList.remove("verborgen")
+    }
+
+    // De luisteraar staat er meteen (vóór de sessiecontrole), zodat een snel of automatisch ingevuld formulier
+    // nooit als gewone pagina wordt verstuurd.
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault()
+      document.getElementById("fout").classList.add("verborgen")
+      const knop = form.querySelector('button[type="submit"]')
       knop.disabled = true
       try {
-        const r = await api("/api/aanmelden", { methode: "POST", data: Object.fromEntries(new FormData(e.target)) })
-        location.replace(veilig(terug) || r.bestemming)
+        const r = await api("/api/aanmelden", { methode: "POST", data: Object.fromEntries(new FormData(form)) })
+        location.replace(terug || r.bestemming)
       } catch (err) {
-        f.textContent = err.message
-        f.classList.remove("verborgen")
-      } finally {
+        toonFout(err.message)
         knop.disabled = false
       }
     })
+
+    // Teruggestuurd na een gewoon verstuurd formulier (script nog niet geladen) met een fout
+    if (params.has("fout")) {
+      toonFout("Gebruikersnaam of wachtwoord klopt niet.")
+      history.replaceState(null, "", terug ? `/aanmelden/?terug=${encodeURIComponent(terug)}` : "/aanmelden/")
+    }
+
+    // E-mail of gebruikersnaam meenemen naar "Wachtwoord vergeten"
+    document.getElementById("vergeten").addEventListener("click", () => {
+      try { sessionStorage.setItem("academie-login", login.value.trim()) } catch {}
+    })
+
+    // Enkel op een computer meteen in het eerste veld. Op een gsm niet: een veld dat al focus heeft voor je het
+    // aantikt, krijgt in Chrome op de iPhone geen voorstel om het bewaarde wachtwoord in te vullen.
+    if (matchMedia("(hover: hover) and (pointer: fine)").matches && !login.value) login.focus()
+
+    try {
+      const s = await api("/api/sessie")
+      if (s.aangemeld) location.replace(terug || s.bestemming)
+    } catch {}
   </script>
   <footer class="voet">
     <p class="disclaimer">De cursussen zijn met de grootste zorg samengesteld. Raadpleeg in geval van twijfel altijd de normatieve documenten en reglementen; die blijven de referentie.</p>
     <p>Betosoft Academie · <a href="/">startpagina</a> · <a href="/prijzen/">prijzen</a> · <a href="https://betosoft.be">betosoft.be</a></p>
   </footer>
+  <script src="/toon-wachtwoord.js" type="module"></script>
   <script src="/fout.js" type="module"></script>
 </body>
 </html>
