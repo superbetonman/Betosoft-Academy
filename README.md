@@ -158,6 +158,10 @@ Netlify (`betosoft-academy`, statische pagina's + functies in Frankfurt) en Neon
 - `migraties/007_bmc_bpb_apart.sql`: BMC en BPB als afgeleide cursussen van de bron BMC-BPB (`bron`, `app_modules`, `app_meta`,
   `modules.app_id`, `v_cursus_modules`, `product_cursussen`); TRJ-BMC/TRJ-BPB worden CRS-BMC/CRS-BPB, CRS-BMC-BPB wordt PAK-BMC-BPB.
   Daarna eenmalig `scripts/cursusapps/haak-filter.mjs BMC-BPB` voor de filterhaak in de opgeslagen app.
+- `migraties/008_csc_milieu_mvo.sql`: CSC wordt "Milieu, CSC en maatschappelijk verantwoord ondernemen", voor betoncentrales en
+  prefabfabrieken (geen betontechnologie of chauffeursinhoud meer). Nieuwe moduletitels 1–11 en module 12; niveau 1 (1–5) is
+  herbouwd in de cursusapp. Het oude niveau 2 (6–11) staat verborgen in de app (`oud-m6` … `oud-m11`, werkfiches in `FD_N2`),
+  om om te zetten naar het nieuwe plan.
 - `migraties/009_modules_af_masterclass.sql`: alle modules van PLM en VRK klaar (CSC niet: zie de ombouw tot "Milieu, CSC en MVO"); nieuwe cursus BT3 (Masterclass betontechnologie 3.0)
   met acht modules en product `CRS-BT3`, op "niet tonen"; de abonnementen heten "Academy-abonnement". Uitvoeren na het opladen van de
   nieuwe cursusbestanden; daarna elke cursus één keer openen als beheerder om de lessenlijst te bevestigen.
