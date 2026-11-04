@@ -71,7 +71,16 @@ Netlify (`betosoft-academy`, statische pagina's + functies in Frankfurt) en Neon
 - Demo (`demo.html`): de start (module 0) en vier lessen, elk uit een ander hoofdstuk en verspreid over de cursus.
   De keuze staat per cursus in `bouw.mjs` (`demo: ["m1-l1", "m4-l1", ...]`). Uit een los modulescript gaat enkel de
   gekozen les mee, ingebouwd in `demo.html`. Elke module toont in de demo "1 van 7 onderdelen in de demo".
+  Met `snoei: true` (PLM, VRK, CSC, BT3) blijven in de demo ook enkel de animaties van de demolessen staan, plus `traject` voor de startpagina.
 - Bijwerken: `scripts/cursusapps/bouw.mjs` (volledige versie + demo, met de twee haken uit `haken.mjs`) en `scripts/cursusapps/opladen.mjs`.
+- Een module toevoegen aan een app met een stub in `COURSE` (`{ id: "m7", ..., avail: false, preview: "..." }`): zet vlak vóór
+  `const REG = ...` het blok `Object.assign(ANIMS, {...}); const M7 = {...};` en daarna
+  `[M7, ...].forEach(m => { const i = COURSE.findIndex(x => x.id === m.id); if (i >= 0) COURSE[i] = m; });`. Zo deed CSC het met
+  modules 2–5, en zo kwamen in november 2026 de ontbrekende modules van PLM, VRK en CSC en de hele Masterclass 3.0 (BT3) erbij.
+  Een werkfiche bij een latere module: `Object.assign(FD, {...})` en daarna FD opnieuw op `FICHES` toepassen; `bouw.mjs` haalt die
+  inhoud uit de demo, net als `FD` zelf.
+- BT3 (Masterclass betontechnologie 3.0) gebruikt de motor van de PLM-app (zelfde lessen, animaties, voorlezen, toetsen en
+  voortgang), met een eigen accentkleur. Voorbeeldcentrale in PLM, VRK en BT3: Lindeveld Beton NV.
 
 ## Cursussen op de startpagina en online
 - Per cursus kies je in **Beheer → Cursussen** hoe ze publiek verschijnt (`cursussen.startpagina`, migratie 006):
@@ -85,8 +94,9 @@ Netlify (`betosoft-academy`, statische pagina's + functies in Frankfurt) en Neon
 - Te koop (`product_te_koop`): een actief product waarvan elke cursus op "inschrijven mogelijk" staat; een abonnement blijft altijd te koop.
   Dat geldt voor `/api/producten` (startpagina, prijzen, inschrijfformulier), de aanvraag zelf en de bestelling van een onderneming.
 - De startpagina toont pas cursussen nadat ze uit de databank geladen zijn, zodat een verborgen cursus niet even opduikt.
-- Elke cursus heeft modules en een product `CRS-<CODE>` (VRK, PLM, CSC, BT1, BT2 sinds migratie 004, nog zonder prijs).
+- Elke cursus heeft modules en een product `CRS-<CODE>` (VRK, PLM, CSC, BT1, BT2 sinds migratie 004, BT3 sinds migratie 008, nog zonder prijs).
   Modules in voorbereiding staan met `gepubliceerd = false`; op de startpagina heten die cursussen "eerste modules online".
+  Sinds migratie 008 zijn alle modules van PLM, VRK en CSC klaar.
 - Boven elke cursus (en demo) staat een menubalk: startpagina, mijn leerlijn, scores (en beheer of mijn centrale). In de bovenbalk van
   de app zit een knop terug naar de leerlijn (in een demo: naar de cursussen).
 
@@ -148,6 +158,9 @@ Netlify (`betosoft-academy`, statische pagina's + functies in Frankfurt) en Neon
 - `migraties/007_bmc_bpb_apart.sql`: BMC en BPB als afgeleide cursussen van de bron BMC-BPB (`bron`, `app_modules`, `app_meta`,
   `modules.app_id`, `v_cursus_modules`, `product_cursussen`); TRJ-BMC/TRJ-BPB worden CRS-BMC/CRS-BPB, CRS-BMC-BPB wordt PAK-BMC-BPB.
   Daarna eenmalig `scripts/cursusapps/haak-filter.mjs BMC-BPB` voor de filterhaak in de opgeslagen app.
+- `migraties/008_modules_af_masterclass.sql`: alle modules van PLM, VRK en CSC klaar; nieuwe cursus BT3 (Masterclass betontechnologie 3.0)
+  met acht modules en product `CRS-BT3`, op "niet tonen"; de abonnementen heten "Academy-abonnement". Uitvoeren na het opladen van de
+  nieuwe cursusbestanden; daarna elke cursus één keer openen als beheerder om de lessenlijst te bevestigen.
 - Bedrijfsregels zitten in databankfuncties: `activeer_aanvraag`, `verleng_recht`, `vraag_verlenging`, `wijs_plaats_toe`,
   `voeg_cursist_toe`, `nieuwe_versie`, `beoordeel_wijziging`, `publiceer_versie`, `zet_op_versie`. Elke actie komt in `auditlog`.
 

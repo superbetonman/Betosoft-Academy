@@ -20,6 +20,7 @@ import { metFilter } from "./haken.mjs"
 const T = process.env.ARTIFACTS || "/root/.claude/projects/-home-user-Betosoft-Academy/6be09980-8e69-5402-8d43-7c5de17d33cb/tool-results"
 const S = process.env.EXTRA || "/tmp/claude-0/-home-user-Betosoft-Academy/6be09980-8e69-5402-8d43-7c5de17d33cb/scratchpad"
 // demo: de lessen (id) die naast de start in de demo zitten, elk uit een ander hoofdstuk.
+// snoei: in de demo ook de animaties van de andere lessen weglaten (enkel de demolessen en "traject" blijven).
 // BMC-BPB is de bron van de cursussen BMC en BPB (migratie 007): die gebruiken deze app en tonen enkel hun modules
 // (cursussen.app_modules); ze hebben dus geen eigen bestanden. De demo bevat lessen uit beide trajecten.
 const CURSUSSEN = [
@@ -28,9 +29,9 @@ const CURSUSSEN = [
   { code: "DSP", bron: "artifact-8ab271c4-1793442580-7f98.html", url: "J8MuGWkqX4ni5uPrkxdvAL", product: "CRS-DSP", extra: `${S}/catalogus/src/disp1`, demo: ["m1-l1", "m4-l1", "m8-l1", "m11-l1"] },
   { code: "MENG", bron: "artifact-547fde33-1793613707-f46c.html", url: "BSCBBERNUMJyooSUPWd2GE", product: "CRS-MENG", demo: ["m1-l1", "m3-l1", "m5-l1", "m7-l1"] },
   { code: "AI", bron: "artifact-98c62fa3-1793375140-79bc.html", url: "KsBYuRJkqZWpfnDsuPwZLV", product: "CRS-AI", extra: `${S}/catalogus-b/ai-files`, demo: ["m1-l1", "m3-l1", "m4-l1", "m6-l1"] },
-  { code: "VRK", bron: "artifact-8b3a1d5d-1793520934-ff36.html", url: "JCA3nRWgGv6EijjX6f38tV", product: "CRS-VRK", demo: ["m1-l1", "g1-l1", "g2-l1", "g4-l1"] },
-  { code: "PLM", bron: "artifact-f01e8662-1793520932-eb9b.html", url: "WekncP6rDyR8oodKmCPyKs", product: "CRS-PLM", demo: ["m1-l1", "g1-l1", "g3-l1", "g5-l1"] },
-  { code: "CSC", bron: "artifact-e15fd538-1793518100-8161.html", url: "Uq9k6jXZzjhKuLKRa1Pndt", product: "CRS-CSC", demo: ["m1-l1", "m2-l1", "m4-l1", "m5-l1"] },
+  { code: "VRK", bron: "artifact-8b3a1d5d-1793520934-ff36.html", url: "JCA3nRWgGv6EijjX6f38tV", product: "CRS-VRK", snoei: true, demo: ["m1-l1", "m5-l1", "g2-l1", "m11-l1"] },
+  { code: "PLM", bron: "artifact-f01e8662-1793520932-eb9b.html", url: "WekncP6rDyR8oodKmCPyKs", product: "CRS-PLM", snoei: true, demo: ["m1-l1", "m6-l1", "g1-l1", "m9-l1"] },
+  { code: "CSC", bron: "artifact-e15fd538-1793518100-8161.html", url: "Uq9k6jXZzjhKuLKRa1Pndt", product: "CRS-CSC", snoei: true, demo: ["m1-l1", "m3-l1", "m7-l1", "m9-l1"] },
   { code: "BT1", bron: "artifact-08dad6d7-1793529805-b0cb.html", url: "26RJzcCHX37ZgetFiXgW4N", product: "CRS-BT1", geenDemo: true },
   { code: "BT2", bron: "artifact-64340363-1793540992-38ab.html", url: "DNfWM52JYcJrsW3xDNET5P", product: "CRS-BT2", geenDemo: true },
 ]
@@ -192,7 +193,36 @@ function korteScript(code, label, ctx) {
     vervang.push([lessen.value.start, lessen.value.end, "[]"])
     markeer(n, false)
   })
-  return { vervang, modules, gezien, gehouden }
+  // snoei (per cursus aan te zetten): enkel de animaties van de lessen in de demo blijven, plus "traject" (startpagina).
+  // Zo staan de titels en samenvattingen van de animaties van de andere lessen niet in de broncode van de demo.
+  let animsWeg = 0
+  if (ctx.snoei) {
+    const nodig = new Set(["traject"])
+    walk.full(ast, (n) => {
+      if (n.type !== "ObjectExpression") return
+      const id = waarde(prop(n, "id")), anim = waarde(prop(n, "anim"))
+      if (typeof id === "string" && typeof anim === "string" && inDemo(id)) nodig.add(anim)
+    })
+    const isRegister = (x) => x && x.type === "Identifier" && /^(SHARED_)?ANIMS$/.test(x.name)
+    const registers = []
+    walk.full(ast, (n) => {
+      if (n.type === "VariableDeclarator" && isRegister(n.id) && n.init) {
+        if (n.init.type === "ObjectExpression") registers.push(n.init)
+        else if (n.init.type === "CallExpression") n.init.arguments.filter((a) => a.type === "ObjectExpression").forEach((a) => registers.push(a))
+      }
+      if (n.type === "CallExpression" && n.callee.type === "MemberExpression" && n.callee.object.type === "Identifier" && n.callee.object.name === "Object" &&
+          n.callee.property.name === "assign" && isRegister(n.arguments[0]))
+        n.arguments.slice(1).filter((a) => a.type === "ObjectExpression").forEach((a) => registers.push(a))
+    })
+    for (const o of registers) {
+      const sleutel = (p) => (p.key.type === "Identifier" ? p.key.name : p.key.value)
+      const houd = o.properties.filter((p) => p.type !== "Property" || p.computed || nodig.has(sleutel(p)))
+      if (houd.length === o.properties.length) continue
+      animsWeg += o.properties.length - houd.length
+      vervang.push([o.start, o.end, "{\n" + houd.map((p) => code.slice(p.start, p.end)).join(",\n") + "\n}"])
+    }
+  }
+  return { vervang, modules, gezien, gehouden, animsWeg }
 }
 
 // Een los modulescript (m2.js ...) inkorten tot de gekozen les, met enkel de animaties die die les gebruikt.
@@ -354,9 +384,10 @@ function maakDemo(html, c, externe = {}) {
     const inhoud = m[2]
     if (inhoud.length < 2000 || !/lessons/.test(inhoud)) continue
     const begin = m.index + m[1].length
-    const r = korteScript(inhoud, c.code, { keuze, extern, externKeuze })
+    const r = korteScript(inhoud, c.code, { keuze, extern, externKeuze, snoei: !!c.snoei })
     if (r.fout) verslag.push(r.fout)
     if (r.modules) verslag.push(`${r.modules} modules (${r.gezien.join(",")})`)
+    if (r.animsWeg) verslag.push(`${r.animsWeg} animaties van andere lessen weggelaten`)
     gehouden.push(...r.gehouden)
     for (const [a, b, t] of r.vervang) vervang.push([begin + a, begin + b, t])
   }
