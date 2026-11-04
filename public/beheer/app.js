@@ -532,7 +532,7 @@ tabs.cursussen = async () => {
       <div class="klein"><span class="mono">${s.modules}</span> modules · <span class="mono">${s.lessen}</span> lessen · <span class="mono">${s.toetsen}</span> toetsen</div>
       ${s.verouderd ? `<div class="klein" style="color:var(--aandacht)">cursus gewijzigd: open ze opnieuw</div>` : `<div class="klein zacht">${esc(tijdstip(s.bijgewerkt_op))}</div>`}`
   }
-  const prijs = (c) => (c.producten || []).filter((p) => p.code.startsWith("CRS-")).map((p) => `${esc(p.code)} <span class="mono">${p.prijs === null ? "prijs volgt" : esc(euro(p.prijs))}</span>${p.actief ? "" : " (inactief)"}`).join("<br>") || `<span class="zacht">geen</span>`
+  const prijs = (c) => (c.producten || []).filter((p) => /^(CRS|PAK)-/.test(p.code)).map((p) => `${esc(p.code)} <span class="mono">${p.prijs === null ? "prijs volgt" : esc(euro(p.prijs))}</span>${p.actief ? "" : " (inactief)"}`).join("<br>") || `<span class="zacht">geen</span>`
   inhoud.innerHTML = `
     <h1>Cursussen</h1>
     <p class="zacht klein">Startpagina: <strong>niet tonen</strong> (niet op de startpagina en de prijzenpagina, geen publieke demo),
@@ -543,10 +543,13 @@ tabs.cursussen = async () => {
     <div class="scroll-x paneel" style="padding:0"><table class="eenvoudig">
       <thead><tr><th>Cursus</th><th>Startpagina</th><th>Lessenlijst</th><th class="num">Modules klaar</th><th>Product</th><th class="num">Met toegang</th><th class="num">Gestart</th><th class="num">Attesten</th><th></th></tr></thead>
       <tbody>${cursussen.map((c) => `<tr>
-        <td><span class="tag">${esc(c.code)}</span><div><strong>${esc(c.titel)}</strong></div><div class="klein zacht">${esc(c.bestanden || "geen app")}</div></td>
-        <td><select data-startpagina="${c.id}" data-was="${esc(c.startpagina)}" data-toegang="${c.met_toegang ?? 0}" aria-label="Startpagina voor ${esc(c.code)}" style="min-width:190px">
+        <td><span class="tag">${esc(c.code)}</span><div><strong>${esc(c.titel)}</strong></div>
+          <div class="klein zacht">${c.bron ? `app, basis en voortgang van <span class="mono">${esc(c.bron)}</span> · ${esc((c.app_modules || []).join(", "))}`
+            : c.afgeleid?.length ? `bron van ${c.afgeleid.map(esc).join(" en ")}: hier onderhoud je de inhoud (één app, één keer de basis) · ${esc(c.bestanden || "geen app")}`
+            : esc(c.bestanden || "geen app")}</div></td>
+        <td>${c.afgeleid?.length ? `<span class="status s-indicatief">bron</span><div class="klein zacht">niet zelf op de startpagina; enkel beheerders openen ze</div>` : `<select data-startpagina="${c.id}" data-was="${esc(c.startpagina)}" data-toegang="${c.met_toegang ?? 0}" aria-label="Startpagina voor ${esc(c.code)}" style="min-width:190px">
             ${STARTPAGINA.map(([w, t]) => `<option value="${w}"${w === c.startpagina ? " selected" : ""}>${t}</option>`).join("")}</select>
-          <div class="klein zacht">${esc(STARTPAGINA.find(([w]) => w === c.startpagina)?.[2] || "")}</div></td>
+          <div class="klein zacht">${esc(STARTPAGINA.find(([w]) => w === c.startpagina)?.[2] || "")}</div>`}</td>
         <td>${struct(c)}</td>
         <td class="num mono">${c.modules_klaar ?? 0}/${c.modules ?? 0}</td>
         <td class="klein">${prijs(c)}</td>
@@ -556,7 +559,7 @@ tabs.cursussen = async () => {
         <td><div class="knoppen">
           ${c.app ? `<a class="knop klein" style="text-decoration:none;display:inline-flex;align-items:center" href="/cursus/${encodeURIComponent(c.code)}/" target="_blank" rel="noopener">Openen</a>` : ""}
           ${c.demo ? `<a class="knop licht klein" style="text-decoration:none;display:inline-flex;align-items:center" href="/demo/${encodeURIComponent(c.code)}/" target="_blank" rel="noopener">Demo</a>` : ""}
-          <a class="knop stil klein" style="text-decoration:none;display:inline-flex;align-items:center" href="/attest/voorbeeld/${encodeURIComponent(c.code)}" target="_blank" rel="noopener">Voorbeeldattest</a>
+          ${c.afgeleid?.length ? "" : `<a class="knop stil klein" style="text-decoration:none;display:inline-flex;align-items:center" href="/attest/voorbeeld/${encodeURIComponent(c.code)}" target="_blank" rel="noopener">Voorbeeldattest</a>`}
         </div></td>
       </tr>`).join("")}</tbody></table></div>
     <p class="klein zacht" style="margin-top:12px">Prijzen stel je in via Instellingen. Een cursus zonder prijs toont op de startpagina "prijs volgt"; inschrijven kan, de prijs leg je vast bij de facturatie.</p>`

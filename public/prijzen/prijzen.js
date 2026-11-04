@@ -29,7 +29,9 @@ async function laad() {
     const abo = producten.filter((p) => p.type === "abonnement")
     $("#abonnementen").innerHTML = abo.length ? tabel(abo) : `<p class="zacht">Er is nog geen abonnement.</p>`
 
-    const blokken = zichtbaar.map((c) => {
+    // per cursus enkel als je kunt inschrijven (een gedeelde basismodule maakt een cursus in voorbereiding niet te koop)
+    const open = (c) => aanbod.get(c.code) === "inschrijven" && productenVan(producten, c.code).length > 0
+    const blokken = zichtbaar.filter(open).map((c) => {
       const lijst = productenVan(producten, c.code)
       if (!lijst.length) return ""
       const hoofd = lijst.filter((p) => p.type !== "module")
@@ -42,7 +44,7 @@ async function laad() {
         <div class="knoppen">${c.demo ? `<a class="knop licht" href="/demo/${encodeURIComponent(c.code)}/">Bekijk de demo</a>` : ""}</div>
       </div>`
     }).join("")
-    const nogNiet = zichtbaar.filter((c) => !productenVan(producten, c.code).length)
+    const nogNiet = zichtbaar.filter((c) => !open(c))
     $("#cursusprijzen").innerHTML =
       blokken +
       (nogNiet.length

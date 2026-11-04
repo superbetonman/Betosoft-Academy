@@ -9,6 +9,10 @@ import { db } from "./db.mts"
  *    Een toets telt als "done" zodra ze geslaagd is (zo werkt de app).
  *  - cursus_structuur: de modules en lessen zoals de app ze toont (doorgegeven door cursus-academie.js).
  * Zonder structuur kennen we enkel het aantal afgeronde lessen, niet het totaal.
+ *
+ * Bron en afgeleide cursussen (migratie 007): BMC en BPB gebruiken de app en de voortgang van de bron BMC-BPB.
+ * De bron zelf staat niet in de leerlijn. De gemeenschappelijke modules (start en basis) tellen in elke cursus mee voor
+ * de voortgang, maar voor punten, lessen, toetsen en badges maar één keer (CursusStand.gedeeld).
  */
 
 export type Soort = "les" | "toets" | "opdracht"
@@ -97,7 +101,13 @@ export type ModuleStand = {
   af: number
   toets: { best: number; total: number; pct: number } | null
   status: "nog" | "bezig" | "af"
+  geslaagd: number
+  foutloos: number
+  /** punten van deze module (lessen, toetsen, foutloos en module af) */
+  punten: number
 }
+/** Wat al meetelt in een andere cursus met dezelfde bron: wordt in het totaal niet nog eens geteld. */
+export type Gedeeld = { af: number; geslaagd: number; foutloos: number; modules_af: number; punten: number }
 export type CursusStand = {
   code: string
   titel: string
@@ -120,6 +130,7 @@ export type CursusStand = {
   afgerond_op: string | null
   punten: number
   dagen: string[]
+  gedeeld?: Gedeeld | null
 }
 
 const datumFmt = new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Brussels", year: "numeric", month: "2-digit", day: "2-digit" })
@@ -159,7 +170,8 @@ export function stand(code: string, titel: string, rij: StructuurRij | null, P: 
   let afgerondOp = 0
   const scores: number[] = []
   const modules: ModuleStand[] = mods.map((m) => {
-    let mAf = 0
+    let mAf = 0, mGeslaagd = 0, mFoutloos = 0
+    const puntenVoor = punten
     let toets: ModuleStand["toets"] = null
     for (const l of m.lessen) {
       lessen++
@@ -172,14 +184,14 @@ export function stand(code: string, titel: string, rij: StructuurRij | null, P: 
       } else if (!volgende) volgende = { id: l.id, titel: l.titel, module: m.n ? `${m.n} · ${m.titel}` : m.titel }
       if (l.soort === "toets") {
         toetsen++
-        if (d) geslaagd++
+        if (d) { geslaagd++; mGeslaagd++ }
         const q = quiz[l.id]
         const p = pctVan(q)
         if (p !== null) {
           scores.push(p)
           if (!toets || p > toets.pct) toets = { best: Number(q!.best || 0), total: Number(q!.total), pct: p }
         }
-        if (perfect(q)) { foutloos++; punten += PUNTEN.foutloos }
+        if (perfect(q)) { foutloos++; mFoutloos++; punten += PUNTEN.foutloos }
       }
     }
     const status = mAf === 0 ? "nog" : mAf === m.lessen.length ? "af" : "bezig"
@@ -188,7 +200,7 @@ export function stand(code: string, titel: string, rij: StructuurRij | null, P: 
       modulesTeller++
       if (status === "af") { modulesAf++; punten += PUNTEN.module }
     }
-    return { id: m.id, n: m.n, titel: m.titel, lessen: m.lessen.length, af: mAf, toets, status }
+    return { id: m.id, n: m.n, titel: m.titel, lessen: m.lessen.length, af: mAf, toets, status, geslaagd: mGeslaagd, foutloos: mFoutloos, punten: punten - puntenVoor }
   })
   const afgerond = lessen > 0 && af === lessen
   if (afgerond) punten += PUNTEN.cursus
@@ -228,18 +240,20 @@ export function niveau(punten: number) {
 
 export function totaal(standen: CursusStand[]) {
   const dagen = standen.flatMap((s) => s.dagen)
+  // gemeenschappelijke modules (bron) maar één keer: wat al in een andere cursus telde, gaat eraf
+  const zonder = (s: CursusStand, k: keyof Gedeeld) => s[k] - (s.gedeeld?.[k] ?? 0)
   const t: Totaal = {
-    lessen_af: standen.reduce((a, s) => a + s.af, 0),
-    toetsen_geslaagd: standen.reduce((a, s) => a + s.geslaagd, 0),
-    foutloos: standen.reduce((a, s) => a + s.foutloos, 0),
-    modules_af: standen.reduce((a, s) => a + s.modules_af, 0),
+    lessen_af: standen.reduce((a, s) => a + zonder(s, "af"), 0),
+    toetsen_geslaagd: standen.reduce((a, s) => a + zonder(s, "geslaagd"), 0),
+    foutloos: standen.reduce((a, s) => a + zonder(s, "foutloos"), 0),
+    modules_af: standen.reduce((a, s) => a + zonder(s, "modules_af"), 0),
     cursussen_af: standen.filter((s) => s.afgerond).length,
     leerdagen: new Set(dagen).size,
     langste_reeks: reeksen(dagen),
   }
   const badges = BADGES.map((b) => ({ code: b.code, naam: b.naam, uitleg: b.uitleg, behaald: b.test(t) }))
   const aantalBadges = badges.filter((b) => b.behaald).length
-  const punten = standen.reduce((a, s) => a + s.punten, 0) + aantalBadges * PUNTEN.badge
+  const punten = standen.reduce((a, s) => a + zonder(s, "punten"), 0) + aantalBadges * PUNTEN.badge
   const scores = standen.map((s) => s.gem_score).filter((x): x is number => x !== null)
   const laatst = standen.map((s) => s.laatst).filter(Boolean).sort().pop() ?? null
   return {
@@ -266,7 +280,8 @@ export type Deelnemer = {
   bedrijf_id: string | null
   bedrijf: string | null
 }
-export type Toegang = { met: number; modules: number; eind: string | null }
+/** met_eigen: modules met toegang die niet ook in een andere cursus van dezelfde bron zitten (bij BMC: M1–M4). */
+export type Toegang = { met: number; met_eigen: number; modules: number; eind: string | null }
 export type AttestRij = {
   id: string
   nummer: string
@@ -278,15 +293,22 @@ export type AttestRij = {
   score: number | null
 }
 /** startpagina: 'niet_tonen' | 'voorbereiding' | 'inschrijven' (Beheer → Cursussen); gepubliceerd = online = 'inschrijven'. */
-export type CursusRij = { id: string; code: string; titel: string; gepubliceerd: boolean; startpagina: string; volgorde: number; app: boolean; demo: boolean }
+/** bron: code van de bron (app en voortgang) of null; is_bron: andere cursussen gebruiken deze cursus als bron. */
+export type CursusRij = {
+  id: string; code: string; titel: string; gepubliceerd: boolean; startpagina: string; volgorde: number; app: boolean; demo: boolean
+  bron: string | null; app_modules: string[] | null; is_bron: boolean
+}
 
 export async function laadCursussen(): Promise<CursusRij[]> {
   return (await db()`
-    SELECT c.id, c.code, c.titel, c.gepubliceerd, c.startpagina, c.volgorde,
-           EXISTS (SELECT 1 FROM cursus_bestanden b WHERE b.cursus = c.code AND b.pad = 'index.html') AS app,
-           EXISTS (SELECT 1 FROM cursus_bestanden b WHERE b.cursus = c.code AND b.pad = 'demo.html') AS demo
+    SELECT c.id, c.code, c.titel, c.gepubliceerd, c.startpagina, c.volgorde, c.bron, c.app_modules, is_bron(c.code) AS is_bron,
+           EXISTS (SELECT 1 FROM cursus_bestanden b WHERE b.cursus = coalesce(c.bron, c.code) AND b.pad = 'index.html') AS app,
+           EXISTS (SELECT 1 FROM cursus_bestanden b WHERE b.cursus = coalesce(c.bron, c.code) AND b.pad = 'demo.html') AS demo
     FROM cursussen c ORDER BY c.volgorde, c.code`) as CursusRij[]
 }
+
+/** Gegevens (voortgang) van een cursus: bij de bron als ze afgeleid is. */
+export const gegevensCode = (c: { code: string; bron: string | null }) => c.bron ?? c.code
 
 export async function laadStructuren(): Promise<Map<string, StructuurRij>> {
   const rijen = await db()`SELECT cursus, structuur, bevestigd, bijgewerkt_op FROM cursus_structuur`
@@ -328,13 +350,16 @@ export async function laadToegang(ids: string[]): Promise<Map<string, Map<string
   if (!ids.length) return uit
   const rijen = await db()`
     SELECT mt.gebruiker_id, c.code, count(DISTINCT mt.module_id)::int AS met, min(mt.eind_datum)::text AS eind,
-           (SELECT count(*)::int FROM modules m2 WHERE m2.cursus_id = c.id) AS modules
-    FROM v_module_toegang mt JOIN modules m ON m.id = mt.module_id JOIN cursussen c ON c.id = m.cursus_id
+           (SELECT count(*)::int FROM v_cursus_modules x WHERE x.cursus_id = c.id) AS modules,
+           count(DISTINCT mt.module_id) FILTER (WHERE c.bron IS NULL OR NOT EXISTS (
+             SELECT 1 FROM v_cursus_modules x JOIN cursussen xc ON xc.id = x.cursus_id
+             WHERE x.module_id = mt.module_id AND xc.id <> c.id AND xc.bron = c.bron))::int AS met_eigen
+    FROM v_module_toegang mt JOIN v_cursus_modules cm ON cm.module_id = mt.module_id JOIN cursussen c ON c.id = cm.cursus_id
     WHERE mt.gebruiker_id = ANY(${ids}::uuid[])
-    GROUP BY mt.gebruiker_id, c.id, c.code`
+    GROUP BY mt.gebruiker_id, c.id, c.code, c.bron`
   for (const r of rijen as any[]) {
     if (!uit.has(r.gebruiker_id)) uit.set(r.gebruiker_id, new Map())
-    uit.get(r.gebruiker_id)!.set(r.code, { met: r.met, modules: r.modules, eind: r.eind })
+    uit.get(r.gebruiker_id)!.set(r.code, { met: r.met, met_eigen: r.met_eigen, modules: r.modules, eind: r.eind })
   }
   return uit
 }
@@ -379,6 +404,13 @@ export async function leerlijn(deelnemers: Deelnemer[], opties: { alleCursussen?
   const [cursussen, structuren, voortgang, toegang, attesten] = await Promise.all([
     laadCursussen(), laadStructuren(), laadVoortgang(ids), laadToegang(ids), laadAttesten(ids),
   ])
+  // Afgeleide cursussen: welke app-modules hebben ze alleen (niet met een andere cursus van dezelfde bron gedeeld)?
+  const eigen = new Map<string, Set<string>>()
+  for (const c of cursussen) {
+    if (!c.bron) continue
+    const anderen = new Set(cursussen.filter((x) => x.bron === c.bron && x.code !== c.code).flatMap((x) => x.app_modules ?? []))
+    eigen.set(c.code, new Set((c.app_modules ?? []).filter((id) => !anderen.has(id))))
+  }
   const uit: LeerlijnDeelnemer[] = []
   for (const d of deelnemers) {
     const v = voortgang.get(d.id) ?? new Map()
@@ -386,13 +418,29 @@ export async function leerlijn(deelnemers: Deelnemer[], opties: { alleCursussen?
     const a = attesten.get(d.id) ?? []
     const alle = opties.alleCursussen?.(d) ?? false
     const lijst: LeerlijnCursus[] = []
+    const geteld = new Map<string, Set<string>>() // per bron: modules die al meetellen in het totaal
     for (const c of cursussen) {
+      if (c.is_bron) continue
       const tg = t.get(c.code)
-      const P = v.get(c.code) ?? null
-      if (!alle && !tg && !P) continue
+      const P = v.get(gegevensCode(c)) ?? null
       if (!c.app && !P) continue
       const s = stand(c.code, c.titel, structuren.get(c.code) ?? null, P)
       const volledig = !!tg && tg.modules > 0 && tg.met >= tg.modules
+      // Bij BMC en BPB maakt de gedeelde basis een cursus niet zichtbaar: enkel toegang of voortgang in de eigen modules.
+      const eigenToegang = !!tg && (c.bron ? tg.met_eigen > 0 : tg.met > 0)
+      const eigenVoortgang = !!P && (!c.bron || s.modules.some((m) => m.af > 0 && eigen.get(c.code)!.has(m.id)))
+      if (!alle && !volledig && !eigenToegang && !eigenVoortgang) continue
+      if (c.bron) {
+        const al = geteld.get(c.bron) ?? new Set<string>()
+        const g: Gedeeld = { af: 0, geslaagd: 0, foutloos: 0, modules_af: 0, punten: 0 }
+        for (const m of s.modules) {
+          if (!al.has(m.id)) { al.add(m.id); continue }
+          g.af += m.af; g.geslaagd += m.geslaagd; g.foutloos += m.foutloos; g.punten += m.punten
+          if (m.n !== "0" && m.status === "af") g.modules_af++
+        }
+        geteld.set(c.bron, al)
+        s.gedeeld = g.af || g.punten ? g : null
+      }
       let at = a.find((x) => x.cursus === c.code && !x.ingetrokken_op) ?? null
       if (!at && s.afgerond && s.bevestigd && !a.some((x) => x.cursus === c.code)) {
         const nieuw = await reikAttestUit(d, c, s)
@@ -403,7 +451,7 @@ export async function leerlijn(deelnemers: Deelnemer[], opties: { alleCursussen?
         online: c.gepubliceerd,
         demo: c.demo,
         toegang: alle || (volledig && c.gepubliceerd),
-        deels: !volledig && !!tg && tg.met > 0,
+        deels: !volledig && eigenToegang,
         eind: tg?.eind ?? null,
         attest: at ? { id: at.id, nummer: at.nummer, uitgereikt_op: at.uitgereikt_op, gemaild_op: at.gemaild_op } : null,
       })

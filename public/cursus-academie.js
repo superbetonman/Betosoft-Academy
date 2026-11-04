@@ -7,6 +7,9 @@
    - de lessenlijst van de app (window.ACADEMIE_COURSE, of de modules op de pagina bij BT1/BT2) gaat naar de academie
      (/api/leren/structuur/<cursus>), zodat leerlijn, scores en attesten weten hoeveel lessen en toetsen er zijn;
    - BT1 en BT2 bewaren hun voortgang zelf enkel in de browser: die wordt hier met het account gesynchroniseerd;
+   - een afgeleide cursus (BMC, BPB) gebruikt de app van haar bron (BMC-BPB): window.ACADEMIE_FILTER laat de modules van
+     het andere traject weg en past titel en inleiding aan; de voortgang staat bij de bron (A.gegevens), zodat de
+     gemeenschappelijke basis maar één keer gevolgd wordt;
    - disclaimer, demoband en foutmelder. */
 (function () {
   "use strict"
@@ -28,7 +31,24 @@
   }
   themaPas(themaLees())
   var cursus = String(A.cursus || "")
-  var basis = "/api/leren/gegevens/" + encodeURIComponent(cursus)
+  // voortgang: bij de bron als de cursus van een bron afgeleid is (gedeelde basis), anders bij de cursus zelf
+  var basis = "/api/leren/gegevens/" + encodeURIComponent(String(A.gegevens || cursus))
+
+  // ---------- Afgeleide cursus: enkel haar modules, met haar titel ----------
+  // De app roept dit op direct na `const COURSE = [...]` (haak uit bouw.mjs / haak-filter.mjs), vóór ze iets toont.
+  window.ACADEMIE_FILTER = function (C, M) {
+    if (Array.isArray(A.modules) && Array.isArray(C)) {
+      var houd = {}
+      A.modules.forEach(function (id) { houd[id] = 1 })
+      for (var i = C.length - 1; i >= 0; i--) if (!C[i] || !houd[C[i].id]) C.splice(i, 1)
+    }
+    if (M && A.meta && typeof A.meta === "object") for (var k in A.meta) M[k] = A.meta[k]
+  }
+  if (A.meta && A.meta.title) {
+    var zetTitel = function () { document.title = A.meta.title }
+    if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", zetTitel)
+    else zetTitel()
+  }
 
   function fout(status) {
     var e = new Error("Fout " + status)
@@ -234,7 +254,9 @@
     "border:1px solid var(--line, rgba(127,127,127,.45));background:var(--surface, transparent);color:var(--ink, inherit);text-decoration:none}" +
     ".academie-thema svg,.academie-thuis svg{width:18px;height:18px}" +
     "@media (prefers-color-scheme:dark){.academie-demo a{color:#6FB0BC;border-color:#6FB0BC}}" +
-    "@media print{.academie-menu,.academie-thuis,.academie-thema{display:none!important}}"
+    "@media print{.academie-menu,.academie-thuis,.academie-thema{display:none!important}}" +
+    // afgeleide cursus: de groep van het andere traject is leeg, dan ook de titel ervan niet tonen
+    (Array.isArray(A.modules) ? ".sec-h:has(+ .mods:empty){display:none}" : "")
 
   var ZON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>'
   var MAAN = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"/></svg>'
@@ -314,7 +336,7 @@
       band.className = "academie-demo"
       band.setAttribute("role", "note")
       band.innerHTML =
-        "<span><b>Demo.</b> Je bekijkt een voorproefje van deze cursus: de start en vier lessen uit verschillende modules. De andere lessen, opdrachten en toetsen zitten in de volledige cursus.</span>" +
+        "<span><b>Demo.</b> Je bekijkt een voorproefje van deze cursus: de start en enkele lessen uit verschillende modules. De andere lessen, opdrachten en toetsen zitten in de volledige cursus.</span>" +
         (A.product ? '<a class="hoofd" href="/aanvragen/?product=' + encodeURIComponent(A.product) + '">Inschrijven</a>' : "") +
         '<a href="/#cursussen">Alle cursussen</a>'
       main.insertBefore(band, main.firstChild)

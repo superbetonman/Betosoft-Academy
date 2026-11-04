@@ -68,7 +68,7 @@ Netlify (`betosoft-academy`, statische pagina's + functies in Frankfurt) en Neon
 - Demo (`demo.html`): de start (module 0) en vier lessen, elk uit een ander hoofdstuk en verspreid over de cursus.
   De keuze staat per cursus in `bouw.mjs` (`demo: ["m1-l1", "m4-l1", ...]`). Uit een los modulescript gaat enkel de
   gekozen les mee, ingebouwd in `demo.html`. Elke module toont in de demo "1 van 7 onderdelen in de demo".
-- Bijwerken: `scripts/cursusapps/bouw.mjs` (volledige versie + demo) en `scripts/cursusapps/opladen.mjs`.
+- Bijwerken: `scripts/cursusapps/bouw.mjs` (volledige versie + demo, met de twee haken uit `haken.mjs`) en `scripts/cursusapps/opladen.mjs`.
 
 ## Cursussen op de startpagina en online
 - Per cursus kies je in **Beheer → Cursussen** hoe ze publiek verschijnt (`cursussen.startpagina`, migratie 006):
@@ -86,6 +86,25 @@ Netlify (`betosoft-academy`, statische pagina's + functies in Frankfurt) en Neon
   Modules in voorbereiding staan met `gepubliceerd = false`; op de startpagina heten die cursussen "eerste modules online".
 - Boven elke cursus (en demo) staat een menubalk: startpagina, mijn leerlijn, scores (en beheer of mijn centrale). In de bovenbalk van
   de app zit een knop terug naar de leerlijn (in een demo: naar de cursussen).
+
+## BMC en BPB: twee cursussen, één bron
+- **Betonmixerchauffeur (BMC)** en **betonpompbediende (BPB)** zijn aparte cursussen: elk een kaart op de startpagina,
+  een eigen product (`CRS-BMC`, `CRS-BPB`), leerlijn en attest. Samen bestaan ze als **pakket** (`PAK-BMC-BPB`, bv. voor een mixerpomp).
+- De inhoud blijft één geheel in de **bron** `BMC-BPB` (migratie 007): één cursusapp met de start, de basis (1–4) en beide trajecten;
+  de modules en hun versies hangen aan BMC-BPB (*Beheer → Versies*). De basis onderhoud je dus één keer.
+- Een afgeleide cursus heeft `cursussen.bron` (de bron), `app_modules` (de app-modules die ze toont, met de start `m0`) en
+  `app_meta` (titel, inleiding en afdrukondertitel in de app). Welke databankmodules erbij horen, volgt uit `modules.app_id`
+  (view `v_cursus_modules`): een basismodule hoort bij BMC-BPB, BMC en BPB.
+- `/cursus/BMC/` en `/demo/BMC/` serveren de app van de bron met een eigen configuratie (`cursus.mts`). Direct na `const COURSE = [...]`
+  roept de app `window.ACADEMIE_FILTER` op (de *filterhaak*, `scripts/cursusapps/haken.mjs`): `cursus-academie.js` laat daar de
+  modules van het andere traject weg en zet de titel, vóór de app iets toont. Zonder filterhaak weigert de server de afgeleide cursus.
+- **Voortgang** staat bij de bron (`/api/leren/gegevens/BMC-BPB`): wie beide volgt, doet de basis één keer. In de leerlijn telt de basis
+  in elke cursus mee voor de voortgang, maar voor punten, lessen, toetsen en badges maar één keer. Wie enkel BMC heeft, ziet BPB niet.
+- De bron zelf staat altijd op "niet tonen", komt niet in de leerlijn en krijgt geen attest; beheerders openen ze als tester.
+- Producten horen bij elke cursus waarvan ze een deel zijn of die ze helemaal omvatten (`product_cursussen`): een basismodule en het
+  pakket staan bij BMC én BPB. Te koop (`product_te_koop`): elke module van het product zit in een cursus met "inschrijven mogelijk".
+- Een nieuwe module in een traject: in de app (bron) toevoegen, in `modules` met `app_id` registreren en de app-id in `app_modules`
+  van de juiste cursus(sen) zetten. *Beheer → Cursussen* toont per afgeleide cursus haar modules.
 
 ## Leerlijn, scores en attesten
 - **Lessenlijst.** De apps houden hun modules en lessen in `COURSE`, binnen een afgesloten functie. Een haak (`window.ACADEMIE_COURSE`,
@@ -123,6 +142,9 @@ Netlify (`betosoft-academy`, statische pagina's + functies in Frankfurt) en Neon
 - `migraties/005_ondernemingen_facturatie.sql`: verlenging neemt de facturatiegegevens mee; meldingen zeggen "onderneming" i.p.v. "centrale".
 - `migraties/006_startpagina_keuze.sql`: `cursussen.startpagina` (niet tonen, in voorbereiding, inschrijven mogelijk) en `product_te_koop`.
   Wat online stond, werd "inschrijven mogelijk"; wat offline stond, "niet tonen".
+- `migraties/007_bmc_bpb_apart.sql`: BMC en BPB als afgeleide cursussen van de bron BMC-BPB (`bron`, `app_modules`, `app_meta`,
+  `modules.app_id`, `v_cursus_modules`, `product_cursussen`); TRJ-BMC/TRJ-BPB worden CRS-BMC/CRS-BPB, CRS-BMC-BPB wordt PAK-BMC-BPB.
+  Daarna eenmalig `scripts/cursusapps/haak-filter.mjs BMC-BPB` voor de filterhaak in de opgeslagen app.
 - Bedrijfsregels zitten in databankfuncties: `activeer_aanvraag`, `verleng_recht`, `vraag_verlenging`, `wijs_plaats_toe`,
   `voeg_cursist_toe`, `nieuwe_versie`, `beoordeel_wijziging`, `publiceer_versie`, `zet_op_versie`. Elke actie komt in `auditlog`.
 

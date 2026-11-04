@@ -32,10 +32,18 @@ export function toegangTekst(p) {
   return "—"
 }
 
-/** Producten van één cursus, volledige cursus eerst, dan trajecten, dan losse modules. */
+/** Een traject bij meer dan één cursus: een pakket (bv. BMC en BPB samen). Een gedeelde basismodule is geen pakket. */
+export const isPakket = (p) => p.type === "traject" && (p.cursussen || []).length > 1
+
+/**
+ * Producten van één cursus: volledige cursus eerst, dan trajecten en pakketten, dan losse modules.
+ * Een product hoort bij elke cursus in p.cursussen: een basismodule van BMC en BPB, of een pakket, staat bij beide.
+ */
 export function productenVan(producten, code) {
-  const rang = (p) => (p.code.startsWith("CRS-") ? 0 : p.type === "traject" ? 1 : 2)
-  return producten.filter((p) => p.cursus === code).sort((a, b) => rang(a) - rang(b) || a.code.localeCompare(b.code))
+  const rang = (p) => (p.code.startsWith("CRS-") ? 0 : p.type === "traject" ? (isPakket(p) ? 2 : 1) : 3)
+  return producten
+    .filter((p) => (p.cursussen || (p.cursus ? [p.cursus] : [])).includes(code))
+    .sort((a, b) => rang(a) - rang(b) || a.code.localeCompare(b.code))
 }
 
 /** Prijs voor op een tegel: de volledige cursus, of anders de laagste prijs ("vanaf"). */

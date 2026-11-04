@@ -13,14 +13,17 @@ import fs from "node:fs"
 import path from "node:path"
 import * as acorn from "acorn"
 import * as walk from "acorn-walk"
+import { metFilter } from "./haken.mjs"
 
 // Bronmappen: T = de opgehaalde artifact-HTML (Artifact read), S = map met de losse modulescripts (m2.js ...).
 // Pas de paden aan of geef ze mee via de omgeving.
 const T = process.env.ARTIFACTS || "/root/.claude/projects/-home-user-Betosoft-Academy/6be09980-8e69-5402-8d43-7c5de17d33cb/tool-results"
 const S = process.env.EXTRA || "/tmp/claude-0/-home-user-Betosoft-Academy/6be09980-8e69-5402-8d43-7c5de17d33cb/scratchpad"
 // demo: de lessen (id) die naast de start in de demo zitten, elk uit een ander hoofdstuk.
+// BMC-BPB is de bron van de cursussen BMC en BPB (migratie 007): die gebruiken deze app en tonen enkel hun modules
+// (cursussen.app_modules); ze hebben dus geen eigen bestanden. De demo bevat lessen uit beide trajecten.
 const CURSUSSEN = [
-  { code: "BMC-BPB", bron: "artifact-7e35f0fe-1793531118-8407.html", url: "Gaw4cbxy6jAehrHgXMw6ne", product: "CRS-BMC-BPB", demo: ["m1-l1", "m3-l1", "mM3-l1", "mP3-l1"] },
+  { code: "BMC-BPB", bron: "artifact-7e35f0fe-1793531118-8407.html", url: "Gaw4cbxy6jAehrHgXMw6ne", product: null, demo: ["m1-l1", "m3-l1", "mM3-l1", "mP3-l1"] },
   { code: "LAB", bron: "artifact-5efec2a4-1793473462-1fe2.html", url: "CjN6BJSmqUf85MaMU9LsQQ", product: "CRS-LAB", demo: ["m1-l1", "m4-l1", "m8-l1", "m11-l1"] },
   { code: "DSP", bron: "artifact-8ab271c4-1793442580-7f98.html", url: "J8MuGWkqX4ni5uPrkxdvAL", product: "CRS-DSP", extra: `${S}/catalogus/src/disp1`, demo: ["m1-l1", "m4-l1", "m8-l1", "m11-l1"] },
   { code: "MENG", bron: "artifact-547fde33-1793613707-f46c.html", url: "BSCBBERNUMJyooSUPWd2GE", product: "CRS-MENG", demo: ["m1-l1", "m3-l1", "m5-l1", "m7-l1"] },
@@ -371,7 +374,8 @@ const enkel = process.env.ENKEL ? process.env.ENKEL.split(",") : null
 const gekozen = CURSUSSEN.filter((c) => !enkel || enkel.includes(c.code))
 const overzicht = []
 for (const c of gekozen) {
-  const bronHtml = metHaak(fs.readFileSync(path.join(T, c.bron), "utf8"), c)
+  // twee haken: de lessenlijst naar de academie (metHaak) en het filter voor afgeleide cursussen (metFilter, haken.mjs)
+  const bronHtml = metFilter(metHaak(fs.readFileSync(path.join(T, c.bron), "utf8"), c), c.code)
   const map = path.join(uit, c.code)
   fs.mkdirSync(map, { recursive: true })
   fs.writeFileSync(path.join(map, "beheer.html"), injecteer(bronHtml, c, { beheer: true }))

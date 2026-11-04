@@ -1,7 +1,7 @@
 import type { Config, Context } from "@netlify/functions"
 import { db, json, fout, dbFout, UUID } from "../lib/db.mts"
 import { aangemeld, eigenAanvraag, isBeheer, type Gebruiker } from "../lib/sessie.mts"
-import { CURSUSCODE, magCursus } from "../lib/cursustoegang.mts"
+import { CURSUSCODE, magCursus, magGegevens } from "../lib/cursustoegang.mts"
 import { laadDeelnemers, leerlijn, valideerStructuur, telLessen, telToetsen, korteNaam, volleNaam, NIVEAUS, PUNTEN, BADGES } from "../lib/leerlijn.mts"
 
 /**
@@ -171,10 +171,11 @@ export default async (req: Request, context: Context) => {
     }
 
     // ---------- Gegevens van een cursusapp ----------
+    // BMC en BPB bewaren hun voortgang bij de bron BMC-BPB (gedeelde basis): magGegevens laat dat toe.
     if (delen[0] === "gegevens" && delen[1]) {
       const code = delen[1].toUpperCase()
       if (!CURSUSCODE.test(code)) return fout("Onbekende cursus.", 404)
-      if (!(await magCursus(g, code))) return fout("Geen toegang tot deze cursus.", 403)
+      if (!(await magGegevens(g, code))) return fout("Geen toegang tot deze cursus.", 403)
 
       if (req.method === "GET") {
         const map = url.searchParams.get("map")

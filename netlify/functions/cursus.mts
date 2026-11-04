@@ -1,7 +1,7 @@
 import type { Config, Context } from "@netlify/functions"
 import { db } from "../lib/db.mts"
 import { aangemeld, isBeheer } from "../lib/sessie.mts"
-import { CURSUSCODE, magCursus } from "../lib/cursustoegang.mts"
+import { CURSUSCODE, magCursus, cursusInfo, type CursusInfo } from "../lib/cursustoegang.mts"
 
 /**
  * Serveert de cursusapps uit de databank (tabel cursus_bestanden):
@@ -10,7 +10,26 @@ import { CURSUSCODE, magCursus } from "../lib/cursustoegang.mts"
  *                            beheerders beheer.html (met die productie-informatie)
  *   /cursus/<CODE>/m2.js     losse modulescripts van dezelfde cursus
  *   /demo/<CODE>/            publieke teaser (start + vier lessen uit verschillende modules; de rest zit niet in het bestand)
+ * Een afgeleide cursus (BMC, BPB: kolom bron) krijgt de bestanden van haar bron (BMC-BPB) met een eigen configuratie:
+ * haar code, haar modules (de app laat de andere weg via de filterhaak), haar titel, en de voortgang bij de bron.
  */
+
+const CONFIG = /<script>window\.ACADEMIE=(\{[^<]*?\});<\/script>/
+const escHtml = (v: string) => v.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]!)
+
+/** De app van de bron, ingesteld voor een afgeleide cursus. Null als de app daar niet op voorzien is (geen filterhaak). */
+function afgeleid(html: string, c: CursusInfo, product: string | null): string | null {
+  const m = CONFIG.exec(html)
+  if (!m || !html.includes("window.ACADEMIE_FILTER(")) return null
+  const cfg = { ...JSON.parse(m[1]), cursus: c.code, gegevens: c.bron, modules: c.app_modules, meta: c.app_meta ?? undefined, product }
+  let uit = html.replace(m[0], () => `<script>window.ACADEMIE=${JSON.stringify(cfg).replace(/</g, "\\u003c")};</script>`)
+  const titel = typeof c.app_meta?.title === "string" ? c.app_meta.title : c.titel
+  uit = uit.replace(/<title>[^<]*<\/title>/i, () => `<title>${escHtml(titel)}</title>`)
+  // naam in de kopbalk van de app (<a class="brand" aria-label="Betosoft · …">…<b>naam</b>), als de app die heeft
+  uit = uit.replace(/(<a class="brand"[^>]*?aria-label=")[^"]*(")/, (_, a, b) => `${a}Betosoft · ${escHtml(titel)}${b}`)
+  uit = uit.replace(/(<a class="brand"[^>]*>(?:(?!<\/a>)[\s\S])*?<b>)[^<]*(<\/b>)/, (_, a, b) => `${a}${escHtml(c.titel)}${b}`)
+  return uit
+}
 
 function pagina(titel: string, tekst: string, link: string, linkTekst: string, status: number) {
   const html = `<!doctype html><html lang="nl-BE"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
@@ -34,11 +53,12 @@ export default async (req: Request, context: Context) => {
   let pad = m[4] || ""
   let beheer = false
   let verborgen = false
+  const c = await cursusInfo(code)
   if (soort === "demo") {
     if (pad !== "" && pad !== "index.html") return pagina("Niet in de demo", "Dit onderdeel zit in de volledige cursus.", `/demo/${code}/`, "Terug naar de demo", 404)
     pad = "demo.html"
     // Een cursus die niet op de startpagina staat (Beheer → Cursussen: niet tonen), heeft geen publieke demo; beheerders zien ze wel.
-    const [c] = await db()`SELECT startpagina FROM cursussen WHERE code = ${code}`
+    // Een bron (BMC-BPB) staat altijd op "niet tonen".
     if (c?.startpagina === "niet_tonen") {
       if (!isBeheer(await aangemeld(context))) return pagina("Niet gevonden", "Voor deze cursus is er nog geen demo.", "/#cursussen", "Naar de cursussen", 404)
       verborgen = true
@@ -53,7 +73,6 @@ export default async (req: Request, context: Context) => {
     }
     beheer = isBeheer(g)
     if (!(await magCursus(g, code))) {
-      const [c] = await db()`SELECT gepubliceerd, startpagina FROM cursussen WHERE code = ${code}`
       if (c && !c.gepubliceerd)
         return c.startpagina === "voorbereiding"
           ? pagina("In voorbereiding", "Deze cursus is in voorbereiding. Je voortgang blijft bewaard.", "/leren/", "Naar mijn leerlijn", 403)
@@ -70,10 +89,19 @@ export default async (req: Request, context: Context) => {
 
   // beheerders: de versie met briefings en prompts, als die bestaat
   const paden = beheer && pad === "index.html" ? ["beheer.html", "index.html"] : [pad]
-  const rijen = await db()`SELECT pad, type, inhoud FROM cursus_bestanden WHERE cursus = ${code} AND pad = ANY(${paden}::text[])`
+  const bestanden = c?.bron ?? code
+  const rijen = await db()`SELECT pad, type, inhoud FROM cursus_bestanden WHERE cursus = ${bestanden} AND pad = ANY(${paden}::text[])`
   const b = paden.map((p) => rijen.find((r: any) => r.pad === p)).find(Boolean)
   if (!b) return pagina("Niet gevonden", soort === "demo" ? "Voor deze cursus is er nog geen demo." : "Deze cursus is nog niet beschikbaar.", "/#cursussen", "Naar de cursussen", 404)
-  return new Response(b.inhoud, {
+  let inhoud: string = b.inhoud
+  if (c?.bron && /html/.test(b.type)) {
+    // in de demo: inschrijven op de volledige cursus (CRS-<code>), als die te koop is
+    const [p] = soort === "demo" ? await db()`SELECT code FROM producten WHERE code = ${"CRS-" + code} AND product_te_koop(id)` : []
+    const a = afgeleid(inhoud, c, p?.code ?? null)
+    if (!a) return pagina("Tijdelijk niet beschikbaar", "Deze cursus wordt bijgewerkt. Probeer het later opnieuw.", soort === "demo" ? "/#cursussen" : "/leren/", "Terug", 503)
+    inhoud = a
+  }
+  return new Response(inhoud, {
     headers: {
       "content-type": b.type,
       "cache-control": soort === "demo" && !verborgen ? "public, max-age=300" : "private, no-store",

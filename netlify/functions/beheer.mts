@@ -3,7 +3,7 @@ import { db, json, fout, dbFout, tekst, geheel, btwVeld, UUID, EMAIL, DATUM } fr
 import { aangemeld, eigenAanvraag, isBeheer, type Gebruiker } from "../lib/sessie.mts"
 import { maakUitnodiging } from "../lib/uitnodiging.mts"
 import { hashWachtwoord, wachtwoordFout } from "../lib/wachtwoord.mts"
-import { laadDeelnemers, laadCursussen, laadStructuren, leerlijn, stand, reikAttestUit, volleNaam } from "../lib/leerlijn.mts"
+import { laadDeelnemers, laadCursussen, laadStructuren, leerlijn, stand, reikAttestUit, volleNaam, gegevensCode } from "../lib/leerlijn.mts"
 
 type Handler = (p: { b: any; q: URLSearchParams; id?: string; ik: Gebruiker; req: Request }) => Promise<Response>
 
@@ -516,19 +516,25 @@ const routes: Record<string, Handler> = {
   },
 
   // ---------- Cursussen: online, structuur, cijfers ----------
+  // Modules via v_cursus_modules (BMC en BPB: de gekozen modules van de bron); bestanden en voortgang bij de bron.
+  // Met toegang = kan de cursus openen (toegang tot alle modules). Producten: volledige cursus, traject of pakket.
   "GET cursussen": async () => {
     const [cursussen, structuren] = await Promise.all([laadCursussen(), laadStructuren()])
     const cijfers = await sql()`
       SELECT c.code,
-             (SELECT count(*)::int FROM modules m WHERE m.cursus_id = c.id) AS modules,
-             (SELECT count(*)::int FROM modules m WHERE m.cursus_id = c.id AND m.gepubliceerd) AS modules_klaar,
-             (SELECT string_agg(b.pad, ', ' ORDER BY b.pad) FROM cursus_bestanden b WHERE b.cursus = c.code AND b.pad LIKE '%.html') AS bestanden,
-             (SELECT max(b.bijgewerkt_op) FROM cursus_bestanden b WHERE b.cursus = c.code) AS bestanden_op,
+             (SELECT count(*)::int FROM v_cursus_modules cm WHERE cm.cursus_id = c.id) AS modules,
+             (SELECT count(*)::int FROM v_cursus_modules cm JOIN modules m ON m.id = cm.module_id WHERE cm.cursus_id = c.id AND m.gepubliceerd) AS modules_klaar,
+             (SELECT string_agg(b.pad, ', ' ORDER BY b.pad) FROM cursus_bestanden b WHERE b.cursus = coalesce(c.bron, c.code) AND b.pad LIKE '%.html') AS bestanden,
+             (SELECT max(b.bijgewerkt_op) FROM cursus_bestanden b WHERE b.cursus = coalesce(c.bron, c.code)) AS bestanden_op,
              (SELECT json_agg(json_build_object('code', p.code, 'prijs', p.prijs_excl_btw, 'actief', p.actief) ORDER BY p.code)
-                FROM producten p WHERE p.id IN (SELECT pm.product_id FROM product_modules pm JOIN modules m ON m.id = pm.module_id WHERE m.cursus_id = c.id)) AS producten,
-             (SELECT count(DISTINCT mt.gebruiker_id)::int FROM v_module_toegang mt JOIN modules m ON m.id = mt.module_id WHERE m.cursus_id = c.id) AS met_toegang,
-             (SELECT count(*)::int FROM cursus_gegevens cg WHERE cg.cursus = c.code AND cg.pad LIKE 'data/users/%/progress') AS gestart,
-             (SELECT count(*)::int FROM attesten a WHERE a.cursus_id = c.id AND a.ingetrokken_op IS NULL) AS attesten
+                FROM producten p WHERE p.type <> 'module' AND c.code = ANY(product_cursussen(p.id))) AS producten,
+             (SELECT count(*)::int FROM (
+                SELECT mt.gebruiker_id FROM v_module_toegang mt JOIN v_cursus_modules cm ON cm.module_id = mt.module_id
+                WHERE cm.cursus_id = c.id GROUP BY mt.gebruiker_id
+                HAVING count(DISTINCT mt.module_id) = (SELECT count(*) FROM v_cursus_modules x WHERE x.cursus_id = c.id)) t) AS met_toegang,
+             (SELECT count(*)::int FROM cursus_gegevens cg WHERE cg.cursus = coalesce(c.bron, c.code) AND cg.pad LIKE 'data/users/%/progress') AS gestart,
+             (SELECT count(*)::int FROM attesten a WHERE a.cursus_id = c.id AND a.ingetrokken_op IS NULL) AS attesten,
+             (SELECT array_agg(x.code ORDER BY x.code) FROM cursussen x WHERE x.bron = c.code) AS afgeleid
       FROM cursussen c`
     const per = new Map(cijfers.map((r: any) => [r.code, r]))
     return json({
@@ -549,6 +555,9 @@ const routes: Record<string, Handler> = {
   "POST cursussen/startpagina": async ({ b, id: cid, ik }) => {
     const keuze = STARTPAGINA.includes(b.startpagina) ? (b.startpagina as string) : null
     if (!keuze) return fout("Kies: niet tonen, in voorbereiding of inschrijven mogelijk.")
+    // een bron (BMC-BPB) is geen cursus op zich: de afgeleide cursussen (BMC, BPB) verschijnen op de startpagina
+    const [bron] = await sql()`SELECT string_agg(code, ' en ' ORDER BY code) AS afgeleid FROM cursussen WHERE bron = (SELECT code FROM cursussen WHERE id = ${cid})`
+    if (bron?.afgeleid && keuze !== "niet_tonen") return fout(`Deze cursus is de bron van ${bron.afgeleid}. Zet die cursussen op de startpagina.`)
     const r = await sql()`
       UPDATE cursussen c SET startpagina = ${keuze}, gepubliceerd = ${keuze === "inschrijven"}
       FROM (SELECT id, startpagina AS van FROM cursussen WHERE id = ${cid} FOR UPDATE) o
@@ -587,9 +596,9 @@ const routes: Record<string, Handler> = {
     const code = tekst(b.cursus, 20)
     if (!gid || !code) return fout("Kies een deelnemer en een cursus.")
     const [d] = await laadDeelnemers({ ids: [gid] })
-    const c = (await laadCursussen()).find((x) => x.code === code)
+    const c = (await laadCursussen()).find((x) => x.code === code && !x.is_bron)
     if (!d || !c) return fout("Deelnemer of cursus niet gevonden.", 404)
-    const [v] = await sql()`SELECT data FROM cursus_gegevens WHERE gebruiker_id = ${gid} AND cursus = ${code} AND pad = ${"data/users/" + gid + "/progress"}`
+    const [v] = await sql()`SELECT data FROM cursus_gegevens WHERE gebruiker_id = ${gid} AND cursus = ${gegevensCode(c)} AND pad = ${"data/users/" + gid + "/progress"}`
     const s = stand(c.code, c.titel, (await laadStructuren()).get(code) ?? null, v?.data ?? null)
     const a = await reikAttestUit(d, c, s, ik.id)
     if (!a) return fout("Deze deelnemer heeft al een geldig attest voor deze cursus.")

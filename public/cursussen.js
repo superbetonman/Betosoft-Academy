@@ -3,6 +3,8 @@
 // niet tonen, in voorbereiding, inschrijven mogelijk). Het veld status hieronder is informatief uit het cursusproject; de site
 // gebruikt het niet meer. klaar: false = module nog in opbouw. demo: er is een publieke demo op /demo/<code>/.
 // lessen = lessen zonder de startmodule, praktijkopdrachten en toetsen; studieminuten = leestijd van alle lessen.
+// bron: BMC en BPB delen de app en de basis van BMC-BPB (migratie 007); gedeeld = wat ze gemeen hebben (modules, lessen),
+// zodat de kerncijfers dat maar één keer tellen. BMC-BPB zelf staat niet in de catalogus.
 
 export const GROEPEN = [
   {
@@ -37,18 +39,20 @@ export const GROEPEN = [
 
 export const CURSUSSEN = [
   {
-    "code": "BMC-BPB",
-    "titel": "Betonmixerchauffeur en betonpompbediende",
+    "code": "BMC",
+    "titel": "Betonmixerchauffeur",
     "groep": "rijden",
     "status": "open",
-    "product": "CRS-BMC-BPB",
-    "doelgroep": "Betonmixerchauffeurs (BMC) en betonpompbedienden (BPB)",
-    "omschrijving": "Lever beton veilig, op tijd en in de juiste kwaliteit. Eerst een gemeenschappelijke basis (veiligheid, betonkennis, de klant en het milieu), daarna kies je je traject: betonmixerchauffeur of betonpompbediende.",
-    "lessen": 59,
-    "toetsen": 12,
-    "opdrachten": 12,
-    "vragen": 142,
-    "studieminuten": 547,
+    "product": "CRS-BMC",
+    "bron": "BMC-BPB",
+    "doelgroep": "Betonmixerchauffeurs (BMC) en chauffeurs van een mixerpomp",
+    "omschrijving": "Lever beton veilig, op tijd en in de juiste kwaliteit met de truckmixer. Eerst de gemeenschappelijke basis (veiligheid, betonkennis, de klant en het milieu), daarna het traject betonmixerchauffeur: de truckmixer, rijden, laden en lossen, reinigen en onderhoud.",
+    "opmerking": "De basis (modules 1 tot 4) is dezelfde in de cursussen betonmixerchauffeur en betonpompbediende. Volg je beide, bijvoorbeeld voor een mixerpomp, dan doe je ze maar één keer.",
+    "lessen": 39,
+    "toetsen": 8,
+    "opdrachten": 8,
+    "vragen": 94,
+    "studieminuten": 359,
     "modules": [
       {
         "code": "1",
@@ -97,6 +101,55 @@ export const CURSUSSEN = [
         "titel": "Reinigen, controle en onderhoud",
         "niveau": "Traject betonmixerchauffeur",
         "klaar": true
+      }
+    ],
+    "modules_aantal": 8,
+    "modules_klaar": 8,
+    "demo": true,
+    "gedeeld": {
+      "modules": 4,
+      "lessen": 19
+    }
+  },
+  {
+    "code": "BPB",
+    "titel": "Betonpompbediende",
+    "groep": "rijden",
+    "status": "open",
+    "product": "CRS-BPB",
+    "bron": "BMC-BPB",
+    "doelgroep": "Betonpompbedienden (BPB) en chauffeurs van een mixerpomp",
+    "omschrijving": "Pomp beton veilig, op tijd en in de juiste kwaliteit. Eerst de gemeenschappelijke basis (veiligheid, betonkennis, de klant en het milieu), daarna het traject betonpompbediende: de betonpomp, opstellen en stabiliseren, pompen, en reinigen, keuring en onderhoud.",
+    "opmerking": "De basis (modules 1 tot 4) is dezelfde in de cursussen betonmixerchauffeur en betonpompbediende. Volg je beide, bijvoorbeeld voor een mixerpomp, dan doe je ze maar één keer.",
+    "lessen": 39,
+    "toetsen": 8,
+    "opdrachten": 8,
+    "vragen": 94,
+    "studieminuten": 365,
+    "modules": [
+      {
+        "code": "1",
+        "titel": "Veilig werken: de basis",
+        "niveau": "Basis",
+        "klaar": true
+      },
+      {
+        "code": "2",
+        "titel": "Betonkennis voor BMC en BPB",
+        "niveau": "Basis",
+        "klaar": true
+      },
+      {
+        "code": "3",
+        "titel": "De klant en de werf",
+        "niveau": "Basis",
+        "klaar": true
+      },
+      {
+        "code": "4",
+        "titel": "Milieu en duurzaamheid",
+        "niveau": "Basis",
+        "klaar": true
       },
       {
         "code": "P1",
@@ -123,9 +176,13 @@ export const CURSUSSEN = [
         "klaar": true
       }
     ],
-    "modules_aantal": 12,
-    "modules_klaar": 12,
-    "demo": true
+    "modules_aantal": 8,
+    "modules_klaar": 8,
+    "demo": true,
+    "gedeeld": {
+      "modules": 4,
+      "lessen": 19
+    }
   },
   {
     "code": "LAB",

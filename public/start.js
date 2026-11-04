@@ -2,7 +2,7 @@
 // Welke cursussen verschijnen en of je kunt inschrijven, komt uit de databank (Beheer → Cursussen): tot die geladen is,
 // staat er geen enkele cursus, zodat een cursus die niet getoond mag worden ook niet even opduikt.
 import { esc, getal } from "/gemeen.js"
-import { laadProducten, productenVan, tegelPrijs, prijsTekst, voorwaardenItems } from "/prijs.js"
+import { laadProducten, productenVan, tegelPrijs, prijsTekst, voorwaardenItems, isPakket } from "/prijs.js"
 import { CURSUSSEN, GROEPEN } from "/cursussen.js"
 
 const $ = (s) => document.querySelector(s)
@@ -30,10 +30,14 @@ async function sessie() {
 function kerncijfers(toegangMaanden) {
   const lijst = zichtbaar()
   const n = (v) => (AANBOD ? getal(v) : "–")
+  // BMC en BPB delen de basis (zelfde bron): die telt maar één keer
+  const perBron = {}
+  for (const c of lijst) if (c.bron && c.gedeeld) perBron[c.bron] = [...(perBron[c.bron] || []), c]
+  const dubbel = (veld) => Object.values(perBron).reduce((t, l) => t + (l.length - 1) * (Number(l[0].gedeeld[veld]) || 0), 0)
   const cijfers = [
     ["Cursussen", n(lijst.length)],
-    ["Modules klaar", n(som(lijst, "modules_klaar"))],
-    ["Lessen", n(som(lijst, "lessen"))],
+    ["Modules klaar", n(som(lijst, "modules_klaar") - dubbel("modules"))],
+    ["Lessen", n(som(lijst, "lessen") - dubbel("lessen"))],
     ["Toegang", `${getal(toegangMaanden)}<small>maanden</small>`],
   ]
   $("#kerncijfers").innerHTML = cijfers.map(([k, v]) => `<div><dt>${k}</dt><dd>${v}</dd></div>`).join("")
@@ -131,16 +135,21 @@ function prijsoverzicht(producten, regels) {
   const btw = regels.btw_pct ?? 21
   const rij = (titel, code, lijst) => {
     const vol = lijst.find((p) => p.code.startsWith("CRS-")) || lijst[0]
-    const delen = lijst.filter((p) => p !== vol && p.type !== "module")
+    const delen = lijst.filter((p) => p !== vol && p.type !== "module" && !isPakket(p))
+    const pakket = lijst.some((p) => p !== vol && isPakket(p))
     const mods = lijst.filter((p) => p.type === "module")
     const deel = delen.length ? `${delen.length} ${delen.length === 1 ? "traject" : "trajecten of niveaus"}` : ""
     const los = mods.length ? `${mods.length} losse modules` : ""
-    return `<tr><td><strong>${esc(titel)}</strong><span class="zacht">${[deel, los].filter(Boolean).join(" · ") || "volledige cursus"}</span></td>
+    return `<tr><td><strong>${esc(titel)}</strong><span class="zacht">${[deel, pakket ? "ook in een pakket" : "", los].filter(Boolean).join(" · ") || "volledige cursus"}</span></td>
       <td class="num">${prijsTekst(vol)}</td>
       <td class="num"><a href="/prijzen/#${encodeURIComponent(code)}">Details</a></td></tr>`
   }
   const abo = producten.filter((p) => p.type === "abonnement")
-  const perCursus = zichtbaar().map((c) => [c, productenVan(producten, c.code)]).filter(([, l]) => l.length)
+  // enkel cursussen waarvoor je kunt inschrijven: een gedeelde basismodule maakt een cursus in voorbereiding niet te koop
+  const perCursus = zichtbaar()
+    .filter((c) => AANBOD.get(c.code) === "inschrijven")
+    .map((c) => [c, productenVan(producten, c.code)])
+    .filter(([, l]) => l.length)
   $("#prijsinleiding").innerHTML = `Alle prijzen zijn exclusief <span class="mono">${getal(btw)}&#8239;%</span> btw en gelden per persoon; een onderneming betaalt per plaats. Voor de cursussen in voorbereiding volgt de prijs bij de opening.`
   $("#prijstabellen").innerHTML = `<div class="scroll-x"><table class="prijzen">
     <colgroup><col class="c-product"><col class="c-toegang"><col class="c-prijs"></colgroup>

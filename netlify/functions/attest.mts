@@ -112,7 +112,8 @@ export default async (req: Request, context: Context) => {
       const s = (await laadStructuren()).get(code)
       const modules = s
         ? beschikbaar(s.structuur).filter((m) => m.n !== "0").map((m) => ({ n: m.n, titel: m.titel, status: "af" }))
-        : ((await db()`SELECT code AS n, titel, CASE WHEN gepubliceerd THEN 'af' ELSE 'nog' END AS status FROM modules WHERE cursus_id = ${c.id} ORDER BY volgorde`) as any[])
+        : ((await db()`SELECT m.code AS n, m.titel, CASE WHEN m.gepubliceerd THEN 'af' ELSE 'nog' END AS status
+                       FROM v_cursus_modules cm JOIN modules m ON m.id = cm.module_id WHERE cm.cursus_id = ${c.id} ORDER BY m.volgorde`) as any[])
       const nu = new Date().toISOString()
       const a: Attest = {
         id: "voorbeeld", nummer: `BSA-${new Date().getFullYear()}-00000`, gebruiker_id: "", organisatie_id: null, email: "", voornaam: "Voornaam",

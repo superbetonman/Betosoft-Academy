@@ -7,22 +7,18 @@ export default async (req: Request, context: Context) => {
 
   try {
     if (pad === "/api/producten" && req.method === "GET") {
-      // cursus: de code van de cursus als alle modules van het product tot één cursus behoren (abonnementen: leeg)
+      // cursussen: de cursussen waarvan het product een deel is, of die het helemaal omvat (een pakket); product_cursussen()
+      //   in de databank. Een basismodule van BMC en BPB hoort bij beide. Abonnementen: leeg.
+      // cursus: de code als het product bij precies één cursus hoort.
       const producten = await sql`
         SELECT p.id, p.code, p.naam, p.type, p.periode, p.geldigheid_maanden, p.prijs_excl_btw, p.beschrijving, p.alle_modules,
-               x.cursus, x.cursus_titel, COALESCE(x.modules, 0)::int AS modules
-        FROM producten p
-        LEFT JOIN LATERAL (
-          SELECT CASE WHEN count(DISTINCT c.id) = 1 THEN min(c.code) END AS cursus,
-                 CASE WHEN count(DISTINCT c.id) = 1 THEN min(c.titel) END AS cursus_titel,
-                 count(*) AS modules
-          FROM product_modules pm JOIN modules m ON m.id = pm.module_id JOIN cursussen c ON c.id = m.cursus_id
-          WHERE pm.product_id = p.id
-        ) x ON true
+               x.cursussen, CASE WHEN cardinality(x.cursussen) = 1 THEN x.cursussen[1] END AS cursus,
+               (SELECT count(*)::int FROM product_modules pm WHERE pm.product_id = p.id) AS modules
+        FROM producten p, LATERAL (SELECT product_cursussen(p.id) AS cursussen) x
         WHERE p.actief AND product_te_koop(p.id)
         ORDER BY CASE p.type WHEN 'abonnement' THEN 1 WHEN 'traject' THEN 2 ELSE 3 END, p.code`
       // Cursussen die publiek verschijnen (Beheer → Cursussen): 'voorbereiding' of 'inschrijven'. 'niet_tonen' blijft weg.
-      const cursussen = await sql`SELECT code, startpagina FROM cursussen WHERE startpagina <> 'niet_tonen' ORDER BY volgorde, code`
+      const cursussen = await sql`SELECT code, startpagina FROM cursussen WHERE startpagina <> 'niet_tonen' AND NOT is_bron(code) ORDER BY volgorde, code`
       // Publieke regels voor de startpagina (verlenging en btw); enkel getallen uit de tabel instellingen.
       const rijen = await sql`
         SELECT sleutel, waarde #>> '{}' AS waarde FROM instellingen
