@@ -358,14 +358,14 @@ export const CURSUSSEN = [
     "code": "VRK",
     "titel": "Verkoop stortklaar beton",
     "groep": "dispatch",
-    "status": "voorbereiding",
+    "status": "open",
     "doelgroep": "Startende en ervaren verkopers en verkoopsverantwoordelijken",
     "omschrijving": "Leer stortklaar beton verkopen, en daarna verkoop en marketing leiden. Niveau 1 gaat over het verkopen zelf, niveau 2 over markt, klantenbeheer, marketing, duurzaam beton, het verkoopteam en het jaarplan.",
-    "lessen": 25,
-    "toetsen": 6,
-    "opdrachten": 6,
-    "vragen": 60,
-    "studieminuten": 257,
+    "lessen": 73,
+    "toetsen": 18,
+    "opdrachten": 18,
+    "vragen": 180,
+    "studieminuten": 696,
     "modules": [
       {
         "code": "1",
@@ -377,37 +377,37 @@ export const CURSUSSEN = [
         "code": "2",
         "titel": "Productkennis voor verkopers",
         "niveau": "Niveau 1 · Verkopen",
-        "klaar": false
+        "klaar": true
       },
       {
         "code": "3",
         "titel": "Het bedrijf van de aannemer",
         "niveau": "Niveau 1 · Verkopen",
-        "klaar": false
+        "klaar": true
       },
       {
         "code": "4",
         "titel": "Bestek lezen en offerte maken",
         "niveau": "Niveau 1 · Verkopen",
-        "klaar": false
+        "klaar": true
       },
       {
         "code": "5",
         "titel": "Prijs zetten",
         "niveau": "Niveau 1 · Verkopen",
-        "klaar": false
+        "klaar": true
       },
       {
         "code": "6",
         "titel": "Verkoopgesprek en onderhandeling",
         "niveau": "Niveau 1 · Verkopen",
-        "klaar": false
+        "klaar": true
       },
       {
         "code": "7",
         "titel": "Van bestelling tot factuur",
         "niveau": "Niveau 1 · Verkopen",
-        "klaar": false
+        "klaar": true
       },
       {
         "code": "G1",
@@ -443,55 +443,55 @@ export const CURSUSSEN = [
         "code": "8",
         "titel": "Markt en werkgebied",
         "niveau": "Niveau 2 · Verkoop en marketing leiden",
-        "klaar": false
+        "klaar": true
       },
       {
         "code": "9",
         "titel": "Klantenbeheer en verkoopprognose",
         "niveau": "Niveau 2 · Verkoop en marketing leiden",
-        "klaar": false
+        "klaar": true
       },
       {
         "code": "10",
         "titel": "Marketing voor een betonbedrijf",
         "niveau": "Niveau 2 · Verkoop en marketing leiden",
-        "klaar": false
+        "klaar": true
       },
       {
         "code": "11",
         "titel": "Duurzaam beton verkopen",
         "niveau": "Niveau 2 · Verkoop en marketing leiden",
-        "klaar": false
+        "klaar": true
       },
       {
         "code": "12",
         "titel": "Het verkoopteam leiden",
         "niveau": "Niveau 2 · Verkoop en marketing leiden",
-        "klaar": false
+        "klaar": true
       },
       {
         "code": "13",
         "titel": "Het commerciële jaarplan",
         "niveau": "Niveau 2 · Verkoop en marketing leiden",
-        "klaar": false
+        "klaar": true
       }
     ],
     "modules_aantal": 18,
-    "modules_klaar": 6,
+    "modules_klaar": 18,
     "demo": true
   },
   {
     "code": "PLM",
     "titel": "Plant manager stortklaar beton",
     "groep": "leiding",
-    "status": "voorbereiding",
+    "status": "open",
     "doelgroep": "Nieuwe en ervaren plant managers, zaakvoerders en directie",
     "omschrijving": "Leer een stortklaarbetoncentrale leiden, en daarna het hele bedrijf. Niveau 1 gaat over de centrale (veiligheid, installatie, milieu, vloot en planning), niveau 2 over financiën, investeren, strategie, HR, bestuur en innovatie.",
-    "lessen": 25,
-    "toetsen": 6,
-    "opdrachten": 6,
-    "vragen": 60,
-    "studieminuten": 257,
+    "lessen": 79,
+    "toetsen": 19,
+    "opdrachten": 19,
+    "vragen": 190,
+    "studieminuten": 750,
     "modules": [
       {
         "code": "1",
@@ -503,31 +503,31 @@ export const CURSUSSEN = [
         "code": "2",
         "titel": "Veiligheid en welzijn",
         "niveau": "Niveau 1 · De centrale leiden",
-        "klaar": false
+        "klaar": true
       },
       {
         "code": "3",
         "titel": "Installatie, onderhoud en voorraad",
         "niveau": "Niveau 1 · De centrale leiden",
-        "klaar": false
+        "klaar": true
       },
       {
         "code": "4",
         "titel": "Milieu en vergunning",
         "niveau": "Niveau 1 · De centrale leiden",
-        "klaar": false
+        "klaar": true
       },
       {
         "code": "5",
         "titel": "Vloot en transport",
         "niveau": "Niveau 1 · De centrale leiden",
-        "klaar": false
+        "klaar": true
       },
       {
         "code": "6",
         "titel": "Planning en capaciteit",
         "niveau": "Niveau 1 · De centrale leiden",
-        "klaar": false
+        "klaar": true
       },
       {
         "code": "G1",
@@ -563,67 +563,67 @@ export const CURSUSSEN = [
         "code": "7",
         "titel": "Financiën lezen en sturen",
         "niveau": "Niveau 2 · Het bedrijf runnen",
-        "klaar": false
+        "klaar": true
       },
       {
         "code": "8",
         "titel": "Klantenkrediet en werkkapitaal",
         "niveau": "Niveau 2 · Het bedrijf runnen",
-        "klaar": false
+        "klaar": true
       },
       {
         "code": "9",
         "titel": "Investeren",
         "niveau": "Niveau 2 · Het bedrijf runnen",
-        "klaar": false
+        "klaar": true
       },
       {
         "code": "10",
         "titel": "Strategie en markt",
         "niveau": "Niveau 2 · Het bedrijf runnen",
-        "klaar": false
+        "klaar": true
       },
       {
         "code": "11",
         "titel": "HR-beleid en organisatie",
         "niveau": "Niveau 2 · Het bedrijf runnen",
-        "klaar": false
+        "klaar": true
       },
       {
         "code": "12",
         "titel": "Bestuur en rapportering",
         "niveau": "Niveau 2 · Het bedrijf runnen",
-        "klaar": false
+        "klaar": true
       },
       {
         "code": "13",
         "titel": "Risico en crisis",
         "niveau": "Niveau 2 · Het bedrijf runnen",
-        "klaar": false
+        "klaar": true
       },
       {
         "code": "14",
         "titel": "Innovatie leiden",
         "niveau": "Niveau 2 · Het bedrijf runnen",
-        "klaar": false
+        "klaar": true
       }
     ],
     "modules_aantal": 19,
-    "modules_klaar": 6,
+    "modules_klaar": 19,
     "demo": true
   },
   {
     "code": "CSC",
     "titel": "CSC en duurzaamheid",
     "groep": "duurzaam",
-    "status": "voorbereiding",
+    "status": "open",
     "doelgroep": "Iedereen in de centrale (niveau 1) en de kwaliteits- of duurzaamheidscoördinator (niveau 2)",
     "omschrijving": "Wat duurzaamheid betekent in een stortklaarbetoncentrale: van de CO₂ in één m³ beton tot het CSC-certificaat, de CO₂-prestatieladder, EPD en CSRD.",
-    "lessen": 21,
-    "toetsen": 5,
-    "opdrachten": 5,
-    "vragen": 50,
-    "studieminuten": 184,
+    "lessen": 46,
+    "toetsen": 11,
+    "opdrachten": 11,
+    "vragen": 110,
+    "studieminuten": 416,
     "modules": [
       {
         "code": "1",
@@ -659,41 +659,41 @@ export const CURSUSSEN = [
         "code": "6",
         "titel": "Het CSC-dossier en de audit",
         "niveau": "Niveau 2 · Coördinator",
-        "klaar": false
+        "klaar": true
       },
       {
         "code": "7",
         "titel": "CO2-footprint en prestatieladder",
         "niveau": "Niveau 2 · Coördinator",
-        "klaar": false
+        "klaar": true
       },
       {
         "code": "8",
         "titel": "EPD en levenscyclusanalyse",
         "niveau": "Niveau 2 · Coördinator",
-        "klaar": false
+        "klaar": true
       },
       {
         "code": "9",
         "titel": "Recepten met minder CO2",
         "niveau": "Niveau 2 · Coördinator",
-        "klaar": false
+        "klaar": true
       },
       {
         "code": "10",
         "titel": "CSRD en vragen uit de keten",
         "niveau": "Niveau 2 · Coördinator",
-        "klaar": false
+        "klaar": true
       },
       {
         "code": "11",
         "titel": "Een duurzaamheidsplan voor je centrale",
         "niveau": "Niveau 2 · Coördinator",
-        "klaar": false
+        "klaar": true
       }
     ],
     "modules_aantal": 11,
-    "modules_klaar": 5,
+    "modules_klaar": 11,
     "demo": true
   },
   {
@@ -956,6 +956,74 @@ export const CURSUSSEN = [
     "modules_aantal": 16,
     "modules_klaar": 16,
     "demo": false
+  },
+  {
+    "code": "BT3",
+    "titel": "Masterclass betontechnologie 3.0",
+    "groep": "technologie",
+    "status": "voorbereiding",
+    "product": "CRS-BT3",
+    "doelgroep": "Kwaliteitsverantwoordelijken, technisch directeurs, mengselontwerpers en adviseurs. Voorkennis: Betontechnologie 2.0 en minstens twee jaar praktijk.",
+    "omschrijving": "Optimaliseren en verantwoorden: mengsels ontwerpen op prestatie, levensduur, kost en CO2, klinkerarme en circulaire mengsels, milieuprestatie, certificatie, statistiek en procesbeheersing, en schadegevallen analyseren. Je sluit af met een eigen mengselontwerp dat je verdedigt voor een jury.",
+    "opmerking": "Nieuwe cursus, eerste versie die nog wordt nagelezen.",
+    "lessen": 34,
+    "toetsen": 8,
+    "opdrachten": 8,
+    "vragen": 90,
+    "studieminuten": 338,
+    "modules": [
+      {
+        "code": "1",
+        "titel": "Mengsels optimaliseren",
+        "niveau": "Deel 1 · Mengsels ontwerpen",
+        "klaar": true
+      },
+      {
+        "code": "2",
+        "titel": "Prestatiegerichte duurzaamheid",
+        "niveau": "Deel 1 · Mengsels ontwerpen",
+        "klaar": true
+      },
+      {
+        "code": "3",
+        "titel": "Klinkerarme en circulaire mengsels",
+        "niveau": "Deel 1 · Mengsels ontwerpen",
+        "klaar": true
+      },
+      {
+        "code": "4",
+        "titel": "Milieuprestatie",
+        "niveau": "Deel 1 · Mengsels ontwerpen",
+        "klaar": true
+      },
+      {
+        "code": "5",
+        "titel": "Certificatie en duurzaamheidslabels",
+        "niveau": "Deel 2 · Beheersen en verantwoorden",
+        "klaar": true
+      },
+      {
+        "code": "6",
+        "titel": "Statistiek en procesbeheersing",
+        "niveau": "Deel 2 · Beheersen en verantwoorden",
+        "klaar": true
+      },
+      {
+        "code": "7",
+        "titel": "Probleemoplossing",
+        "niveau": "Deel 2 · Beheersen en verantwoorden",
+        "klaar": true
+      },
+      {
+        "code": "8",
+        "titel": "Eindopdracht",
+        "niveau": "Deel 2 · Beheersen en verantwoorden",
+        "klaar": true
+      }
+    ],
+    "modules_aantal": 8,
+    "modules_klaar": 8,
+    "demo": true
   },
   {
     "code": "AI",
