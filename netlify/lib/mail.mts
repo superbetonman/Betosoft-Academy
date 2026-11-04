@@ -1,8 +1,8 @@
 /**
  * E-mail via Brevo (transactionele mail). Nodig in Netlify:
  *   BREVO_API_KEY   API-sleutel van Brevo (SMTP & API > API Keys)
- *   MAIL_AFZENDER   een afzenderadres dat in Brevo geverifieerd is (bv. academie@betosoft.be)
- *   MAIL_AFZENDER_NAAM (optioneel, standaard "Betosoft Academie")
+ *   MAIL_AFZENDER   een afzenderadres dat in Brevo geverifieerd is (bv. academy@betosoft.be)
+ *   MAIL_AFZENDER_NAAM (optioneel, standaard "Betosoft Academy")
  * Zonder die instellingen geeft verstuur() { geconfigureerd: false } terug; de pagina valt dan terug op het eigen mailprogramma.
  */
 export type Mail = { naar: string; naarNaam?: string | null; onderwerp: string; html: string; tekst: string; antwoordAan?: string | null }
@@ -19,7 +19,7 @@ export async function verstuur(m: Mail): Promise<{ geconfigureerd: boolean; ok: 
     method: "POST",
     headers: { "api-key": sleutel, "content-type": "application/json", accept: "application/json" },
     body: JSON.stringify({
-      sender: { email: afzender, name: Netlify.env.get("MAIL_AFZENDER_NAAM") || "Betosoft Academie" },
+      sender: { email: afzender, name: Netlify.env.get("MAIL_AFZENDER_NAAM") || "Betosoft Academy" },
       to: [{ email: m.naar, ...(m.naarNaam ? { name: m.naarNaam } : {}) }],
       ...(m.antwoordAan ? { replyTo: { email: m.antwoordAan } } : {}),
       subject: m.onderwerp,

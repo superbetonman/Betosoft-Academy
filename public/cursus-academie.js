@@ -1,10 +1,10 @@
-/* Betosoft Academie — brug voor de cursusapps.
+/* Betosoft Academy — brug voor de cursusapps.
    De cursussen zijn gebouwd als losse apps die hun voortgang bewaren via window.claude.use("db" | "user" | "downloads").
-   Dit script levert dezelfde functies, maar dan met de academie: de voortgang komt per gebruiker en per cursus in de
-   databank van de academie (/api/leren/gegevens/<cursus>). In een demo is er geen account: de app bewaart dan enkel in de browser.
+   Dit script levert dezelfde functies, maar dan met de academy: de voortgang komt per gebruiker en per cursus in de
+   databank van de academy (/api/leren/gegevens/<cursus>). In een demo is er geen account: de app bewaart dan enkel in de browser.
    Verder:
    - menubalk boven de cursus (startpagina, mijn leerlijn, scores) en een knop naar de startpagina in de bovenbalk van de app;
-   - de lessenlijst van de app (window.ACADEMIE_COURSE, of de modules op de pagina bij BT1/BT2) gaat naar de academie
+   - de lessenlijst van de app (window.ACADEMIE_COURSE, of de modules op de pagina bij BT1/BT2) gaat naar de academy
      (/api/leren/structuur/<cursus>), zodat leerlijn, scores en attesten weten hoeveel lessen en toetsen er zijn;
    - BT1 en BT2 bewaren hun voortgang zelf enkel in de browser: die wordt hier met het account gesynchroniseerd;
    - een afgeleide cursus (BMC, BPB) gebruikt de app van haar bron (BMC-BPB): window.ACADEMIE_FILTER laat de modules van
@@ -118,7 +118,7 @@
 
   // ---------- BT1 en BT2: voortgang uit de browser naar het account ----------
   // Die apps bewaren { m1: true, ..., toets: true } onder een eigen sleutel in localStorage.
-  // We bewaren dezelfde gegevens in het voortgangsdocument van de academie (done = module -> tijdstip), zodat leerlijn,
+  // We bewaren dezelfde gegevens in het voortgangsdocument van de academy (done = module -> tijdstip), zodat leerlijn,
   // scores en attesten ze kennen, en zetten wat op het account staat terug in de browser (ander toestel).
   var LOKAAL = { BT1: "betosoft-basis10-v2", BT2: "betosoft-tech20-v2" }
   var lokaalSleutel = !A.demo && LOKAAL[cursus]
@@ -172,7 +172,7 @@
     }).catch(function () {})
   }
 
-  // ---------- Lessenlijst van de app naar de academie ----------
+  // ---------- Lessenlijst van de app naar de academy ----------
   var SOORTEN = { les: 1, toets: 1, opdracht: 1 }
   function tekst(v, max) { return v === null || v === undefined ? "" : String(v).slice(0, max || 200) }
   function structuur() {
@@ -301,7 +301,7 @@
     if (A.demo && A.product) rechts += '<a class="am-actie" href="/aanvragen/?product=' + encodeURIComponent(A.product) + '">Inschrijven</a>'
     if (A.demo && !aan) rechts += '<a href="/aanmelden/?terug=' + encodeURIComponent("/cursus/" + cursus + "/") + '">Aanmelden</a>'
     return '<div class="academie-menu-in">' +
-      '<a class="am-logo" href="/" aria-label="Betosoft Academie, startpagina"><img src="/logo.svg" alt="" width="24" height="21"><span class="am-tekst">Betosoft <em>Academie</em></span></a>' +
+      '<a class="am-logo" href="/" aria-label="Betosoft Academy, startpagina"><img src="/logo.svg" alt="" width="24" height="21"><span class="am-tekst">Betosoft <em>Academy</em></span></a>' +
       links.join("") + '<span class="am-rechts">' + rechts + "</span></div>"
   }
 
@@ -313,7 +313,7 @@
     // menubalk boven de cursus
     var menu = document.createElement("nav")
     menu.className = "academie-menu"
-    menu.setAttribute("aria-label", "Betosoft Academie")
+    menu.setAttribute("aria-label", "Betosoft Academy")
     menu.innerHTML = menuHtml(null)
     document.body.insertBefore(menu, document.body.firstChild)
     sessie.then(function (s) { if (s) menu.innerHTML = menuHtml(s) })
@@ -354,7 +354,7 @@
       "<p>" + DISCLAIMER + "</p>" +
       '<p><a href="/">Startpagina</a> · ' +
       (A.demo ? '<a href="/#cursussen">Alle cursussen</a>' : '<a href="/leren/">Mijn leerlijn</a> · <a href="/scores/">Scores</a>') +
-      " · Betosoft Academie</p>"
+      " · Betosoft Academy</p>"
     main.appendChild(onder)
     var f = document.createElement("script")
     f.type = "module"

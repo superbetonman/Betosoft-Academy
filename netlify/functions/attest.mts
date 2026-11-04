@@ -43,8 +43,8 @@ function htmlAntwoord(html: string, status = 200) {
 }
 function melding(titel: string, tekstInhoud: string, status: number) {
   return htmlAntwoord(`<!doctype html><html lang="nl-BE"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<title>${esc(titel)} · Betosoft Academie</title><link rel="icon" href="/favicon.svg" type="image/svg+xml"><script src="/thema.js"></script><link rel="stylesheet" href="/stijl.css"></head>
-<body><header class="kop"><div class="kop-in"><a class="logo" href="/"><img src="/logo.svg" alt="" width="34" height="30"><span class="logo-tekst">Betosoft <em>Academie</em></span></a></div></header>
+<title>${esc(titel)} · Betosoft Academy</title><link rel="icon" href="/favicon.svg" type="image/svg+xml"><script src="/thema.js"></script><link rel="stylesheet" href="/stijl.css"></head>
+<body><header class="kop"><div class="kop-in"><a class="logo" href="/"><img src="/logo.svg" alt="" width="34" height="30"><span class="logo-tekst">Betosoft <em>Academy</em></span></a></div></header>
 <main style="max-width:640px"><h1 style="margin-top:24px">${esc(titel)}</h1><p>${esc(tekstInhoud)}</p><p><a href="/">Naar de startpagina</a></p></main></body></html>`, status)
 }
 
@@ -68,13 +68,13 @@ export default async (req: Request, context: Context) => {
       const tekstMail = [
         `Beste${a.voornaam && naar.toLowerCase() === a.email.toLowerCase() ? " " + a.voornaam : ""},`,
         "",
-        `${a.naam} heeft de opleiding "${a.cursus_titel}" van de Betosoft Academie met succes afgerond.`,
+        `${a.naam} heeft de opleiding "${a.cursus_titel}" van de Betosoft Academy met succes afgerond.`,
         `Attest ${a.nummer}, uitgereikt op ${datum(a.uitgereikt_op)}.`,
         "",
         `Bekijk, druk af of bewaar het attest als PDF: ${link}`,
         "Via dezelfde link controleer je ook of het attest geldig is.",
         "",
-        "Betosoft Academie",
+        "Betosoft Academy",
       ].join("\n")
       if (!mailGeconfigureerd()) {
         // geen mailserver ingesteld: het eigen mailprogramma opent met het bericht klaar
@@ -86,11 +86,11 @@ export default async (req: Request, context: Context) => {
       if (teller.n >= 10) return fout("Dit attest werd vandaag al vaak gemaild. Probeer morgen opnieuw.", 429)
       const html = `<div style="font:15px/1.5 Arial,sans-serif;color:#223840;max-width:560px">
         <p>${esc(tekstMail.split("\n")[0])}</p>
-        <p><strong>${esc(a.naam)}</strong> heeft de opleiding <strong>${esc(a.cursus_titel)}</strong> van de Betosoft Academie met succes afgerond.<br>
+        <p><strong>${esc(a.naam)}</strong> heeft de opleiding <strong>${esc(a.cursus_titel)}</strong> van de Betosoft Academy met succes afgerond.<br>
         Attest <span style="font-family:monospace">${esc(a.nummer)}</span>, uitgereikt op ${datum(a.uitgereikt_op)}.</p>
         <p><a href="${esc(link)}" style="display:inline-block;background:#1E5A66;color:#fff;padding:10px 16px;border-radius:4px;text-decoration:none;font-weight:600">Attest bekijken en afdrukken</a></p>
         <p style="font-size:13px;color:#5a6b70">Via dezelfde link controleer je ook of het attest geldig is: ${esc(link)}</p>
-        <p style="font-size:13px;color:#5a6b70">Betosoft Academie · betosoft.be</p></div>`
+        <p style="font-size:13px;color:#5a6b70">Betosoft Academy · betosoft.be</p></div>`
       const r = await verstuur({ naar, naarNaam: naar.toLowerCase() === a.email.toLowerCase() ? a.naam : null, onderwerp, html, tekst: tekstMail, antwoordAan: ik.email })
       if (!r.ok) return fout(r.fout || "Versturen mislukt.", 502)
       await db()`UPDATE attesten SET gemaild_op = now(), gemaild_aantal = gemaild_aantal + 1 WHERE id = ${a.id}`

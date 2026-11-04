@@ -1,9 +1,9 @@
 {
-  "name": "betosoft-academie",
+  "name": "betosoft-academy",
   "private": true,
   "type": "module",
   "version": "0.1.0",
-  "description": "Betosoft Academie: inschrijvingen, toegangsrechten en beheer",
+  "description": "Betosoft Academy: inschrijvingen, toegangsrechten en beheer",
   "dependencies": {
     "@neondatabase/serverless": "^1.2.0"
   },

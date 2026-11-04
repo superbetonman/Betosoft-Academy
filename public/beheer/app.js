@@ -1,4 +1,4 @@
-// Betosoft Academie — beheerscherm
+// Betosoft Academy — beheerscherm
 import { uitnodigingHtml, koppelKopieer } from "/gemeen.js"
 import { matrix, deelnemerDetail } from "/leerlijn.js"
 const $ = (s, el = document) => el.querySelector(s)
@@ -478,7 +478,7 @@ function toonDeelnemer(id) {
     breed: true,
     inhoud: deelnemerDetail(m, { beheer: true }) + (zonder.length ? `
       <h3 style="margin:16px 0 6px">Attest handmatig uitreiken</h3>
-      <p class="klein zacht">Bijvoorbeeld na een examen buiten de academie, of opnieuw na intrekken. Het attest vermeldt de voortgang zoals ze nu is.</p>
+      <p class="klein zacht">Bijvoorbeeld na een examen buiten de academy, of opnieuw na intrekken. Het attest vermeldt de voortgang zoals ze nu is.</p>
       <div class="balk"><select id="uitreikcursus" style="max-width:340px">${zonder.map((c) => `<option value="${esc(c.code)}">${esc(c.code)} · ${esc(c.titel)} (${c.pct === null ? c.af + " lessen" : c.pct + " %"})</option>`).join("")}</select>
       <button class="knop licht" type="button" id="uitreiken" data-gebruiker="${m.id}">Uitreiken</button></div>` : ""),
   })

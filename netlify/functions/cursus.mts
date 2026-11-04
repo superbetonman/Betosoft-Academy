@@ -33,8 +33,8 @@ function afgeleid(html: string, c: CursusInfo, product: string | null): string |
 
 function pagina(titel: string, tekst: string, link: string, linkTekst: string, status: number) {
   const html = `<!doctype html><html lang="nl-BE"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<title>${titel} · Betosoft Academie</title><link rel="icon" href="/favicon.svg" type="image/svg+xml"><script src="/thema.js"></script><link rel="stylesheet" href="/stijl.css"></head>
-<body><header class="kop"><div class="kop-in"><a class="logo" href="/" aria-label="Betosoft Academie, startpagina"><img src="/logo.svg" alt="" width="34" height="30"><span class="logo-tekst">Betosoft <em>Academie</em></span></a></div></header>
+<title>${titel} · Betosoft Academy</title><link rel="icon" href="/favicon.svg" type="image/svg+xml"><script src="/thema.js"></script><link rel="stylesheet" href="/stijl.css"></head>
+<body><header class="kop"><div class="kop-in"><a class="logo" href="/" aria-label="Betosoft Academy, startpagina"><img src="/logo.svg" alt="" width="34" height="30"><span class="logo-tekst">Betosoft <em>Academy</em></span></a></div></header>
 <main style="max-width:640px"><h1 style="margin-top:24px">${titel}</h1><p>${tekst}</p><p><a class="knop" style="text-decoration:none;display:inline-flex;align-items:center" href="${link}">${linkTekst}</a></p></main>
 <script src="/fout.js" type="module"></script></body></html>`
   return new Response(html, { status, headers: { "content-type": "text/html; charset=utf-8", "cache-control": "no-store" } })

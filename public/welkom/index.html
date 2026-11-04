@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="robots" content="noindex">
   <meta name="referrer" content="no-referrer">
-  <title>Welkom · Betosoft Academie</title>
+  <title>Welkom · Betosoft Academy</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -16,7 +16,7 @@
 <body>
   <header class="kop">
   <div class="kop-in">
-    <a class="logo" href="/" aria-label="Betosoft Academie, startpagina"><img src="/logo.svg" alt="" width="34" height="30"><span class="logo-tekst">Betosoft <em>Academie</em></span></a>
+    <a class="logo" href="/" aria-label="Betosoft Academy, startpagina"><img src="/logo.svg" alt="" width="34" height="30"><span class="logo-tekst">Betosoft <em>Academy</em></span></a>
   </div>
 </header>
   <section class="aanmeldscherm">
@@ -48,7 +48,7 @@
         const u = await api(`/api/uitnodiging?t=${encodeURIComponent(token)}`)
         document.getElementById("titel").textContent = `Welkom${u.voornaam ? ", " + u.voornaam : ""}`
         document.getElementById("intro").textContent = u.organisatie
-          ? `Je bent uitgenodigd voor de Betosoft Academie via ${u.organisatie}. Kies een wachtwoord om je account te activeren.`
+          ? `Je bent uitgenodigd voor de Betosoft Academy via ${u.organisatie}. Kies een wachtwoord om je account te activeren.`
           : "Kies een wachtwoord om je account te activeren."
         document.getElementById("email").value = u.email
         document.getElementById("form").classList.remove("verborgen")
@@ -76,7 +76,7 @@
   </script>
   <footer class="voet">
     <p class="disclaimer">De cursussen zijn met de grootste zorg samengesteld. Raadpleeg in geval van twijfel altijd de normatieve documenten en reglementen; die blijven de referentie.</p>
-    <p>Betosoft Academie · <a href="/">startpagina</a> · <a href="/prijzen/">prijzen</a> · <a href="https://betosoft.be">betosoft.be</a></p>
+    <p>Betosoft Academy · <a href="/">startpagina</a> · <a href="/prijzen/">prijzen</a> · <a href="https://betosoft.be">betosoft.be</a></p>
   </footer>
   <script src="/fout.js" type="module"></script>
 </body>

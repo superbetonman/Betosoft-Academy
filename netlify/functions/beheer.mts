@@ -591,7 +591,7 @@ const routes: Record<string, Handler> = {
 
   // ---------- Attesten ----------
   "POST attesten": async ({ b, ik }) => {
-    // handmatig uitreiken (bv. na een examen buiten de academie, of opnieuw na intrekken)
+    // handmatig uitreiken (bv. na een examen buiten de academy, of opnieuw na intrekken)
     const gid = id(b.gebruiker_id)
     const code = tekst(b.cursus, 20)
     if (!gid || !code) return fout("Kies een deelnemer en een cursus.")

@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="robots" content="noindex, nofollow">
-  <title>Scores · Betosoft Academie</title>
+  <title>Scores · Betosoft Academy</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -16,8 +16,8 @@
 <body>
   <header class="kop">
   <div class="kop-in">
-    <a class="logo" href="/" aria-label="Betosoft Academie, startpagina"><img src="/logo.svg" alt="" width="34" height="30"><span class="logo-tekst">Betosoft <em>Academie</em></span></a>
-    <nav class="navlinks" aria-label="Mijn academie" id="nav">
+    <a class="logo" href="/" aria-label="Betosoft Academy, startpagina"><img src="/logo.svg" alt="" width="34" height="30"><span class="logo-tekst">Betosoft <em>Academy</em></span></a>
+    <nav class="navlinks" aria-label="Mijn academy" id="nav">
       <a href="/leren/">Mijn leerlijn</a><a href="/scores/" aria-current="page">Scores</a><a href="/">Startpagina</a>
     </nav>
     <div class="rechts"><span class="klein zacht" id="wie"></span><button id="afmelden" class="knop stil klein" type="button">Afmelden</button></div>
@@ -74,7 +74,7 @@
             ? `<div class="balk"><select id="bedrijfkeuze" style="max-width:320px" aria-label="Bedrijf"><option value="">Kies een bedrijf</option>${d.keuze.map((b) => `<option value="${b.id}" ${b.id === bedrijfKeuze ? "selected" : ""}>${esc(b.naam)}</option>`).join("")}</select></div>`
             : d.bedrijf ? `<p class="klein zacht">Alle medewerkers van ${esc(d.bedrijf.naam)} met een opleiding.</p>` : ""
           if (!d.bedrijf) { el.innerHTML = kop + `<div class="leeg">${d.beheer ? "Kies een bedrijf." : "Je hoort niet bij een bedrijf. Het algemene klassement geldt voor iedereen."}</div>`; koppelKeuze(); return }
-        } else kop = `<p class="klein zacht">Alle deelnemers van de academie met punten. Je ziet de voornaam en de eerste letter van de achternaam.</p>`
+        } else kop = `<p class="klein zacht">Alle deelnemers van de academy met punten. Je ziet de voornaam en de eerste letter van de achternaam.</p>`
         el.innerHTML = kop + (lijst.length
           ? tabel(`<th>#</th><th>Naam</th>${keuze === "algemeen" ? "<th>Bedrijf</th>" : metLocatie ? "<th>Locatie</th>" : ""}<th>Niveau</th><th class="num">Punten</th><th class="num">Badges</th><th class="num">Lessen af</th><th class="num">Cursussen af</th>`,
               lijst.map((r) => `<tr class="${r.ik ? "ik" : ""}">${rangCel(r.rang)}<td><strong>${esc(r.naam)}</strong>${r.ik ? ` <span class="tag">jij</span>` : ""}</td>
@@ -96,7 +96,7 @@
         if (d.ik) {
           const t = d.ik.totaal
           const rang = [
-            d.ik.rang_algemeen ? `plaats <strong class="mono">${d.ik.rang_algemeen}</strong> van <span class="mono">${d.ik.deelnemers_algemeen}</span> in de academie` : "nog niet in het klassement",
+            d.ik.rang_algemeen ? `plaats <strong class="mono">${d.ik.rang_algemeen}</strong> van <span class="mono">${d.ik.deelnemers_algemeen}</span> in de academy` : "nog niet in het klassement",
             d.ik.rang_bedrijf && d.ik.bedrijf ? `plaats <strong class="mono">${d.ik.rang_bedrijf}</strong> bij ${esc(d.ik.bedrijf)}` : "",
           ].filter(Boolean).join(" · ")
           $("#ik").innerHTML = niveauBlok(t, rang) + `<details><summary class="klein" style="cursor:pointer;color:var(--petrol)">Mijn badges (${t.aantal_badges} van ${t.badges.length})</summary><div style="margin-top:8px">${badgeLijst(t.badges)}</div></details>`
@@ -138,7 +138,7 @@
   </script>
   <footer class="voet">
     <p class="disclaimer">De cursussen zijn met de grootste zorg samengesteld. Raadpleeg in geval van twijfel altijd de normatieve documenten en reglementen; die blijven de referentie.</p>
-    <p>Betosoft Academie · <a href="/">startpagina</a> · <a href="/prijzen/">prijzen</a> · <a href="https://betosoft.be">betosoft.be</a></p>
+    <p>Betosoft Academy · <a href="/">startpagina</a> · <a href="/prijzen/">prijzen</a> · <a href="https://betosoft.be">betosoft.be</a></p>
   </footer>
   <script src="/fout.js" type="module"></script>
 </body>

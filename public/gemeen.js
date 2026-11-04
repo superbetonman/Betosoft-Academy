@@ -1,4 +1,4 @@
-// Gedeelde hulpfuncties voor alle pagina's van de Betosoft Academie
+// Gedeelde hulpfuncties voor alle pagina's van de Betosoft Academy
 export const $ = (s, el = document) => el.querySelector(s)
 export const $$ = (s, el = document) => [...el.querySelectorAll(s)]
 

@@ -1,6 +1,9 @@
-# Betosoft Academie
+# Betosoft Academy
 
 Leerplatform voor de betonsector: inschrijvingen, toegangsrechten, versies per module, ondernemingen met eigen beheerder, verlengingen.
+De naam is overal **Betosoft Academy** (niet "Academie"), ook in lopende tekst ("de academy"). Technische namen blijven wel zoals ze zijn:
+`cursus-academie.js`, `window.ACADEMIE*`, de kop `x-academie`, de cookie `academie_sessie` en de sleutel `academie-thema`
+(de opgeslagen cursusapps verwijzen ernaar, en een andere cookienaam zou iedereen afmelden).
 Netlify (`betosoft-academy`, statische pagina's + functies in Frankfurt) en Neon (project `betosoft-academy`, databank `academy`, Frankfurt).
 
 ## Pagina's

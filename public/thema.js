@@ -1,4 +1,4 @@
-/* Betosoft Academie — lichte of donkere modus.
+/* Betosoft Academy — lichte of donkere modus.
    Laad dit script in <head> (zonder defer), zodat de keuze al geldt voor de eerste weergave.
    Zonder keuze volgt de site het toestel (prefers-color-scheme). De keuze wordt bewaard in de browser
    en geldt ook in de cursussen (cursus-academie.js leest dezelfde sleutel).

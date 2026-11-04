@@ -42,7 +42,7 @@ export function pagina(a: Attest, opties: { url: string; magMailen: boolean; voo
   ].join("")
   const titel = `Attest ${a.nummer} · ${a.naam}`
   return `<!doctype html><html lang="nl-BE"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="robots" content="noindex, nofollow"><title>${esc(titel)} · Betosoft Academie</title>
+<meta name="robots" content="noindex, nofollow"><title>${esc(titel)} · Betosoft Academy</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Serif:ital,wght@0,500;1,400&display=swap" rel="stylesheet">
 <link rel="icon" href="/favicon.svg" type="image/svg+xml"><script src="/thema.js"></script><link rel="stylesheet" href="/stijl.css">
@@ -101,10 +101,10 @@ export function pagina(a: Attest, opties: { url: string; magMailen: boolean; voo
   }
 </style></head>
 <body>
-<header class="kop"><div class="kop-in"><a class="logo" href="/" aria-label="Betosoft Academie, startpagina"><img src="/logo.svg" alt="" width="34" height="30"><span class="logo-tekst">Betosoft <em>Academie</em></span><span class="kop-context">· attest</span></a>
+<header class="kop"><div class="kop-in"><a class="logo" href="/" aria-label="Betosoft Academy, startpagina"><img src="/logo.svg" alt="" width="34" height="30"><span class="logo-tekst">Betosoft <em>Academy</em></span><span class="kop-context">· attest</span></a>
 <div class="rechts"><a class="kop-link" href="${esc(opties.terug)}">${opties.terug === "/leren/" ? "Mijn leerlijn" : "Terug"}</a></div></div></header>
 <div class="werkbalk">
-  <div class="groei">${opties.voorbeeld ? `<strong>Voorbeeld.</strong> Zo ziet het attest van deze cursus eruit.` : geldig ? `<span class="geldig ja">● Geldig attest</span> <span class="zacht klein">uitgereikt op ${datum(a.uitgereikt_op)} door de Betosoft Academie</span>` : `<span class="geldig nee">■ Ingetrokken</span> <span class="zacht klein">op ${datum(a.ingetrokken_op)}. Dit attest is niet meer geldig.</span>`}</div>
+  <div class="groei">${opties.voorbeeld ? `<strong>Voorbeeld.</strong> Zo ziet het attest van deze cursus eruit.` : geldig ? `<span class="geldig ja">● Geldig attest</span> <span class="zacht klein">uitgereikt op ${datum(a.uitgereikt_op)} door de Betosoft Academy</span>` : `<span class="geldig nee">■ Ingetrokken</span> <span class="zacht klein">op ${datum(a.ingetrokken_op)}. Dit attest is niet meer geldig.</span>`}</div>
   ${geldig || opties.voorbeeld ? `<button class="knop" type="button" id="afdrukken">Afdrukken of bewaren als PDF</button>` : ""}
   ${opties.magMailen && geldig && !opties.voorbeeld ? `<button class="knop licht" type="button" id="mailen">Mailen</button>` : ""}
 </div>
@@ -115,7 +115,7 @@ ${opties.magMailen && geldig && !opties.voorbeeld ? `<div class="mailvak verborg
 <div class="papier"><article class="blad" aria-label="${esc(titel)}">
   ${!geldig ? `<div class="stempel">INGETROKKEN</div>` : opties.voorbeeld ? `<div class="stempel">VOORBEELD</div>` : ""}
   <div class="bkop">
-    <div class="bmerk"><span class="vak"><img src="/logo.svg" alt=""></span><div><b>Betosoft <em>Academie</em></b><small>Opleidingen voor de betonsector</small></div></div>
+    <div class="bmerk"><span class="vak"><img src="/logo.svg" alt=""></span><div><b>Betosoft <em>Academy</em></b><small>Opleidingen voor de betonsector</small></div></div>
     <div class="bnr">Attest <strong>${esc(a.nummer)}</strong><br>Uitgereikt <strong>${datum(a.uitgereikt_op)}</strong></div>
   </div>
   <div class="bkern">
@@ -128,12 +128,12 @@ ${opties.magMailen && geldig && !opties.voorbeeld ? `<div class="mailvak verborg
     ${mods.length ? `<ul class="bmods">${mods.map((m) => `<li${m.status && m.status !== "af" ? ' class="nog"' : ""}><span class="n">${esc(m.n)}</span><span>${esc(m.titel)}</span></li>`).join("")}</ul>` : ""}
   </div>
   <div class="bvoet">
-    <div class="hand">Betosoft Academie<small>betosoft.be</small></div>
+    <div class="hand">Betosoft Academy<small>betosoft.be</small></div>
     <div class="contr">Controleer dit attest: <code>${esc(opties.url)}</code>
       <div class="disc">De cursussen zijn met de grootste zorg samengesteld. Raadpleeg in geval van twijfel altijd de normatieve documenten en reglementen; die blijven de referentie.</div></div>
   </div>
 </article></div>
-<footer class="voet"><p>Betosoft Academie · <a href="/">startpagina</a> · <a href="https://betosoft.be">betosoft.be</a></p></footer>
+<footer class="voet"><p>Betosoft Academy · <a href="/">startpagina</a> · <a href="https://betosoft.be">betosoft.be</a></p></footer>
 <script type="module">
   const $ = (s) => document.querySelector(s)
   $("#afdrukken")?.addEventListener("click", () => window.print())

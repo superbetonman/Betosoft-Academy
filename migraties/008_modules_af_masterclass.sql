@@ -21,6 +21,9 @@ WHERE cursussen.code = v.code;
 
 UPDATE producten SET beschrijving = 'Niveau 1 en niveau 2 (modules 1–11)' WHERE code = 'CRS-CSC';
 
+-- De naam is Betosoft Academy, ook in de productnamen
+UPDATE producten SET naam = replace(naam, 'Academie', 'Academy') WHERE naam LIKE '%Academie%';
+
 -- ---------------------------------------------------------------------
 -- 2. BT3 · Masterclass betontechnologie 3.0
 --    Start op "niet tonen": enkel beheerders zien de cursus (als tester). Kies de stand in Beheer → Cursussen.

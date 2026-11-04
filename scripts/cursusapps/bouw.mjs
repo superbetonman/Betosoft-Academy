@@ -1,4 +1,4 @@
-// Bouwt de cursusbestanden voor de academie uit de artifacts:
+// Bouwt de cursusbestanden voor de academy uit de artifacts:
 //  - beheer.html: de cursus zoals gebouwd, met opnamebriefings, AI-prompts en mediaplan (enkel voor beheerders)
 //  - index.html: cursistenversie: zonder briefings, prompts en mediaplan; de beeldvakken blijven als placeholder
 //    (die teksten zitten ook niet in de broncode die de cursist ontvangt)
@@ -35,7 +35,7 @@ const CURSUSSEN = [
   { code: "BT2", bron: "artifact-64340363-1793540992-38ab.html", url: "DNfWM52JYcJrsW3xDNET5P", product: "CRS-BT2", geenDemo: true },
 ]
 
-// Haak: de app geeft haar lessenlijst (COURSE) door aan de academie; cursus-academie.js leest window.ACADEMIE_COURSE()
+// Haak: de app geeft haar lessenlijst (COURSE) door aan de academy; cursus-academie.js leest window.ACADEMIE_COURSE()
 // en meldt modules en lessen aan /api/leren/structuur (leerlijn, scores, attesten). COURSE zit in een afgesloten functie,
 // dus de haak komt vooraan in die functie (na "use strict";). BT1 en BT2 hebben geen COURSE: de brug leest de pagina.
 // Dezelfde haak werd in migratie 004 in de opgeslagen bestanden gezet.
@@ -380,7 +380,7 @@ const enkel = process.env.ENKEL ? process.env.ENKEL.split(",") : null
 const gekozen = CURSUSSEN.filter((c) => !enkel || enkel.includes(c.code))
 const overzicht = []
 for (const c of gekozen) {
-  // twee haken: de lessenlijst naar de academie (metHaak) en het filter voor afgeleide cursussen (metFilter, haken.mjs)
+  // twee haken: de lessenlijst naar de academy (metHaak) en het filter voor afgeleide cursussen (metFilter, haken.mjs)
   const bronHtml = metFilter(metHaak(fs.readFileSync(path.join(T, c.bron), "utf8"), c), c.code)
   const map = path.join(uit, c.code)
   fs.mkdirSync(map, { recursive: true })

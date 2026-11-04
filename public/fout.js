@@ -1,7 +1,7 @@
-// Betosoft Academie — foutmelder op elke pagina (ook in de cursussen), naar het model van de bevindingen in Betosoft.
+// Betosoft Academy — foutmelder op elke pagina (ook in de cursussen), naar het model van de bevindingen in Betosoft.
 // Knop rechts op het scherm › melding over dit scherm, een onderdeel aanduiden, of mijn meldingen bekijken.
 // Werkt zonder stijlblad van de pagina: alle opmaak zit hieronder, met eigen klassen (bfm-).
-const VERSIE = "academie 0.3"
+const VERSIE = "academy 0.3"
 const ERNST = [
   ["Blokkerend", "Een pagina of les werkt niet, of je raakt niet verder."],
   ["Inhoudelijke fout", "Een fout in de leerstof, een toetsvraag, een berekening of een normverwijzing."],
@@ -88,7 +88,7 @@ function start() {
   function openMenu() {
     const beheer = wie && (wie.rol === "superadmin" || wie.rol === "beheerder")
     menu = el(`<div class="bfm bfm-menu" role="menu" data-foutmelder>
-      <p>${wie ? "Aangemeld als " + esc(naam(wie)) : "Help ons de academie te verbeteren"}</p>
+      <p>${wie ? "Aangemeld als " + esc(naam(wie)) : "Help ons de academy te verbeteren"}</p>
       <button type="button" role="menuitem" data-a="scherm"><b>Melding over dit scherm</b><small>Met een schermafbeelding van wat je nu ziet</small></button>
       <button type="button" role="menuitem" data-a="kies"><b>Een onderdeel aanduiden</b><small>Klik daarna op de tekst, knop of vraag waar het over gaat</small></button>
       ${wie ? `<button type="button" role="menuitem" data-a="mijn"><b>Mijn meldingen</b><small>Met de status en het antwoord</small></button>` : ""}
