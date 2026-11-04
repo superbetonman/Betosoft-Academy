@@ -255,6 +255,15 @@
     ".academie-thema svg,.academie-thuis svg{width:18px;height:18px}" +
     "@media (prefers-color-scheme:dark){.academie-demo a{color:#6FB0BC;border-color:#6FB0BC}}" +
     "@media print{.academie-menu,.academie-thuis,.academie-thema{display:none!important}}" +
+    // inhoudstafel links wegklikken (enkel vanaf 901 px; smaller opent de app ze zelf met haar menuknop)
+    ".academie-inhoud{appearance:none;flex:none;margin-right:4px;width:38px;height:38px;padding:0;border-radius:8px;display:none;place-items:center;cursor:pointer;" +
+    "border:1px solid var(--line, rgba(127,127,127,.45));background:var(--surface, transparent);color:var(--ink, inherit)}" +
+    ".academie-inhoud svg{width:18px;height:18px}" +
+    "@media (min-width:901px){.academie-inhoud{display:inline-grid}" +
+    "html.academie-zonder-inhoud{--side:0px}" +
+    "html.academie-zonder-inhoud .shell{grid-template-columns:minmax(0,1fr)}" +
+    "html.academie-zonder-inhoud .side{display:none}}" +
+    "@media print{.academie-inhoud{display:none!important}}" +
     // afgeleide cursus: de groep van het andere traject is leeg, dan ook de titel ervan niet tonen
     (Array.isArray(A.modules) ? ".sec-h:has(+ .mods:empty){display:none}" : "")
 
@@ -282,6 +291,51 @@
   }
   function esc(v) {
     return String(v == null ? "" : v).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c] })
+  }
+
+  // ---------- Inhoudstafel links (apps met .side en #toc) ----------
+  // 1. Ze schuift mee: de huidige les (aria-current) komt in beeld binnen de inhoudstafel, bij elke nieuwe les.
+  // 2. Ze is weg te klikken met een knop links in de bovenbalk; de keuze blijft bewaard in de browser.
+  var INHOUD = "academie-inhoud"
+  var PANEEL = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M9 4v16"/></svg>'
+  function inhoudstafel(balk) {
+    var zij = document.querySelector(".side")
+    var toc = document.getElementById("toc")
+    if (!zij || !toc) return
+    var volg = function () {
+      var a = toc.querySelector('[aria-current="page"]') || (location.hash.length > 1 ? toc.querySelector('a[href="' + location.hash.replace(/"/g, "") + '"]') : null)
+      if (!a || !zij.clientHeight) return
+      var z = zij.getBoundingClientRect(), r = a.getBoundingClientRect()
+      if (r.top >= z.top + 40 && r.bottom <= z.bottom - 90) return // staat al in beeld
+      zij.scrollTop += r.top - z.top - zij.clientHeight / 3
+    }
+    var wacht = null
+    var later = function () { clearTimeout(wacht); wacht = setTimeout(volg, 60) }
+    new MutationObserver(later).observe(toc, { childList: true, subtree: true, attributes: true, attributeFilter: ["aria-current"] })
+    window.addEventListener("hashchange", later)
+    setTimeout(volg, 300)
+
+    if (!balk) return
+    var b = document.createElement("button")
+    b.type = "button"
+    b.className = "academie-inhoud"
+    b.innerHTML = PANEEL
+    var zet = function (weg) {
+      document.documentElement.classList.toggle("academie-zonder-inhoud", weg)
+      b.setAttribute("aria-pressed", String(!weg))
+      b.setAttribute("aria-label", weg ? "Inhoudstafel tonen" : "Inhoudstafel verbergen")
+      b.title = weg ? "Inhoudstafel tonen" : "Inhoudstafel verbergen"
+    }
+    var bewaard = null
+    try { bewaard = localStorage.getItem(INHOUD) } catch (e) {}
+    zet(bewaard === "weg")
+    b.addEventListener("click", function () {
+      var weg = !document.documentElement.classList.contains("academie-zonder-inhoud")
+      zet(weg)
+      try { localStorage.setItem(INHOUD, weg ? "weg" : "zichtbaar") } catch (e) {}
+      if (!weg) setTimeout(volg, 30)
+    })
+    balk.insertBefore(b, balk.firstChild)
   }
 
   // De menubalk: eerst zonder sessie (meteen zichtbaar), daarna aangevuld volgens de rol
@@ -329,6 +383,7 @@
     var knop = themaKnop()
     if (balk) { balk.appendChild(thuis); balk.appendChild(knop) }
     else { knop.style.position = "fixed"; knop.style.top = "52px"; knop.style.right = "10px"; knop.style.zIndex = "50"; document.body.appendChild(knop) }
+    inhoudstafel(balk)
 
     var main = document.getElementById("main") || document.body
     if (A.demo) {

@@ -80,7 +80,7 @@ Netlify (`betosoft-academy`, statische pagina's + functies in Frankfurt) en Neon
   Een werkfiche bij een latere module: `Object.assign(FD, {...})` en daarna FD opnieuw op `FICHES` toepassen; `bouw.mjs` haalt die
   inhoud uit de demo, net als `FD` zelf.
 - BT3 (Masterclass betontechnologie 3.0) gebruikt de motor van de PLM-app (zelfde lessen, animaties, voorlezen, toetsen en
-  voortgang), met een eigen accentkleur. Voorbeeldcentrale in PLM, VRK en BT3: Lindeveld Beton NV.
+  voortgang), met een eigen accentkleur. Voorbeeldcentrale in alle cursussen: Beter BetonCentrale (BBC).
 
 ## Cursussen op de startpagina en online
 - Per cursus kies je in **Beheer → Cursussen** hoe ze publiek verschijnt (`cursussen.startpagina`, migratie 006):
