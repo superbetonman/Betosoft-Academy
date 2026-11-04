@@ -141,6 +141,12 @@ function korteScript(code, label, ctx) {
       vervang.push([n.init.start, n.init.end, "{}"])
       return
     }
+    // fiches die een latere module aanvult: Object.assign(FD, { "f-...": {...} }) (CSC, modules 6–10)
+    if (n.type === "CallExpression" && n.callee.type === "MemberExpression" && n.callee.object.type === "Identifier" && n.callee.object.name === "Object" &&
+        n.callee.property.name === "assign" && n.arguments.length > 1 && n.arguments[0].type === "Identifier" && /^(FICHE_DATA\d*|FD)$/.test(n.arguments[0].name)) {
+      vervang.push([n.arguments[1].start, n.arguments[n.arguments.length - 1].end, "{}"])
+      return
+    }
     if (n.type !== "ObjectExpression") return
     const id = prop(n, "id"), lessen = prop(n, "lessons"), titel = prop(n, "title"), nr = prop(n, "n")
     // een fiche met inhoud in de lijst zelf: enkel de kenmerken houden, niet beschikbaar
