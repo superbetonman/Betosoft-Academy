@@ -616,14 +616,14 @@ export const CURSUSSEN = [
     "code": "CSC",
     "titel": "CSC en duurzaamheid",
     "groep": "duurzaam",
-    "status": "open",
+    "status": "voorbereiding",
     "doelgroep": "Iedereen in de centrale (niveau 1) en de kwaliteits- of duurzaamheidscoördinator (niveau 2)",
     "omschrijving": "Wat duurzaamheid betekent in een stortklaarbetoncentrale: van de CO₂ in één m³ beton tot het CSC-certificaat, de CO₂-prestatieladder, EPD en CSRD.",
-    "lessen": 46,
-    "toetsen": 11,
-    "opdrachten": 11,
-    "vragen": 110,
-    "studieminuten": 416,
+    "lessen": 21,
+    "toetsen": 5,
+    "opdrachten": 5,
+    "vragen": 50,
+    "studieminuten": 184,
     "modules": [
       {
         "code": "1",
@@ -659,41 +659,41 @@ export const CURSUSSEN = [
         "code": "6",
         "titel": "Het CSC-dossier en de audit",
         "niveau": "Niveau 2 · Coördinator",
-        "klaar": true
+        "klaar": false
       },
       {
         "code": "7",
         "titel": "CO2-footprint en prestatieladder",
         "niveau": "Niveau 2 · Coördinator",
-        "klaar": true
+        "klaar": false
       },
       {
         "code": "8",
         "titel": "EPD en levenscyclusanalyse",
         "niveau": "Niveau 2 · Coördinator",
-        "klaar": true
+        "klaar": false
       },
       {
         "code": "9",
         "titel": "Recepten met minder CO2",
         "niveau": "Niveau 2 · Coördinator",
-        "klaar": true
+        "klaar": false
       },
       {
         "code": "10",
         "titel": "CSRD en vragen uit de keten",
         "niveau": "Niveau 2 · Coördinator",
-        "klaar": true
+        "klaar": false
       },
       {
         "code": "11",
         "titel": "Een duurzaamheidsplan voor je centrale",
         "niveau": "Niveau 2 · Coördinator",
-        "klaar": true
+        "klaar": false
       }
     ],
     "modules_aantal": 11,
-    "modules_klaar": 11,
+    "modules_klaar": 5,
     "demo": true
   },
   {

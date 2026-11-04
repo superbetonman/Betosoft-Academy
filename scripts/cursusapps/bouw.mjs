@@ -31,7 +31,7 @@ const CURSUSSEN = [
   { code: "AI", bron: "artifact-98c62fa3-1793375140-79bc.html", url: "KsBYuRJkqZWpfnDsuPwZLV", product: "CRS-AI", extra: `${S}/catalogus-b/ai-files`, demo: ["m1-l1", "m3-l1", "m4-l1", "m6-l1"] },
   { code: "VRK", bron: "artifact-8b3a1d5d-1793780340-7c0f.html", url: "JCA3nRWgGv6EijjX6f38tV", product: "CRS-VRK", snoei: true, demo: ["m1-l1", "m5-l1", "g2-l1", "m11-l1"] },
   { code: "PLM", bron: "artifact-f01e8662-1793781085-b950.html", url: "WekncP6rDyR8oodKmCPyKs", product: "CRS-PLM", snoei: true, demo: ["m1-l1", "m6-l1", "g1-l1", "m9-l1"] },
-  { code: "CSC", bron: "artifact-e15fd538-1793779018-392e.html", url: "Uq9k6jXZzjhKuLKRa1Pndt", product: "CRS-CSC", snoei: true, demo: ["m1-l1", "m3-l1", "m7-l1", "m9-l1"] },
+  { code: "CSC", bron: "artifact-e15fd538-1793518100-8161.html", url: "Uq9k6jXZzjhKuLKRa1Pndt", product: "CRS-CSC", demo: ["m1-l1", "m2-l1", "m4-l1", "m5-l1"] },
   { code: "BT1", bron: "artifact-08dad6d7-1793529805-b0cb.html", url: "26RJzcCHX37ZgetFiXgW4N", product: "CRS-BT1", geenDemo: true },
   { code: "BT2", bron: "artifact-64340363-1793540992-38ab.html", url: "DNfWM52JYcJrsW3xDNET5P", product: "CRS-BT2", geenDemo: true },
   { code: "BT3", bron: "artifact-6a366dcd-1793780320-5619.html", url: "E7hqGQ3vZKnpXPfoXP7wfD", product: "CRS-BT3", snoei: true, demo: ["m1-l1", "m3-l1", "m6-l1", "m7-l1"] },

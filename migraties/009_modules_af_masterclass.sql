@@ -1,25 +1,24 @@
 -- =====================================================================
--- 008 · PLM, VRK en CSC volledig; nieuwe cursus BT3 (Masterclass betontechnologie 3.0)
+-- 009 · PLM en VRK volledig; nieuwe cursus BT3 (Masterclass betontechnologie 3.0)
 -- =====================================================================
--- De cursusapps van PLM (19 modules), VRK (18) en CSC (11) bevatten nu alle modules; BT3 is een nieuwe cursusapp.
+-- De cursusapps van PLM (19 modules) en VRK (18) bevatten nu alle modules; BT3 is een nieuwe cursusapp.
+-- CSC hoort hier niet bij: die cursus wordt omgebouwd tot "Milieu, CSC en MVO" (migratie 008, branch claude/csc-milieu-mvo).
+-- Uitgevoerd op 4 november 2026, na migratie 008.
 -- Voer deze migratie uit nadat de nieuwe bestanden met scripts/cursusapps/opladen.mjs in cursus_bestanden staan.
 -- Een beheerder opent daarna elke cursus één keer om de nieuwe lessenlijst te bevestigen (Beheer → Cursussen).
 
 -- ---------------------------------------------------------------------
--- 1. PLM, VRK en CSC: alle modules klaar
+-- 1. PLM en VRK: alle modules klaar
 -- ---------------------------------------------------------------------
 UPDATE modules SET gepubliceerd = true
-WHERE cursus_id IN (SELECT id FROM cursussen WHERE code IN ('PLM', 'VRK', 'CSC')) AND NOT gepubliceerd;
+WHERE cursus_id IN (SELECT id FROM cursussen WHERE code IN ('PLM', 'VRK')) AND NOT gepubliceerd;
 
 UPDATE cursussen SET beschrijving = v.beschrijving
 FROM (VALUES
  ('VRK', 'Stortklaar beton verkopen, daarna verkoop en marketing leiden: achttien modules, elk met praktijkopdracht en toets.'),
- ('PLM', 'Een stortklaarbetoncentrale leiden, daarna het hele bedrijf: negentien modules, elk met praktijkopdracht en toets.'),
- ('CSC', 'Duurzaamheid in de centrale: CO₂, CSC-certificaat, prestatieladder, EPD en CSRD. Niveau 1 en niveau 2, elf modules.')
+ ('PLM', 'Een stortklaarbetoncentrale leiden, daarna het hele bedrijf: negentien modules, elk met praktijkopdracht en toets.')
 ) AS v(code, beschrijving)
 WHERE cursussen.code = v.code;
-
-UPDATE producten SET beschrijving = 'Niveau 1 en niveau 2 (modules 1–11)' WHERE code = 'CRS-CSC';
 
 -- De naam is Betosoft Academy, ook in de productnamen
 UPDATE producten SET naam = replace(naam, 'Academie', 'Academy') WHERE naam LIKE '%Academie%';
