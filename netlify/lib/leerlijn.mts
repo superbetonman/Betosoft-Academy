@@ -277,11 +277,12 @@ export type AttestRij = {
   gemaild_op: string | null
   score: number | null
 }
-export type CursusRij = { id: string; code: string; titel: string; gepubliceerd: boolean; volgorde: number; app: boolean; demo: boolean }
+/** startpagina: 'niet_tonen' | 'voorbereiding' | 'inschrijven' (Beheer → Cursussen); gepubliceerd = online = 'inschrijven'. */
+export type CursusRij = { id: string; code: string; titel: string; gepubliceerd: boolean; startpagina: string; volgorde: number; app: boolean; demo: boolean }
 
 export async function laadCursussen(): Promise<CursusRij[]> {
   return (await db()`
-    SELECT c.id, c.code, c.titel, c.gepubliceerd, c.volgorde,
+    SELECT c.id, c.code, c.titel, c.gepubliceerd, c.startpagina, c.volgorde,
            EXISTS (SELECT 1 FROM cursus_bestanden b WHERE b.cursus = c.code AND b.pad = 'index.html') AS app,
            EXISTS (SELECT 1 FROM cursus_bestanden b WHERE b.cursus = c.code AND b.pad = 'demo.html') AS demo
     FROM cursussen c ORDER BY c.volgorde, c.code`) as CursusRij[]

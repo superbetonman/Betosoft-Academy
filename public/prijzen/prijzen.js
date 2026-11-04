@@ -20,14 +20,16 @@ function tabel(lijst) {
 
 async function laad() {
   try {
-    const { producten, regels } = await laadProducten()
+    const { producten, regels, aanbod } = await laadProducten()
+    // Enkel de cursussen die publiek verschijnen (Beheer → Cursussen); de producten zijn al beperkt tot wat te koop is.
+    const zichtbaar = CURSUSSEN.filter((c) => aanbod.has(c.code))
     const btw = regels.btw_pct ?? 21
     $("#inleiding").innerHTML = `<strong>Je betaalt per cursus, per niveau of per module</strong>, of je neemt een abonnement voor alle cursussen. Prijzen exclusief <span class="mono">${getal(btw)}&#8239;%</span> btw, per persoon. Een onderneming betaalt per plaats.`
 
     const abo = producten.filter((p) => p.type === "abonnement")
     $("#abonnementen").innerHTML = abo.length ? tabel(abo) : `<p class="zacht">Er is nog geen abonnement.</p>`
 
-    const blokken = CURSUSSEN.map((c) => {
+    const blokken = zichtbaar.map((c) => {
       const lijst = productenVan(producten, c.code)
       if (!lijst.length) return ""
       const hoofd = lijst.filter((p) => p.type !== "module")
@@ -40,11 +42,11 @@ async function laad() {
         <div class="knoppen">${c.demo ? `<a class="knop licht" href="/demo/${encodeURIComponent(c.code)}/">Bekijk de demo</a>` : ""}</div>
       </div>`
     }).join("")
-    const nogNiet = CURSUSSEN.filter((c) => !productenVan(producten, c.code).length)
+    const nogNiet = zichtbaar.filter((c) => !productenVan(producten, c.code).length)
     $("#cursusprijzen").innerHTML =
       blokken +
       (nogNiet.length
-        ? `<p class="zacht">In opbouw, prijs bij de opening: ${nogNiet.map((c) => (c.demo ? `<a href="/demo/${encodeURIComponent(c.code)}/">${esc(c.titel)}</a>` : esc(c.titel))).join(", ")}.</p>`
+        ? `<p class="zacht">In voorbereiding, prijs bij de opening: ${nogNiet.map((c) => (c.demo ? `<a href="/demo/${encodeURIComponent(c.code)}/">${esc(c.titel)}</a>` : esc(c.titel))).join(", ")}.</p>`
         : "")
 
     // Rekenvoorbeeld voor een onderneming met de eerste volledige cursus die een prijs heeft

@@ -33,9 +33,16 @@ export default async (req: Request, context: Context) => {
 
   let pad = m[4] || ""
   let beheer = false
+  let verborgen = false
   if (soort === "demo") {
     if (pad !== "" && pad !== "index.html") return pagina("Niet in de demo", "Dit onderdeel zit in de volledige cursus.", `/demo/${code}/`, "Terug naar de demo", 404)
     pad = "demo.html"
+    // Een cursus die niet op de startpagina staat (Beheer → Cursussen: niet tonen), heeft geen publieke demo; beheerders zien ze wel.
+    const [c] = await db()`SELECT startpagina FROM cursussen WHERE code = ${code}`
+    if (c?.startpagina === "niet_tonen") {
+      if (!isBeheer(await aangemeld(context))) return pagina("Niet gevonden", "Voor deze cursus is er nog geen demo.", "/#cursussen", "Naar de cursussen", 404)
+      verborgen = true
+    }
   } else {
     if (pad === "") pad = "index.html"
     if (!/^(index\.html|m\d{1,2}\.js)$/.test(pad)) return pagina("Niet gevonden", "Dit onderdeel bestaat niet.", `/cursus/${code}/`, "Naar de cursus", 404)
@@ -46,9 +53,11 @@ export default async (req: Request, context: Context) => {
     }
     beheer = isBeheer(g)
     if (!(await magCursus(g, code))) {
-      const [c] = await db()`SELECT gepubliceerd FROM cursussen WHERE code = ${code}`
+      const [c] = await db()`SELECT gepubliceerd, startpagina FROM cursussen WHERE code = ${code}`
       if (c && !c.gepubliceerd)
-        return pagina("Tijdelijk offline", "Deze cursus staat tijdelijk offline. Je voortgang blijft bewaard.", "/leren/", "Naar mijn leerlijn", 403)
+        return c.startpagina === "voorbereiding"
+          ? pagina("In voorbereiding", "Deze cursus is in voorbereiding. Je voortgang blijft bewaard.", "/leren/", "Naar mijn leerlijn", 403)
+          : pagina("Tijdelijk offline", "Deze cursus staat tijdelijk offline. Je voortgang blijft bewaard.", "/leren/", "Naar mijn leerlijn", 403)
       return pagina(
         "Geen toegang tot deze cursus",
         "Je hebt nog geen toegang tot de volledige cursus. Bekijk de demo, of vraag toegang via je onderneming of via een inschrijving.",
@@ -67,7 +76,7 @@ export default async (req: Request, context: Context) => {
   return new Response(b.inhoud, {
     headers: {
       "content-type": b.type,
-      "cache-control": soort === "demo" ? "public, max-age=300" : "private, no-store",
+      "cache-control": soort === "demo" && !verborgen ? "public, max-age=300" : "private, no-store",
       "x-robots-tag": soort === "demo" ? "noarchive" : "noindex, nofollow",
       "x-content-type-options": "nosniff",
       "referrer-policy": "same-origin",

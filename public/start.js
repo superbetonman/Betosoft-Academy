@@ -1,10 +1,14 @@
 // Startpagina: cursusoverzicht (uit /cursussen.js), prijzen en voorwaarden (uit de databank via /prijs.js).
+// Welke cursussen verschijnen en of je kunt inschrijven, komt uit de databank (Beheer → Cursussen): tot die geladen is,
+// staat er geen enkele cursus, zodat een cursus die niet getoond mag worden ook niet even opduikt.
 import { esc, getal } from "/gemeen.js"
 import { laadProducten, productenVan, tegelPrijs, prijsTekst, voorwaardenItems } from "/prijs.js"
 import { CURSUSSEN, GROEPEN } from "/cursussen.js"
 
 const $ = (s) => document.querySelector(s)
-const som = (veld) => CURSUSSEN.reduce((t, c) => t + (Number(c[veld]) || 0), 0)
+let AANBOD = null // Map code → "voorbereiding" | "inschrijven", uit de databank
+const zichtbaar = () => (AANBOD ? CURSUSSEN.filter((c) => AANBOD.has(c.code)) : [])
+const som = (lijst, veld) => lijst.reduce((t, c) => t + (Number(c[veld]) || 0), 0)
 const uren = (min) => Math.round(min / 60)
 
 // ---------- Aangemeld? Dan gaat de knop naar de eigen omgeving ----------
@@ -24,10 +28,12 @@ async function sessie() {
 
 // ---------- Kerncijfers in de band ----------
 function kerncijfers(toegangMaanden) {
+  const lijst = zichtbaar()
+  const n = (v) => (AANBOD ? getal(v) : "–")
   const cijfers = [
-    ["Cursussen", getal(CURSUSSEN.length)],
-    ["Modules klaar", getal(som("modules_klaar"))],
-    ["Lessen", getal(som("lessen"))],
+    ["Cursussen", n(lijst.length)],
+    ["Modules klaar", n(som(lijst, "modules_klaar"))],
+    ["Lessen", n(som(lijst, "lessen"))],
     ["Toegang", `${getal(toegangMaanden)}<small>maanden</small>`],
   ]
   $("#kerncijfers").innerHTML = cijfers.map(([k, v]) => `<div><dt>${k}</dt><dd>${v}</dd></div>`).join("")
@@ -37,7 +43,8 @@ function kerncijfers(toegangMaanden) {
 let filterGroep = "alle"
 
 function filterknoppen() {
-  const gebruikt = GROEPEN.filter((g) => CURSUSSEN.some((c) => c.groep === g.id))
+  const gebruikt = GROEPEN.filter((g) => zichtbaar().some((c) => c.groep === g.id))
+  if (!gebruikt.some((g) => g.id === filterGroep)) filterGroep = "alle"
   const knoppen = [{ id: "alle", naam: "Alle functies" }, ...gebruikt]
   $("#filter").innerHTML = knoppen
     .map((g) => `<button type="button" data-groep="${g.id}" aria-pressed="${g.id === filterGroep}">${esc(g.naam)}</button>`)
@@ -55,17 +62,19 @@ const STATUS = {
   open: `<span class="status s-conform">inschrijven mogelijk</span>`,
   deels: `<span class="status s-aandacht">eerste modules online · inschrijven mogelijk</span>`,
   binnenkort: `<span class="status s-indicatief">inhoud klaar · opent binnenkort</span>`,
-  voorbereiding: `<span class="status s-concept">in opbouw</span>`,
+  voorbereiding: `<span class="status s-concept">in voorbereiding</span>`,
 }
 const VOLGORDE = { open: 0, deels: 1, binnenkort: 2, voorbereiding: 3 }
 const kanInschrijven = (st) => st === "open" || st === "deels"
 let PRODUCTEN = []
 
-// Open = er is een actief product voor deze cursus in de databank (anders de status uit de catalogus).
-// Deels = er is een product, maar een deel van de modules is nog in opbouw.
+// Voorbereiding = zo gekozen in Beheer → Cursussen: met de demo, zonder prijs en zonder inschrijven.
+// Open = inschrijven mogelijk en er is een product te koop. Deels = idem, maar een deel van de modules is nog in opbouw.
+// Binnenkort = inschrijven mogelijk, maar er is (nog) geen actief product.
 function status(c) {
+  if (AANBOD?.get(c.code) !== "inschrijven") return "voorbereiding"
   if (productenVan(PRODUCTEN, c.code).length) return c.modules?.some((m) => m.klaar === false) ? "deels" : "open"
-  return c.status === "open" ? "binnenkort" : c.status
+  return "binnenkort"
 }
 
 function modulelijst(c) {
@@ -110,10 +119,11 @@ function kaart(c) {
 }
 
 function cursussen() {
-  const lijst = CURSUSSEN.filter((c) => filterGroep === "alle" || c.groep === filterGroep).sort(
-    (a, b) => (VOLGORDE[status(a)] ?? 9) - (VOLGORDE[status(b)] ?? 9),
-  )
-  $("#cursusrooster").innerHTML = lijst.map(kaart).join("")
+  if (!AANBOD) return ($("#cursusrooster").innerHTML = `<p class="zacht">De cursussen worden geladen…</p>`)
+  const lijst = zichtbaar()
+    .filter((c) => filterGroep === "alle" || c.groep === filterGroep)
+    .sort((a, b) => (VOLGORDE[status(a)] ?? 9) - (VOLGORDE[status(b)] ?? 9))
+  $("#cursusrooster").innerHTML = lijst.length ? lijst.map(kaart).join("") : `<p class="zacht">Binnenkort verschijnen hier de cursussen.</p>`
 }
 
 // ---------- Prijzen in het kort (de volledige lijst staat op /prijzen/) ----------
@@ -130,8 +140,8 @@ function prijsoverzicht(producten, regels) {
       <td class="num"><a href="/prijzen/#${encodeURIComponent(code)}">Details</a></td></tr>`
   }
   const abo = producten.filter((p) => p.type === "abonnement")
-  const perCursus = CURSUSSEN.map((c) => [c, productenVan(producten, c.code)]).filter(([, l]) => l.length)
-  $("#prijsinleiding").innerHTML = `Alle prijzen zijn exclusief <span class="mono">${getal(btw)}&#8239;%</span> btw en gelden per persoon; een onderneming betaalt per plaats. Voor de cursussen in opbouw volgt de prijs bij de opening.`
+  const perCursus = zichtbaar().map((c) => [c, productenVan(producten, c.code)]).filter(([, l]) => l.length)
+  $("#prijsinleiding").innerHTML = `Alle prijzen zijn exclusief <span class="mono">${getal(btw)}&#8239;%</span> btw en gelden per persoon; een onderneming betaalt per plaats. Voor de cursussen in voorbereiding volgt de prijs bij de opening.`
   $("#prijstabellen").innerHTML = `<div class="scroll-x"><table class="prijzen">
     <colgroup><col class="c-product"><col class="c-toegang"><col class="c-prijs"></colgroup>
     <thead><tr><th>Cursus</th><th class="num">Volledige cursus</th><th class="num"></th></tr></thead>
@@ -143,15 +153,18 @@ function prijsoverzicht(producten, regels) {
 
 async function laad() {
   try {
-    const { producten, regels } = await laadProducten()
+    const { producten, regels, aanbod } = await laadProducten()
     PRODUCTEN = producten
+    AANBOD = aanbod
     const v = voorwaardenItems(producten, regels)
     $("#voorwaardenlijst").innerHTML = v.items.map(([k, t]) => `<div><dt>${k}</dt><dd>${t}</dd></div>`).join("")
     kerncijfers(v.toegangMnd)
     prijsoverzicht(producten, regels)
+    filterknoppen()
     cursussen()
   } catch (e) {
     $("#prijstabellen").innerHTML = `<p class="melding fout">${esc(e.message)}</p>`
+    $("#cursusrooster").innerHTML = `<p class="melding fout">De cursussen konden niet geladen worden. Probeer het later opnieuw.</p>`
   }
 }
 

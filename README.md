@@ -9,9 +9,9 @@ Netlify (`betosoft-academy`, statische pagina's + functies in Frankfurt) en Neon
 | `/aanvragen/` | publiek | Inschrijven als persoon (eventueel met factuur op een bedrijf) of als onderneming |
 | `/aanmelden/` | iedereen | Aanmelden met gebruikersnaam of e-mail + wachtwoord |
 | `/welkom/?t=…` | nieuwe gebruiker | Wachtwoord kiezen via uitnodigingslink (14 dagen geldig, één keer) |
-| `/beheer/` | superadmin, beheerder | Aanvragen, toegangsrechten, ondernemingen, cursisten, leerlijn, cursussen (online/offline), versies, instellingen, logboek |
+| `/beheer/` | superadmin, beheerder | Aanvragen, toegangsrechten, ondernemingen, cursisten, leerlijn, cursussen (startpagina: niet tonen, in voorbereiding, inschrijven mogelijk), versies, instellingen, logboek |
 | `/centrale/` | beheerder van een onderneming of locatie | Overzicht, medewerkers (met eigen login), leerlijn, scorebord, opleidingen, locaties |
-| `/` | publiek | Startpagina: cursussen (uit `public/cursussen.js`) met prijs en demo, werkwijze, ondernemingen, voorwaarden |
+| `/` | publiek | Startpagina: cursussen (uit `public/cursussen.js`, welke en hoe uit de databank) met prijs en demo, werkwijze, ondernemingen, voorwaarden |
 | `/prijzen/` | publiek | Alle prijzen: abonnement, per cursus (volledig, niveaus, losse modules), ondernemingen, voorwaarden |
 | `/demo/<CODE>/` | publiek | Teaser van een cursus: de start en vier lessen uit verschillende modules; de rest zit niet in het bestand |
 | `/leren/` | iedereen die aangemeld is | Mijn leerlijn: niveau en punten, voortgang per cursus en module, volgende stap, attesten, badges; beheerders zien alle cursussen (tester) |
@@ -70,8 +70,18 @@ Netlify (`betosoft-academy`, statische pagina's + functies in Frankfurt) en Neon
   gekozen les mee, ingebouwd in `demo.html`. Elke module toont in de demo "1 van 7 onderdelen in de demo".
 - Bijwerken: `scripts/cursusapps/bouw.mjs` (volledige versie + demo) en `scripts/cursusapps/opladen.mjs`.
 
-## Cursussen online
-- Alle tien cursussen staan online (`cursussen.gepubliceerd`). Aan- en uitzetten in **Beheer → Cursussen**. Offline: enkel beheerders (tester).
+## Cursussen op de startpagina en online
+- Per cursus kies je in **Beheer → Cursussen** hoe ze publiek verschijnt (`cursussen.startpagina`, migratie 006):
+  | Keuze | Startpagina en prijzen | Demo | Inschrijven | Cursus voor cursisten |
+  |---|---|---|---|---|
+  | **Niet tonen** (`niet_tonen`) | niet zichtbaar | enkel beheerders | nee | offline |
+  | **In voorbereiding** (`voorbereiding`) | "in voorbereiding", zonder prijs | publiek | nee | offline |
+  | **Inschrijven mogelijk** (`inschrijven`) | met prijs en inschrijfknop | publiek | ja | online |
+- Online (`cursussen.gepubliceerd`) is precies "inschrijven mogelijk"; een controle in de databank houdt de twee kolommen gelijk.
+  Offline: enkel beheerders (tester); een cursist met toegang krijgt "in voorbereiding" of "tijdelijk offline", de voortgang blijft bewaard.
+- Te koop (`product_te_koop`): een actief product waarvan elke cursus op "inschrijven mogelijk" staat; een abonnement blijft altijd te koop.
+  Dat geldt voor `/api/producten` (startpagina, prijzen, inschrijfformulier), de aanvraag zelf en de bestelling van een onderneming.
+- De startpagina toont pas cursussen nadat ze uit de databank geladen zijn, zodat een verborgen cursus niet even opduikt.
 - Elke cursus heeft modules en een product `CRS-<CODE>` (VRK, PLM, CSC, BT1, BT2 sinds migratie 004, nog zonder prijs).
   Modules in voorbereiding staan met `gepubliceerd = false`; op de startpagina heten die cursussen "eerste modules online".
 - Boven elke cursus (en demo) staat een menubalk: startpagina, mijn leerlijn, scores (en beheer of mijn centrale). In de bovenbalk van
@@ -111,6 +121,8 @@ Netlify (`betosoft-academy`, statische pagina's + functies in Frankfurt) en Neon
   `cursus_structuur`; attesten met momentopname en mailteller; de haak in de opgeslagen cursusapps.
   De basis (stap 1) werd rechtstreeks in Neon aangemaakt.
 - `migraties/005_ondernemingen_facturatie.sql`: verlenging neemt de facturatiegegevens mee; meldingen zeggen "onderneming" i.p.v. "centrale".
+- `migraties/006_startpagina_keuze.sql`: `cursussen.startpagina` (niet tonen, in voorbereiding, inschrijven mogelijk) en `product_te_koop`.
+  Wat online stond, werd "inschrijven mogelijk"; wat offline stond, "niet tonen".
 - Bedrijfsregels zitten in databankfuncties: `activeer_aanvraag`, `verleng_recht`, `vraag_verlenging`, `wijs_plaats_toe`,
   `voeg_cursist_toe`, `nieuwe_versie`, `beoordeel_wijziging`, `publiceer_versie`, `zet_op_versie`. Elke actie komt in `auditlog`.
 

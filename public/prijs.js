@@ -1,4 +1,6 @@
 // Gedeeld door de startpagina en de prijzenpagina: producten, prijzen en voorwaarden uit de databank (/api/producten).
+// De API geeft enkel producten die te koop zijn, en de cursussen die publiek verschijnen (Beheer → Cursussen):
+// aanbod = Map code → "voorbereiding" | "inschrijven". Een cursus die er niet in staat ("niet tonen"), blijft weg.
 import { esc, euro, getal } from "/gemeen.js"
 
 let cache = null
@@ -9,7 +11,11 @@ export function laadProducten() {
         if (!r.ok) throw new Error("De prijzen konden niet geladen worden.")
         return r.json()
       })
-      .then((d) => ({ producten: d.producten || [], regels: d.regels || {} }))
+      .then((d) => ({
+        producten: d.producten || [],
+        regels: d.regels || {},
+        aanbod: new Map((d.cursussen || []).map((c) => [c.code, c.startpagina])),
+      }))
   return cache
 }
 

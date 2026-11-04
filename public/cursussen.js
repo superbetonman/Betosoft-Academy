@@ -1,7 +1,7 @@
 // Cursusoverzicht voor de startpagina. Bron: de cursussen uit het cursusproject (stand 02.11.2026).
-// status: "open" = er is een product om in te schrijven (code in `product`), "binnenkort" = inhoud klaar maar nog niet te koop,
-// "voorbereiding" = een deel van de modules is nog in opbouw (klaar: false). Op de site wordt "open" ook afgeleid uit de producten
-// in de databank (een actief product voor de cursus). demo: er is een publieke demo op /demo/<code>/.
+// Of een cursus op de startpagina staat en of je kunt inschrijven, kies je in Beheer → Cursussen (databank, cursussen.startpagina:
+// niet tonen, in voorbereiding, inschrijven mogelijk). Het veld status hieronder is informatief uit het cursusproject; de site
+// gebruikt het niet meer. klaar: false = module nog in opbouw. demo: er is een publieke demo op /demo/<code>/.
 // lessen = lessen zonder de startmodule, praktijkopdrachten en toetsen; studieminuten = leestijd van alle lessen.
 
 export const GROEPEN = [

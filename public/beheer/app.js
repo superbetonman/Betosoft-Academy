@@ -517,6 +517,12 @@ $("#dialooginhoud").addEventListener("click", async (e) => {
 })
 
 // =============== CURSUSSEN ===============
+// Startpagina (cursussen.startpagina): enkel "inschrijven mogelijk" staat online; de twee andere standen zijn offline (tester).
+const STARTPAGINA = [
+  ["niet_tonen", "Niet tonen", "offline · niet op de startpagina, geen demo"],
+  ["voorbereiding", "In voorbereiding", "offline · op de startpagina met de demo, zonder inschrijven"],
+  ["inschrijven", "Inschrijven mogelijk", "online · met prijs en inschrijfknop"],
+]
 tabs.cursussen = async () => {
   const { cursussen } = await api("/api/beheer/cursussen")
   const struct = (c) => {
@@ -529,13 +535,18 @@ tabs.cursussen = async () => {
   const prijs = (c) => (c.producten || []).filter((p) => p.code.startsWith("CRS-")).map((p) => `${esc(p.code)} <span class="mono">${p.prijs === null ? "prijs volgt" : esc(euro(p.prijs))}</span>${p.actief ? "" : " (inactief)"}`).join("<br>") || `<span class="zacht">geen</span>`
   inhoud.innerHTML = `
     <h1>Cursussen</h1>
-    <p class="zacht klein">Online: cursisten met toegang kunnen de cursus openen. Offline: enkel beheerders (als tester). De <em>lessenlijst</em> komt uit de cursusapp zelf:
+    <p class="zacht klein">Startpagina: <strong>niet tonen</strong> (niet op de startpagina en de prijzenpagina, geen publieke demo),
+      <strong>in voorbereiding</strong> (op de startpagina met de demo, zonder prijs en zonder inschrijven) of
+      <strong>inschrijven mogelijk</strong> (met prijs en inschrijfknop). Enkel bij <em>inschrijven mogelijk</em> staat de cursus online en kunnen
+      cursisten met toegang ze openen; anders enkel beheerders (als tester). De <em>lessenlijst</em> komt uit de cursusapp zelf:
       open de cursus als beheerder om ze te bevestigen (nodig voor voortgang in procent en voor attesten). Doe dat opnieuw na elke nieuwe versie van de app.</p>
     <div class="scroll-x paneel" style="padding:0"><table class="eenvoudig">
-      <thead><tr><th>Cursus</th><th>Online</th><th>Lessenlijst</th><th class="num">Modules klaar</th><th>Product</th><th class="num">Met toegang</th><th class="num">Gestart</th><th class="num">Attesten</th><th></th></tr></thead>
+      <thead><tr><th>Cursus</th><th>Startpagina</th><th>Lessenlijst</th><th class="num">Modules klaar</th><th>Product</th><th class="num">Met toegang</th><th class="num">Gestart</th><th class="num">Attesten</th><th></th></tr></thead>
       <tbody>${cursussen.map((c) => `<tr>
         <td><span class="tag">${esc(c.code)}</span><div><strong>${esc(c.titel)}</strong></div><div class="klein zacht">${esc(c.bestanden || "geen app")}</div></td>
-        <td><label class="check" style="margin:0"><input type="checkbox" data-online="${c.id}" ${c.gepubliceerd ? "checked" : ""}><span>${c.gepubliceerd ? "online" : "offline"}</span></label></td>
+        <td><select data-startpagina="${c.id}" data-was="${esc(c.startpagina)}" data-toegang="${c.met_toegang ?? 0}" aria-label="Startpagina voor ${esc(c.code)}" style="min-width:190px">
+            ${STARTPAGINA.map(([w, t]) => `<option value="${w}"${w === c.startpagina ? " selected" : ""}>${t}</option>`).join("")}</select>
+          <div class="klein zacht">${esc(STARTPAGINA.find(([w]) => w === c.startpagina)?.[2] || "")}</div></td>
         <td>${struct(c)}</td>
         <td class="num mono">${c.modules_klaar ?? 0}/${c.modules ?? 0}</td>
         <td class="klein">${prijs(c)}</td>
@@ -549,14 +560,23 @@ tabs.cursussen = async () => {
         </div></td>
       </tr>`).join("")}</tbody></table></div>
     <p class="klein zacht" style="margin-top:12px">Prijzen stel je in via Instellingen. Een cursus zonder prijs toont op de startpagina "prijs volgt"; inschrijven kan, de prijs leg je vast bij de facturatie.</p>`
-  inhoud.querySelectorAll("[data-online]").forEach((el) =>
+  inhoud.querySelectorAll("[data-startpagina]").forEach((el) =>
     el.addEventListener("change", async () => {
+      const keuze = el.value
+      const n = Number(el.dataset.toegang) || 0
+      if (el.dataset.was === "inschrijven" && keuze !== "inschrijven" && n > 0 &&
+          !confirm(`${n} ${n === 1 ? "persoon heeft" : "personen hebben"} toegang tot deze cursus. Offline kunnen ze de cursus niet meer openen (de voortgang blijft bewaard). Doorgaan?`)) {
+        el.value = el.dataset.was
+        return
+      }
+      el.disabled = true
       try {
-        await api(`/api/beheer/cursussen/${el.dataset.online}/online`, { methode: "POST", data: { online: el.checked } })
-        toast(el.checked ? "Cursus staat online" : "Cursus staat offline")
+        await api(`/api/beheer/cursussen/${el.dataset.startpagina}/startpagina`, { methode: "POST", data: { startpagina: keuze } })
+        toast(`Startpagina: ${STARTPAGINA.find(([w]) => w === keuze)[1].toLowerCase()}`)
         herlaad()
       } catch (err) {
-        el.checked = !el.checked
+        el.value = el.dataset.was
+        el.disabled = false
         toast(err.message, true)
       }
     }),
@@ -752,6 +772,7 @@ const actieNamen = {
   instellingen_gewijzigd: "Instellingen gewijzigd", beheerder_toegevoegd: "Beheerder toegevoegd", beheerder_actief: "Beheerder (de)geactiveerd",
   uitnodiging_gemaakt: "Uitnodiging gemaakt", account_geactiveerd: "Account geactiveerd", wachtwoord_gewijzigd: "Wachtwoord gewijzigd",
   locatie_toegevoegd: "Locatie toegevoegd", rol_gewijzigd: "Rol gewijzigd",
+  cursus_online: "Cursus online", cursus_offline: "Cursus offline", cursus_startpagina: "Startpagina gewijzigd",
 }
 tabs.logboek = async () => {
   const { logboek } = await api("/api/beheer/logboek")

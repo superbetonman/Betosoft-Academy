@@ -19,8 +19,10 @@ export default async (req: Request, context: Context) => {
           FROM product_modules pm JOIN modules m ON m.id = pm.module_id JOIN cursussen c ON c.id = m.cursus_id
           WHERE pm.product_id = p.id
         ) x ON true
-        WHERE p.actief
+        WHERE p.actief AND product_te_koop(p.id)
         ORDER BY CASE p.type WHEN 'abonnement' THEN 1 WHEN 'traject' THEN 2 ELSE 3 END, p.code`
+      // Cursussen die publiek verschijnen (Beheer → Cursussen): 'voorbereiding' of 'inschrijven'. 'niet_tonen' blijft weg.
+      const cursussen = await sql`SELECT code, startpagina FROM cursussen WHERE startpagina <> 'niet_tonen' ORDER BY volgorde, code`
       // Publieke regels voor de startpagina (verlenging en btw); enkel getallen uit de tabel instellingen.
       const rijen = await sql`
         SELECT sleutel, waarde #>> '{}' AS waarde FROM instellingen
@@ -30,7 +32,7 @@ export default async (req: Request, context: Context) => {
         const n = Number(r.waarde)
         if (Number.isFinite(n)) regels[r.sleutel] = n
       }
-      return json({ producten, regels })
+      return json({ producten, regels, cursussen })
     }
 
     if (pad === "/api/aanvraag" && req.method === "POST") {
@@ -67,7 +69,7 @@ export default async (req: Request, context: Context) => {
       }
       if (!plaatsen) return fout("Vul het aantal plaatsen in (1 tot 500).")
 
-      const [p] = await sql`SELECT id FROM producten WHERE id = ${product} AND actief`
+      const [p] = await sql`SELECT id FROM producten WHERE id = ${product} AND product_te_koop(id)`
       if (!p) return fout("Dit cursusonderdeel is niet beschikbaar.")
 
       // Max. 5 open aanvragen per e-mailadres per dag tegen misbruik.

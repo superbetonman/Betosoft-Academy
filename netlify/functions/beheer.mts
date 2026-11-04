@@ -12,6 +12,9 @@ const SUPERADMIN = new Set(["POST producten/wijzig", "POST instellingen", "POST 
 
 const sql = () => db()
 
+/** Keuzes voor een cursus op de startpagina (kolom cursussen.startpagina, migratie 006). */
+const STARTPAGINA = ["niet_tonen", "voorbereiding", "inschrijven"]
+
 function id(v: unknown) {
   const s = tekst(v, 36)
   return s && UUID.test(s) ? s : null
@@ -542,11 +545,17 @@ const routes: Record<string, Handler> = {
     })
   },
 
-  "POST cursussen/online": async ({ b, id: cid, ik }) => {
-    const online = b.online === true
-    const r = await sql()`UPDATE cursussen SET gepubliceerd = ${online} WHERE id = ${cid} RETURNING code`
+  // Startpagina: niet tonen, in voorbereiding of inschrijven mogelijk. Enkel bij inschrijven staat de cursus online.
+  "POST cursussen/startpagina": async ({ b, id: cid, ik }) => {
+    const keuze = STARTPAGINA.includes(b.startpagina) ? (b.startpagina as string) : null
+    if (!keuze) return fout("Kies: niet tonen, in voorbereiding of inschrijven mogelijk.")
+    const r = await sql()`
+      UPDATE cursussen c SET startpagina = ${keuze}, gepubliceerd = ${keuze === "inschrijven"}
+      FROM (SELECT id, startpagina AS van FROM cursussen WHERE id = ${cid} FOR UPDATE) o
+      WHERE c.id = o.id RETURNING c.code, o.van`
     if (!r.length) return fout("Cursus niet gevonden.", 404)
-    await sql()`SELECT log_actie(${online ? "cursus_online" : "cursus_offline"}, 'cursus', ${cid}::uuid, ${JSON.stringify({ cursus: r[0].code, door: ik.id })}::jsonb)`
+    if (r[0].van !== keuze)
+      await sql()`SELECT log_actie('cursus_startpagina', 'cursus', ${cid}::uuid, ${JSON.stringify({ cursus: r[0].code, van: r[0].van, naar: keuze, door: ik.id })}::jsonb)`
     return json({ ok: true })
   },
 

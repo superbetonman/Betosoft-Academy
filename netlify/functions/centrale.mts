@@ -220,7 +220,7 @@ const routes: Record<string, Handler> = {
     if (!product) return fout("Kies een opleiding.")
     if (!Number.isInteger(n) || n < 1 || n > 500) return fout("Aantal plaatsen: 1 tot 500.")
     const [o] = await sql()`SELECT naam, btw_nummer, adres FROM organisaties WHERE id = ${hoofd}`
-    const [p] = await sql()`SELECT id FROM producten WHERE id = ${product} AND actief`
+    const [p] = await sql()`SELECT id FROM producten WHERE id = ${product} AND product_te_koop(id)`
     if (!p) return fout("Deze opleiding is niet beschikbaar.")
     await sql()`
       INSERT INTO aanvragen (type, voornaam, achternaam, email, organisatie_naam, btw_nummer, adres, product_id, aantal_plaatsen, opmerking, organisatie_id, gebruiker_id)
@@ -232,7 +232,7 @@ const routes: Record<string, Handler> = {
   "GET producten": async () => {
     const rijen = await sql()`
       SELECT id, naam, type, prijs_excl_btw, periode, geldigheid_maanden, beschrijving FROM producten
-      WHERE actief AND type <> 'abonnement' ORDER BY CASE type WHEN 'traject' THEN 1 ELSE 2 END, code`
+      WHERE actief AND type <> 'abonnement' AND product_te_koop(id) ORDER BY CASE type WHEN 'traject' THEN 1 ELSE 2 END, code`
     return json({ producten: rijen })
   },
 }
