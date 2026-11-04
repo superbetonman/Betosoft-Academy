@@ -614,85 +614,91 @@ export const CURSUSSEN = [
   },
   {
     "code": "CSC",
-    "titel": "CSC en duurzaamheid",
+    "titel": "Milieu, CSC en maatschappelijk verantwoord ondernemen",
     "groep": "duurzaam",
     "status": "voorbereiding",
-    "doelgroep": "Iedereen in de centrale (niveau 1) en de kwaliteits- of duurzaamheidscoördinator (niveau 2)",
-    "omschrijving": "Wat duurzaamheid betekent in een stortklaarbetoncentrale: van de CO₂ in één m³ beton tot het CSC-certificaat, de CO₂-prestatieladder, EPD en CSRD.",
+    "doelgroep": "Betoncentrales en prefabfabrieken: wie mee beslist (niveau 1: directie, plant manager, KAM, verkoop en aankoop) en de milieu-, KAM- of duurzaamheidscoördinator (niveau 2)",
+    "omschrijving": "Wat klanten, overheid en bank vragen over milieu, CSC en MVO, en hoe je het aantoont: van de CO2 van je bedrijf tot het CSC-certificaat, de CO2-prestatieladder, ISO 14001, de VSME en EPD’s. Met werkfiches voor de werkvloer.",
     "lessen": 21,
     "toetsen": 5,
     "opdrachten": 5,
     "vragen": 50,
-    "studieminuten": 184,
+    "studieminuten": 202,
     "modules": [
       {
         "code": "1",
-        "titel": "Waarom duurzaamheid telt",
+        "titel": "Wie vraagt wat",
         "niveau": "Niveau 1 · Basis",
         "klaar": true
       },
       {
         "code": "2",
-        "titel": "Duurzaam werken in de centrale",
+        "titel": "Milieu in de centrale en de fabriek",
         "niveau": "Niveau 1 · Basis",
         "klaar": true
       },
       {
         "code": "3",
-        "titel": "CSC in de praktijk",
+        "titel": "CO2 tellen",
         "niveau": "Niveau 1 · Basis",
         "klaar": true
       },
       {
         "code": "4",
-        "titel": "Circulair beton",
+        "titel": "CSC begrijpen",
         "niveau": "Niveau 1 · Basis",
         "klaar": true
       },
       {
         "code": "5",
-        "titel": "Duurzaamheid eerlijk verkopen",
+        "titel": "Maatschappelijk verantwoord ondernemen",
         "niveau": "Niveau 1 · Basis",
         "klaar": true
       },
       {
         "code": "6",
-        "titel": "Het CSC-dossier en de audit",
+        "titel": "Eén dataset voor alles",
         "niveau": "Niveau 2 · Coördinator",
         "klaar": false
       },
       {
         "code": "7",
-        "titel": "CO2-footprint en prestatieladder",
+        "titel": "Het CSC-dossier",
         "niveau": "Niveau 2 · Coördinator",
         "klaar": false
       },
       {
         "code": "8",
-        "titel": "EPD en levenscyclusanalyse",
+        "titel": "De CSC-audit en een hoger niveau",
         "niveau": "Niveau 2 · Coördinator",
         "klaar": false
       },
       {
         "code": "9",
-        "titel": "Recepten met minder CO2",
+        "titel": "ISO 14001 en milieuwetgeving",
         "niveau": "Niveau 2 · Coördinator",
         "klaar": false
       },
       {
         "code": "10",
-        "titel": "CSRD en vragen uit de keten",
+        "titel": "CO2-footprint en prestatieladder",
         "niveau": "Niveau 2 · Coördinator",
         "klaar": false
       },
       {
         "code": "11",
-        "titel": "Een duurzaamheidsplan voor je centrale",
+        "titel": "VSME, EPD en vragen uit de keten",
+        "niveau": "Niveau 2 · Coördinator",
+        "klaar": false
+      },
+      {
+        "code": "12",
+        "titel": "Het jaarplan milieu en MVO",
         "niveau": "Niveau 2 · Coördinator",
         "klaar": false
       }
     ],
-    "modules_aantal": 11,
+    "modules_aantal": 12,
     "modules_klaar": 5,
     "demo": true
   },
