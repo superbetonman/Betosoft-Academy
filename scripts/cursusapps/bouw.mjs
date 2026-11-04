@@ -34,6 +34,7 @@ const CURSUSSEN = [
   { code: "CSC", bron: "artifact-e15fd538-1793779018-392e.html", url: "Uq9k6jXZzjhKuLKRa1Pndt", product: "CRS-CSC", snoei: true, demo: ["m1-l1", "m3-l1", "m7-l1", "m9-l1"] },
   { code: "BT1", bron: "artifact-08dad6d7-1793529805-b0cb.html", url: "26RJzcCHX37ZgetFiXgW4N", product: "CRS-BT1", geenDemo: true },
   { code: "BT2", bron: "artifact-64340363-1793540992-38ab.html", url: "DNfWM52JYcJrsW3xDNET5P", product: "CRS-BT2", geenDemo: true },
+  { code: "BT3", bron: "artifact-6a366dcd-1793780320-5619.html", url: "E7hqGQ3vZKnpXPfoXP7wfD", product: "CRS-BT3", snoei: true, demo: ["m1-l1", "m3-l1", "m6-l1", "m7-l1"] },
 ]
 
 // Haak: de app geeft haar lessenlijst (COURSE) door aan de academy; cursus-academie.js leest window.ACADEMIE_COURSE()
