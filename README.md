@@ -69,6 +69,9 @@ Netlify (`betosoft-academy`, statische pagina's + functies in Frankfurt) en Neon
   De keuze staat per cursus in `bouw.mjs` (`demo: ["m1-l1", "m4-l1", ...]`). Uit een los modulescript gaat enkel de
   gekozen les mee, ingebouwd in `demo.html`. Elke module toont in de demo "1 van 7 onderdelen in de demo".
 - Bijwerken: `scripts/cursusapps/bouw.mjs` (volledige versie + demo) en `scripts/cursusapps/opladen.mjs`.
+- Knop **Les voltooid** (`#doneBtn` onderaan elke les, niet in BT1 en BT2): `cursus-academie.js` maakt er één klik van. De les
+  (of opdracht) gaat op voltooid en na een korte bevestiging volgt de volgende les, of het overzicht na de laatste. Een voltooide
+  les blijft voltooid; de knop brengt je dan meteen verder. Een toets wordt pas voltooid door te slagen.
 
 ## Cursussen online
 - Alle tien cursussen staan online (`cursussen.gepubliceerd`). Aan- en uitzetten in **Beheer → Cursussen**. Offline: enkel beheerders (tester).

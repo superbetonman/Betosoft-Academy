@@ -342,6 +342,39 @@
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", voegToe)
   else voegToe()
 
+  // ---------- "Les voltooid": één klik = voltooid en door naar de volgende les ----------
+  // In de apps (knop #doneBtn onderaan elke les) schakelde de knop heen en weer: nog eens klikken zette de les terug op
+  // niet voltooid, en naar de volgende les moest je zelf. Nu zet de eerste klik de les (of opdracht) op voltooid en gaat
+  // na een korte bevestiging naar de link na de knop: de volgende les, of het overzicht na de laatste.
+  // Een les die al voltooid is, blijft voltooid: de klik bereikt de app dan niet en brengt je meteen verder.
+  // Een toets wordt pas voltooid door te slagen (de knop staat tot dan uit); daarna brengt de knop je ook verder.
+  // Geldt voor alle cursusapps met #doneBtn (niet voor BT1 en BT2: die hebben geen lesknop).
+  var DOOR_MS = 450
+  function volgendeLink(knop) {
+    for (var el = knop.nextElementSibling; el; el = el.nextElementSibling) {
+      if (el.matches && el.matches('a[href^="#"]')) return el
+    }
+    return null
+  }
+  document.addEventListener("click", function (e) {
+    var knop = e.target && e.target.closest ? e.target.closest("#doneBtn") : null
+    if (!knop || knop.disabled) return
+    var link = volgendeLink(knop)
+    var doel = link ? link.getAttribute("href") : null
+    if (knop.getAttribute("aria-pressed") === "true") {
+      e.stopPropagation()
+      e.preventDefault()
+      if (doel) location.hash = doel
+      return
+    }
+    // de app zet de les zelf op voltooid (haar eigen klikafhandeling); daarna verder, tenzij intussen een andere les open is
+    var van = location.hash
+    if (doel) setTimeout(function () {
+      var b = document.getElementById("doneBtn")
+      if (location.hash === van && b && b.getAttribute("aria-pressed") === "true") location.hash = doel
+    }, DOOR_MS)
+  }, true)
+
   // lessenlijst doorsturen zodra alles geladen is (ook de losse modulescripts)
   if (!A.demo) {
     var meld = function () { gebruiker.then(function (g) { if (g) setTimeout(meldStructuur, 1200) }) }
