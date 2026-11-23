@@ -13,7 +13,7 @@ import fs from "node:fs"
 import path from "node:path"
 import * as acorn from "acorn"
 import * as walk from "acorn-walk"
-import { metFilter } from "./haken.mjs"
+import { metFilter, metKnoppen } from "./haken.mjs"
 
 // Bronmappen: T = de opgehaalde artifact-HTML (Artifact read), S = map met de losse modulescripts (m2.js ...).
 // Pas de paden aan of geef ze mee via de omgeving.
@@ -412,8 +412,8 @@ const enkel = process.env.ENKEL ? process.env.ENKEL.split(",") : null
 const gekozen = CURSUSSEN.filter((c) => !enkel || enkel.includes(c.code))
 const overzicht = []
 for (const c of gekozen) {
-  // twee haken: de lessenlijst naar de academy (metHaak) en het filter voor afgeleide cursussen (metFilter, haken.mjs)
-  const bronHtml = metFilter(metHaak(fs.readFileSync(path.join(T, c.bron), "utf8"), c), c.code)
+  // haken: de lessenlijst naar de academy (metHaak), het filter voor afgeleide cursussen (metFilter) en de knoppen onderaan een les (metKnoppen, haken.mjs)
+  const bronHtml = metKnoppen(metFilter(metHaak(fs.readFileSync(path.join(T, c.bron), "utf8"), c), c.code))
   const map = path.join(uit, c.code)
   fs.mkdirSync(map, { recursive: true })
   fs.writeFileSync(path.join(map, "beheer.html"), injecteer(bronHtml, c, { beheer: true }))

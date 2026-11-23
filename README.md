@@ -85,7 +85,9 @@ Netlify (`betosoft-academy`, statische pagina's + functies in Frankfurt) en Neon
   De keuze staat per cursus in `bouw.mjs` (`demo: ["m1-l1", "m4-l1", ...]`). Uit een los modulescript gaat enkel de
   gekozen les mee, ingebouwd in `demo.html`. Elke module toont in de demo "1 van 7 onderdelen in de demo".
   Met `snoei: true` (PLM, VRK, BT3) blijven in de demo ook enkel de animaties van de demolessen staan, plus `traject` voor de startpagina.
-- Bijwerken: `scripts/cursusapps/bouw.mjs` (volledige versie + demo, met de twee haken uit `haken.mjs`) en `scripts/cursusapps/opladen.mjs`.
+- Bijwerken: `scripts/cursusapps/bouw.mjs` (volledige versie + demo, met de haken uit `haken.mjs`) en `scripts/cursusapps/opladen.mjs`.
+- Knoppen onderaan een les (`metKnoppen`, `haken.mjs`): vorige, voltooid en volgende even groot, de titel van de vorige of volgende les
+  eronder; een juist antwoord op de controlevraag zet de les op voltooid. Zo staat het ook in de opgeslagen apps (23 november 2026).
 - Een module toevoegen aan een app met een stub in `COURSE` (`{ id: "m7", ..., avail: false, preview: "..." }`): zet vlak vóór
   `const REG = ...` het blok `Object.assign(ANIMS, {...}); const M7 = {...};` en daarna
   `[M7, ...].forEach(m => { const i = COURSE.findIndex(x => x.id === m.id); if (i >= 0) COURSE[i] = m; });`. Zo deed CSC het met
