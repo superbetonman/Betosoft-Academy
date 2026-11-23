@@ -56,9 +56,9 @@ function kerncijfers(n, toegangMnd) {
 const prix = (p) => (heeftPrijs(p) ? `<span class="mono">${esc(new Intl.NumberFormat("fr-BE", { style: "currency", currency: "EUR" }).format(Number(p.prijs_excl_btw)))}</span>` : `<span class="prijs-volgt">prix à venir</span>`)
 const uren = (min) => Math.round(min / 60)
 
-function kaart(c, producten, open) {
+function kaart(c, producten, open, demo) {
   const f = FR[c.code] || { titel: c.titel, doelgroep: "" }
-  if (!open)
+  if (!open && !demo)
     return `<article class="cursus" data-groep="${esc(c.groep)}">
       <div class="ckop"><span class="tag">${esc(c.code)}</span><span class="status s-concept">en préparation</span></div>
       <h3>${esc(f.titel)}</h3>
@@ -69,15 +69,15 @@ function kaart(c, producten, open) {
   const vol = producten.find((p) => p.code === "CRS-" + c.code)
   const cijfers = [[c.modules_aantal || c.modules.length, "modules"], [c.lessen ?? "—", "leçons"], [c.toetsen, "tests"], [c.studieminuten ? `±${uren(c.studieminuten)}` : "—", "heures"]]
   return `<article class="cursus uitgelicht" data-groep="${esc(c.groep)}">
-    <div class="ckop"><span class="tag">${esc(c.code)}</span><span class="status s-conform">inscription possible</span></div>
+    <div class="ckop"><span class="tag">${esc(c.code)}</span>${open ? `<span class="status s-conform">inscription possible</span>` : `<span class="status s-concept">en préparation</span>`}</div>
     <h3>${esc(f.titel)}</h3>
     <p class="voor">${esc(f.doelgroep)}</p>
     <p class="oms">${esc(f.omschrijving)}</p>
     <p class="opm">${esc(f.opmerking)}</p>
     <div class="cijferrij">${cijfers.map(([v, l]) => `<div><b>${esc(v)}</b><span>${l}</span></div>`).join("")}</div>
     <details><summary>Voir les modules</summary><ol class="modlijst">${f.modules.map((m, i) => `${i === 0 || f.modules[i - 1][2] !== m[2] ? `<li class="niv">${esc(m[2])}</li>` : ""}<li><span class="mono">${esc(m[0])}</span><span>${esc(m[1])}</span></li>`).join("")}</ol></details>
-    <div class="tegelprijs">${vol ? `${prix(vol)} <span class="zacht">formation complète, hors TVA</span>` : `<span class="zacht">Prix à l'ouverture</span>`}</div>
-    <div class="cvoet">${vol ? `<a class="knop" href="/fr/inscription/?product=${encodeURIComponent(vol.code)}">S'inscrire</a>` : ""}<a class="knop licht" href="/fr/demo/${encodeURIComponent(c.code)}/">Voir la démo</a></div>
+    <div class="tegelprijs">${open && vol ? `${prix(vol)} <span class="zacht">formation complète, hors TVA</span>` : `<span class="zacht">Prix à l'ouverture</span>`}</div>
+    <div class="cvoet">${open && vol ? `<a class="knop" href="/fr/inscription/?product=${encodeURIComponent(vol.code)}">S'inscrire</a>` : ""}<a class="knop licht" href="/fr/demo/${encodeURIComponent(c.code)}/">Voir la démo</a></div>
   </article>`
 }
 
@@ -101,12 +101,14 @@ async function laad() {
   try {
     const { producten, regels, aanbod } = await laadProducten()
     const zichtbaar = CURSUSSEN.filter((c) => aanbod.has(c.code))
+    // Franse cursus: inschrijven mogelijk = volledige kaart met inschrijven en demo; in voorbereiding = zelfde kaart met demo, zonder prijs en inschrijven
     const open = (c) => FR_OPEN.has(c.code) && aanbod.get(c.code) === "inschrijven"
-    const lijst = [...zichtbaar.filter(open), ...zichtbaar.filter((c) => !open(c))]
-    $("#cursusrooster").innerHTML = lijst.map((c) => kaart(c, producten, open(c))).join("")
+    const demo = (c) => FR_OPEN.has(c.code) && ["inschrijven", "voorbereiding"].includes(aanbod.get(c.code))
+    const lijst = [...zichtbaar.filter(demo), ...zichtbaar.filter((c) => !demo(c))]
+    $("#cursusrooster").innerHTML = lijst.map((c) => kaart(c, producten, open(c), demo(c))).join("")
     const vol = producten.filter((p) => p.code === "CRS-BMC")
     const toegang = vol[0]?.geldigheid_maanden || 3
-    kerncijfers(zichtbaar.filter(open).length, toegang)
+    kerncijfers(zichtbaar.filter(demo).length, toegang)
     const pf = producten.find((p) => p.code === "ABO-PLATFORM" && heeftPrijs(p))
     $("#voorwaardenlijst").innerHTML = voorwaarden(regels, toegang, pf).map(([k, t]) => `<div><dt>${k}</dt><dd>${t}</dd></div>`).join("")
     $("#prijsinleiding").innerHTML = (pf ? `<strong>Vous payez l'accès à la plateforme, ${e$(Number(pf.prijs_excl_btw) / 12)} par mois et par personne (minimum un an), et en plus chaque formation que vous suivez.</strong> ` : "") + `Tous les prix s'entendent hors <span class="mono">${getal(regels.btw_pct ?? 21)}&#8239;%</span> de TVA et par personne ; une entreprise paie par place. Les formations en préparation auront leur prix à l'ouverture.`
