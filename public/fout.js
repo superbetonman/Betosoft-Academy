@@ -2,6 +2,16 @@
 // Knop rechts op het scherm › melding over dit scherm, een onderdeel aanduiden, of mijn meldingen bekijken.
 // Werkt zonder stijlblad van de pagina: alle opmaak zit hieronder, met eigen klassen (bfm-).
 const VERSIE = "academy 0.3"
+// Franstalige pagina's (lang="fr…", bv. /fr/ en de Franse demo): de knop en de vensters in het Frans. De soort melding gaat in het Nederlands naar de server.
+const FRT = (document.documentElement.lang || "").toLowerCase().startsWith("fr")
+const L = (nl, fr) => (FRT ? fr : nl)
+const ERNST_FR = {
+  "Blokkerend": ["Bloquant", "Une page ou une leçon ne fonctionne pas, ou vous ne pouvez pas continuer."],
+  "Inhoudelijke fout": ["Erreur de contenu", "Une erreur dans la matière, une question de test, un calcul ou une référence à une norme."],
+  "Functioneel": ["Fonctionnement", "Quelque chose ne fonctionne pas comme prévu : un bouton, un lien ou un formulaire."],
+  "Tekst en vorm": ["Texte et forme", "Langue, faute d'orthographe, notation ou mise en page."],
+  "Wens": ["Souhait", "Une idée ou une extension pour plus tard."],
+}
 const ERNST = [
   ["Blokkerend", "Een pagina of les werkt niet, of je raakt niet verder."],
   ["Inhoudelijke fout", "Een fout in de leerstof, een toetsvraag, een berekening of een normverwijzing."],
@@ -80,7 +90,7 @@ function start() {
     .then((s) => { if (s && s.aangemeld) wie = s.gebruiker })
     .catch(() => {})
 
-  const tab = el(`<button type="button" class="bfm bfm-tab" data-foutmelder aria-haspopup="true" aria-expanded="false">Fout melden</button>`)
+  const tab = el(`<button type="button" class="bfm bfm-tab" data-foutmelder aria-haspopup="true" aria-expanded="false">${L("Fout melden", "Signaler une erreur")}</button>`)
   document.body.appendChild(tab)
   let menu = null
   tab.addEventListener("click", () => (menu ? sluitMenu() : openMenu()))
@@ -88,10 +98,10 @@ function start() {
   function openMenu() {
     const beheer = wie && (wie.rol === "superadmin" || wie.rol === "beheerder")
     menu = el(`<div class="bfm bfm-menu" role="menu" data-foutmelder>
-      <p>${wie ? "Aangemeld als " + esc(naam(wie)) : "Help ons de academy te verbeteren"}</p>
-      <button type="button" role="menuitem" data-a="scherm"><b>Melding over dit scherm</b><small>Met een schermafbeelding van wat je nu ziet</small></button>
-      <button type="button" role="menuitem" data-a="kies"><b>Een onderdeel aanduiden</b><small>Klik daarna op de tekst, knop of vraag waar het over gaat</small></button>
-      ${wie ? `<button type="button" role="menuitem" data-a="mijn"><b>Mijn meldingen</b><small>Met de status en het antwoord</small></button>` : ""}
+      <p>${wie ? L("Aangemeld als ", "Connecté en tant que ") + esc(naam(wie)) : L("Help ons de academy te verbeteren", "Aidez-nous à améliorer l'academy")}</p>
+      <button type="button" role="menuitem" data-a="scherm"><b>${L("Melding over dit scherm", "Signaler cet écran")}</b><small>${L("Met een schermafbeelding van wat je nu ziet", "Avec une capture de ce que vous voyez")}</small></button>
+      <button type="button" role="menuitem" data-a="kies"><b>${L("Een onderdeel aanduiden", "Désigner un élément")}</b><small>${L("Klik daarna op de tekst, knop of vraag waar het over gaat", "Cliquez ensuite sur le texte, le bouton ou la question concerné")}</small></button>
+      ${wie ? `<button type="button" role="menuitem" data-a="mijn"><b>${L("Mijn meldingen", "Mes signalements")}</b><small>${L("Met de status en het antwoord", "Avec le statut et la réponse")}</small></button>` : ""}
       ${beheer ? `<a role="menuitem" href="/beheer/#meldingen"><b>Alle meldingen</b><small>Beheer › Meldingen</small></a>` : ""}
     </div>`)
     document.body.appendChild(menu)
@@ -120,7 +130,7 @@ function start() {
   // ---------- Een onderdeel aanduiden ----------
   function kies() {
     const kader = el(`<div class="bfm-kies" data-foutmelder></div>`)
-    const band = el(`<div class="bfm bfm-kiesband" data-foutmelder role="status">Klik op het onderdeel waar het over gaat <button type="button">Esc</button></div>`)
+    const band = el(`<div class="bfm bfm-kiesband" data-foutmelder role="status">${L("Klik op het onderdeel waar het over gaat", "Cliquez sur l'élément concerné")} <button type="button">Esc</button></div>`)
     document.body.append(kader, band)
     const doel = (e) => (e.target && !e.target.closest("[data-foutmelder]") ? e.target : null)
     const beweeg = (e) => {
@@ -157,21 +167,21 @@ function start() {
     const beeld = await schermafbeelding(element)
     let ernst = null
     const paneel = open(
-      "Fout of opmerking melden",
+      L("Fout of opmerking melden", "Signaler une erreur ou une remarque"),
       ctx.scherm || ctx.adres,
       `<form class="bfm-form" novalidate>
         <div class="bfm-meld"></div>
-        <label class="bfm-veld"><span>Korte titel *</span><input type="text" name="titel" maxlength="200" placeholder="bv. Antwoord van toetsvraag 3 in module 5 klopt niet" required></label>
-        <label class="bfm-veld"><span>Wat deed je en wat zag je?</span><textarea name="omschrijving" maxlength="4000" placeholder="De stappen, zodat we het kunnen nagaan"></textarea></label>
-        <label class="bfm-veld"><span>Wat verwachtte je?</span><textarea name="verwacht" maxlength="2000" style="min-height:60px" placeholder="bv. volgens NBN EN 206 tabel … zou dit … moeten zijn"></textarea></label>
-        <label class="bfm-veld"><span>Soort melding *</span></label>
-        <div class="bfm-ernst">${ERNST.map(([k, u]) => `<button type="button" data-ernst="${k}" aria-pressed="false"><b>${k}</b><span>${u}</span></button>`).join("")}</div>
-        ${wie ? "" : `<label class="bfm-veld"><span>Je e-mailadres (optioneel, voor een antwoord)</span><input type="email" name="email" maxlength="254" autocomplete="email"></label>`}
+        <label class="bfm-veld"><span>${L("Korte titel *", "Titre court *")}</span><input type="text" name="titel" maxlength="200" placeholder="${L("bv. Antwoord van toetsvraag 3 in module 5 klopt niet", "p. ex. la réponse de la question 3 du module 5 est fausse")}" required></label>
+        <label class="bfm-veld"><span>${L("Wat deed je en wat zag je?", "Qu'avez-vous fait et qu'avez-vous vu ?")}</span><textarea name="omschrijving" maxlength="4000" placeholder="${L("De stappen, zodat we het kunnen nagaan", "Les étapes, pour que nous puissions vérifier")}"></textarea></label>
+        <label class="bfm-veld"><span>${L("Wat verwachtte je?", "Qu'attendiez-vous ?")}</span><textarea name="verwacht" maxlength="2000" style="min-height:60px" placeholder="${L("bv. volgens NBN EN 206 tabel … zou dit … moeten zijn", "p. ex. selon la NBN EN 206, tableau …, cela devrait être …")}"></textarea></label>
+        <label class="bfm-veld"><span>${L("Soort melding *", "Type de signalement *")}</span></label>
+        <div class="bfm-ernst">${ERNST.map(([k, u]) => `<button type="button" data-ernst="${k}" aria-pressed="false"><b>${FRT ? ERNST_FR[k][0] : k}</b><span>${FRT ? ERNST_FR[k][1] : u}</span></button>`).join("")}</div>
+        ${wie ? "" : `<label class="bfm-veld"><span>${L("Je e-mailadres (optioneel, voor een antwoord)", "Votre adresse e-mail (facultatif, pour une réponse)")}</span><input type="email" name="email" maxlength="254" autocomplete="email"></label>`}
         <div class="bfm-val" aria-hidden="true"><label>Website<input type="text" name="website" tabindex="-1" autocomplete="off"></label></div>
-        ${beeld ? `<div class="bfm-beeld"><label class="bfm-check"><input type="checkbox" name="metbeeld" checked> Schermafbeelding meesturen</label><img src="${beeld}" alt="Schermafbeelding van wat je zag"></div>` : ""}
-        <div class="bfm-ctx" style="margin-top:12px"><p>Automatisch meegestuurd</p><dl>${ctxLijst(ctx)}</dl></div>
+        ${beeld ? `<div class="bfm-beeld"><label class="bfm-check"><input type="checkbox" name="metbeeld" checked> ${L("Schermafbeelding meesturen", "Joindre la capture d'écran")}</label><img src="${beeld}" alt=""></div>` : ""}
+        <div class="bfm-ctx" style="margin-top:12px"><p>${L("Automatisch meegestuurd", "Envoyé automatiquement")}</p><dl>${ctxLijst(ctx)}</dl></div>
       </form>`,
-      `<button type="button" class="bfm-knop stil" data-x>Annuleren</button><button type="button" class="bfm-knop" data-stuur>Melding versturen</button>`,
+      `<button type="button" class="bfm-knop stil" data-x>${L("Annuleren", "Annuler")}</button><button type="button" class="bfm-knop" data-stuur>${L("Melding versturen", "Envoyer le signalement")}</button>`,
     )
     const form = paneel.querySelector("form")
     const meld = paneel.querySelector(".bfm-meld")
@@ -187,8 +197,8 @@ function start() {
     paneel.querySelector("[data-stuur]").addEventListener("click", async (e) => {
       meld.innerHTML = ""
       const titel = form.titel.value.trim()
-      if (!titel) return toon(meld, "Geef een korte titel.", true)
-      if (!ernst) return toon(meld, "Kies wat voor melding het is.", true)
+      if (!titel) return toon(meld, L("Geef een korte titel.", "Donnez un titre court."), true)
+      if (!ernst) return toon(meld, L("Kies wat voor melding het is.", "Choisissez le type de signalement."), true)
       const knop = e.currentTarget
       knop.disabled = true
       try {
@@ -208,9 +218,9 @@ function start() {
           }),
         })
         const d = await res.json().catch(() => ({}))
-        if (!res.ok) throw new Error(d.fout || "Versturen lukte niet.")
-        paneel.querySelector(".bfm-inhoud").innerHTML = `<div class="bfm-ok"><b>Dank je. Melding <span class="bfm-mono">${esc(d.nummer)}</span> is geregistreerd.</b><br>${wie ? "Je volgt ze op via Fout melden › Mijn meldingen." : "We bekijken ze zo snel mogelijk."}</div>`
-        paneel.querySelector(".bfm-voet").innerHTML = `<button type="button" class="bfm-knop" data-x>Sluiten</button>`
+        if (!res.ok) throw new Error(d.fout || L("Versturen lukte niet.", "L'envoi a échoué."))
+        paneel.querySelector(".bfm-inhoud").innerHTML = `<div class="bfm-ok"><b>${L("Dank je. Melding", "Merci. Le signalement")} <span class="bfm-mono">${esc(d.nummer)}</span> ${L("is geregistreerd.", "est enregistré.")}</b><br>${wie ? L("Je volgt ze op via Fout melden › Mijn meldingen.", "Suivez-le via Signaler une erreur › Mes signalements.") : L("We bekijken ze zo snel mogelijk.", "Nous l'examinons dès que possible.")}</div>`
+        paneel.querySelector(".bfm-voet").innerHTML = `<button type="button" class="bfm-knop" data-x>${L("Sluiten", "Fermer")}</button>`
       } catch (err) {
         toon(meld, err.message, true)
         knop.disabled = false
@@ -243,7 +253,7 @@ function start() {
   // ---------- Hulpfuncties ----------
   function open(titel, sub, inhoud, voet) {
     const a = el(`<div class="bfm bfm-achter" data-foutmelder role="dialog" aria-modal="true" aria-label="${esc(titel)}">
-      <div class="bfm-paneel"><div class="bfm-kop"><div><h2>${esc(titel)}</h2><small>${esc(sub || "")}</small></div><button type="button" class="bfm-sluit" aria-label="Sluiten" data-x>×</button></div>
+      <div class="bfm-paneel"><div class="bfm-kop"><div><h2>${esc(titel)}</h2><small>${esc(sub || "")}</small></div><button type="button" class="bfm-sluit" aria-label="${L("Sluiten", "Fermer")}" data-x>×</button></div>
       <div class="bfm-inhoud">${inhoud}</div><div class="bfm-voet">${voet}</div></div></div>`)
     document.body.appendChild(a)
     const sluit = () => { a.remove(); document.removeEventListener("keydown", esc_) }
@@ -271,8 +281,8 @@ function start() {
     return c
   }
   function ctxLijst(c) {
-    const rijen = [["Scherm", c.scherm], ["Adres", c.adres], ["Cursus", c.cursus], ["Les", c.les], ["Onderdeel", c.onderdeel ? `“${c.onderdeel}”` : null],
-      ["Aangemeld als", wie ? `${naam(wie)} (${wie.rol})` : "niet aangemeld"], ["Venster", `${c.venster} · ${c.browser}`], ["Versie", c.versie]]
+    const rijen = [[L("Scherm", "Écran"), c.scherm], [L("Adres", "Adresse"), c.adres], [L("Cursus", "Formation"), c.cursus], [L("Les", "Leçon"), c.les], [L("Onderdeel", "Élément"), c.onderdeel ? `“${c.onderdeel}”` : null],
+      [L("Aangemeld als", "Connecté en tant que"), wie ? `${naam(wie)} (${wie.rol})` : L("niet aangemeld", "non connecté")], [L("Venster", "Fenêtre"), `${c.venster} · ${c.browser}`], [L("Versie", "Version"), c.versie]]
     return rijen.filter(([, v]) => v).map(([k, v]) => `<dt>${k}</dt><dd>${esc(v)}</dd>`).join("")
   }
   async function schermafbeelding(element) {

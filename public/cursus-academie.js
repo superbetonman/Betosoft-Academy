@@ -14,6 +14,28 @@
 (function () {
   "use strict"
   var A = window.ACADEMIE || {}
+  // Franse demo (/fr/demo/<CODE>/): menubalk, demoband en disclaimer in het Frans
+  var FR = A.taal === "fr"
+  var T = FR ? {
+    disclaimer: "Les formations ont été composées avec le plus grand soin. En cas de doute, consultez toujours les documents normatifs et les règlements : ils restent la référence.",
+    start: "Accueil", alle: "Toutes les formations", prijzen: "Prix", leerlijn: "Mon parcours", scores: "Scores", centrale: "Mon entreprise", beheer: "Gestion",
+    code: "Code de la formation", inschrijven: "S'inscrire", aanmelden: "Se connecter",
+    licht: "Passer en mode clair", donker: "Passer en mode sombre", lichtK: "Mode clair", donkerK: "Mode sombre",
+    toonInhoud: "Afficher la table des matières", verbergInhoud: "Masquer la table des matières",
+    terugStart: "Retour à l'accueil", terugLeerlijn: "Retour à mon parcours",
+    demo: "<b>Démo.</b> Vous voyez un avant-goût de cette formation : le départ et quelques leçons de différents modules. Les autres leçons, exercices et tests se trouvent dans la formation complète.",
+  } : {
+    disclaimer: "De cursussen zijn met de grootste zorg samengesteld. Raadpleeg in geval van twijfel altijd de normatieve documenten en reglementen; die blijven de referentie.",
+    start: "Startpagina", alle: "Alle cursussen", prijzen: "Prijzen", leerlijn: "Mijn leerlijn", scores: "Scores", centrale: "Mijn centrale", beheer: "Beheer",
+    code: "Cursuscode", inschrijven: "Inschrijven", aanmelden: "Aanmelden",
+    licht: "Naar lichte modus", donker: "Naar donkere modus", lichtK: "Lichte modus", donkerK: "Donkere modus",
+    toonInhoud: "Inhoudstafel tonen", verbergInhoud: "Inhoudstafel verbergen",
+    terugStart: "Terug naar de startpagina", terugLeerlijn: "Terug naar mijn leerlijn",
+    demo: "<b>Demo.</b> Je bekijkt een voorproefje van deze cursus: de start en enkele lessen uit verschillende modules. De andere lessen, opdrachten en toetsen zitten in de volledige cursus.",
+  }
+  var THUIS = FR ? "/fr/" : "/"
+  var CURSUSSEN = FR ? "/fr/#formations" : "/#cursussen"
+  var AANVRAGEN = FR ? "/fr/inscription/?product=" : "/aanvragen/?product="
 
   // ---------- Lichte of donkere modus: dezelfde keuze als op de site (thema.js) ----------
   var THEMA = "academie-thema"
@@ -224,7 +246,7 @@
   }
 
   // ---------- Menubalk, disclaimer, demoband en foutmelder ----------
-  var DISCLAIMER = "De cursussen zijn met de grootste zorg samengesteld. Raadpleeg in geval van twijfel altijd de normatieve documenten en reglementen; die blijven de referentie."
+  var DISCLAIMER = T.disclaimer
   var css =
     ".academie-menu{background:#223840;color:#F3EFE7;border-bottom:1px solid #3A5560;font:14px/1.3 'IBM Plex Sans',system-ui,sans-serif;position:relative;z-index:30}" +
     ".academie-menu-in{display:flex;align-items:center;gap:6px 18px;padding:6px 16px;min-height:44px;overflow-x:auto;scrollbar-width:none;white-space:nowrap}" +
@@ -277,8 +299,8 @@
     var teken = function () {
       var d = themaHuidig() === "donker"
       b.innerHTML = d ? ZON : MAAN
-      b.setAttribute("aria-label", d ? "Naar lichte modus" : "Naar donkere modus")
-      b.title = d ? "Lichte modus" : "Donkere modus"
+      b.setAttribute("aria-label", d ? T.licht : T.donker)
+      b.title = d ? T.lichtK : T.donkerK
     }
     b.addEventListener("click", function () {
       var t = themaHuidig() === "donker" ? "licht" : "donker"
@@ -323,8 +345,8 @@
     var zet = function (weg) {
       document.documentElement.classList.toggle("academie-zonder-inhoud", weg)
       b.setAttribute("aria-pressed", String(!weg))
-      b.setAttribute("aria-label", weg ? "Inhoudstafel tonen" : "Inhoudstafel verbergen")
-      b.title = weg ? "Inhoudstafel tonen" : "Inhoudstafel verbergen"
+      b.setAttribute("aria-label", weg ? T.toonInhoud : T.verbergInhoud)
+      b.title = weg ? T.toonInhoud : T.verbergInhoud
     }
     var bewaard = null
     try { bewaard = localStorage.getItem(INHOUD) } catch (e) {}
@@ -342,20 +364,20 @@
   function menuHtml(s) {
     var aan = s && s.aangemeld
     var rol = aan && s.gebruiker ? s.gebruiker.rol : null
-    var links = ['<a href="/">Startpagina</a>']
+    var links = ['<a href="' + THUIS + '">' + T.start + "</a>"]
     if (A.demo) {
-      links.push('<a href="/#cursussen">Alle cursussen</a>', '<a href="/prijzen/">Prijzen</a>')
-      if (aan) links.push('<a href="/leren/">Mijn leerlijn</a>')
+      links.push('<a href="' + CURSUSSEN + '">' + T.alle + "</a>", '<a href="' + (FR ? "/fr/#prix" : "/prijzen/") + '">' + T.prijzen + "</a>")
+      if (aan) links.push('<a href="/leren/">' + T.leerlijn + "</a>")
     } else {
       links.push('<a href="/leren/">Mijn leerlijn</a>', '<a href="/scores/">Scores</a>')
-      if (rol === "centrale_verantwoordelijke") links.push('<a href="/centrale/">Mijn centrale</a>')
-      if (rol === "beheerder" || rol === "superadmin") links.push('<a href="/beheer/">Beheer</a>')
+      if (rol === "centrale_verantwoordelijke") links.push('<a href="/centrale/">' + T.centrale + "</a>")
+      if (rol === "beheerder" || rol === "superadmin") links.push('<a href="/beheer/">' + T.beheer + "</a>")
     }
-    var rechts = '<span class="am-code" title="Cursuscode">' + esc(cursus) + "</span>"
-    if (A.demo && A.product) rechts += '<a class="am-actie" href="/aanvragen/?product=' + encodeURIComponent(A.product) + '">Inschrijven</a>'
-    if (A.demo && !aan) rechts += '<a href="/aanmelden/?terug=' + encodeURIComponent("/cursus/" + cursus + "/") + '">Aanmelden</a>'
+    var rechts = '<span class="am-code" title="' + T.code + '">' + esc(cursus) + "</span>"
+    if (A.demo && A.product) rechts += '<a class="am-actie" href="' + AANVRAGEN + encodeURIComponent(A.product) + '">' + T.inschrijven + "</a>"
+    if (A.demo && !aan) rechts += '<a href="' + (FR ? "/fr/connexion/" : "/aanmelden/") + "?terug=" + encodeURIComponent("/cursus/" + cursus + "/") + '">' + T.aanmelden + "</a>"
     return '<div class="academie-menu-in">' +
-      '<a class="am-logo" href="/" aria-label="Betosoft Academy, startpagina"><img src="/logo.svg" alt="" width="24" height="21"><span class="am-tekst">Betosoft <em>Academy</em></span></a>' +
+      '<a class="am-logo" href="' + THUIS + '" aria-label="Betosoft Academy"><img src="/logo.svg" alt="" width="24" height="21"><span class="am-tekst">Betosoft <em>Academy</em></span></a>' +
       links.join("") + '<span class="am-rechts">' + rechts + "</span></div>"
   }
 
@@ -376,8 +398,8 @@
     var balk = document.querySelector("header.top .top-in") || document.querySelector("header.top")
     var thuis = document.createElement("a")
     thuis.className = "academie-thuis"
-    thuis.href = A.demo ? "/#cursussen" : "/leren/"
-    thuis.title = A.demo ? "Terug naar de startpagina" : "Terug naar mijn leerlijn"
+    thuis.href = A.demo ? CURSUSSEN : "/leren/"
+    thuis.title = A.demo ? T.terugStart : T.terugLeerlijn
     thuis.setAttribute("aria-label", thuis.title)
     thuis.innerHTML = HUIS
     var knop = themaKnop()
@@ -391,9 +413,9 @@
       band.className = "academie-demo"
       band.setAttribute("role", "note")
       band.innerHTML =
-        "<span><b>Demo.</b> Je bekijkt een voorproefje van deze cursus: de start en enkele lessen uit verschillende modules. De andere lessen, opdrachten en toetsen zitten in de volledige cursus.</span>" +
-        (A.product ? '<a class="hoofd" href="/aanvragen/?product=' + encodeURIComponent(A.product) + '">Inschrijven</a>' : "") +
-        '<a href="/#cursussen">Alle cursussen</a>'
+        "<span>" + T.demo + "</span>" +
+        (A.product ? '<a class="hoofd" href="' + AANVRAGEN + encodeURIComponent(A.product) + '">' + T.inschrijven + "</a>" : "") +
+        '<a href="' + CURSUSSEN + '">' + T.alle + "</a>"
       main.insertBefore(band, main.firstChild)
     }
     if (A.beheer) {
@@ -407,8 +429,8 @@
     onder.className = "academie-onder"
     onder.innerHTML =
       "<p>" + DISCLAIMER + "</p>" +
-      '<p><a href="/">Startpagina</a> · ' +
-      (A.demo ? '<a href="/#cursussen">Alle cursussen</a>' : '<a href="/leren/">Mijn leerlijn</a> · <a href="/scores/">Scores</a>') +
+      '<p><a href="' + THUIS + '">' + T.start + "</a> · " +
+      (A.demo ? '<a href="' + CURSUSSEN + '">' + T.alle + "</a>" : '<a href="/leren/">' + T.leerlijn + '</a> · <a href="/scores/">' + T.scores + "</a>") +
       " · Betosoft Academy</p>"
     main.appendChild(onder)
     var f = document.createElement("script")

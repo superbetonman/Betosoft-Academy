@@ -9,7 +9,8 @@ const cursussen = JSON.parse(fs.readFileSync(path.join(uit, "cursussen.json"), "
 for (const c of cursussen) {
   const map = path.join(uit, c.code)
   const bestanden = fs.readdirSync(map)
-  const q = [sql`DELETE FROM cursus_bestanden WHERE cursus = ${c.code}`]
+  // Franse bestanden (demo-fr.html, gemaakt met scripts/cursusapps/frans/) bouwt bouw.mjs niet: die blijven staan.
+  const q = [sql`DELETE FROM cursus_bestanden WHERE cursus = ${c.code} AND pad NOT LIKE '%-fr.html'`]
   let totaal = 0
   for (const f of bestanden) {
     const inhoud = fs.readFileSync(path.join(map, f), "utf8")

@@ -23,6 +23,14 @@ Netlify (`betosoft-academy`, statische pagina's + functies in Frankfurt) en Neon
 | `/attest/<id>` | wie de link heeft | Attest (A4 liggend) afdrukken of als PDF bewaren, mailen, en controleren of het geldig is |
 | `/attest/voorbeeld/<CODE>` | beheerder | Voorbeeldattest van een cursus |
 
+## Franse versie
+- Publieke pagina's in het Frans: `/fr/` (startpagina), `/fr/inscription/`, `/fr/connexion/`. Enkel de cursus BMC bestaat in het
+  Frans; de andere zichtbare cursussen staan er als "en préparation". Een Franse aanvraag krijgt "[FR]" vooraan in de opmerking.
+- Franse demo: `/fr/demo/BMC/` serveert `demo-fr.html` van de bron (`cursus.mts`, `FR_META`). Menubalk, demoband en disclaimer
+  komen in het Frans via `ACADEMIE.taal = "fr"` (`cursus-academie.js`); de foutmelder volgt `lang="fr"` van de pagina.
+- Voorleesstem FR: opnames per alinea in `public/media/bmc/fr/voix/`. Werkwijze: `scripts/cursusapps/frans/LEESMIJ.md`.
+- De leeromgeving na het aanmelden (leerlijn, scores, beheer, centrale) is nog enkel Nederlands.
+
 ## Rollen
 - **superadmin** (`superbetonman`): alles, plus prijzen, voorwaarden, verlengingsregels en beheerders.
 - **beheerder**: dagelijks beheer (aanvragen, activeren, verlengen, centrales, versies).

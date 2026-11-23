@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="fr-BE">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Inscription · Betosoft Academy</title>
+  <meta name="description" content="Inscrivez-vous à une formation de la Betosoft Academy, en tant que personne ou entreprise.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <script src="/thema.js"></script>
+  <link rel="stylesheet" href="/stijl.css">
+  <style>
+    main { max-width: 720px; }
+    .keuze { display: grid; grid-template-columns: 1fr 1fr; gap: 0; border: 1px solid var(--lijn); border-radius: var(--r); overflow: hidden; background: var(--wit); }
+    .keuze label { padding: 12px; cursor: pointer; border-right: 1px solid var(--lijn); display: block; position: relative; }
+    .keuze label:last-child { border-right: 0; }
+    .keuze input { position: absolute; left: 12px; top: 12px; width: 1px; height: 1px; margin: 0; opacity: 0; pointer-events: none; }
+    .keuze label:has(input:checked) { background: var(--petrol-licht); box-shadow: inset 0 -2px 0 var(--petrol); }
+    .keuze label:has(input:focus-visible) { outline: 2px solid var(--petrol); outline-offset: -2px; }
+    .keuze strong { display: block; }
+    .val { position: absolute; left: -9999px; width: 1px; height: 1px; overflow: hidden; }
+    .prijsregel { font-family: var(--mono); font-size: 14px; margin: -4px 0 12px; }
+    fieldset { border: 0; padding: 0; margin: 0; min-width: 0; }
+    .melding.info p { margin: 0; }
+    .melding.info p + p { margin-top: 6px; }
+  </style>
+</head>
+<body>
+  <header class="kop">
+  <div class="kop-in">
+    <a class="logo" href="/fr/" aria-label="Betosoft Academy, accueil"><img src="/logo.svg" alt="" width="34" height="30"><span class="logo-tekst">Betosoft <em>Academy</em></span></a>
+    <nav class="hoofdnav" aria-label="Menu principal">
+      <a href="/fr/#formations">Formations</a>
+      <a href="/fr/#fonctionnement">Fonctionnement</a>
+      <a href="/fr/#prix">Prix</a>
+      <a href="/fr/#entreprises">Entreprises</a>
+      <a href="/fr/#conditions">Conditions</a>
+    </nav>
+    <div class="rechts"><a class="bknop" id="aanmeldknop" href="/fr/connexion/">Se connecter</a></div>
+  </div>
+</header>
+  <main>
+    <p class="label" style="margin-top:8px">Inscription</p>
+    <h1>Inscrivez-vous à une formation</h1>
+    <p>Vous demandez ici un accès. Après votre demande, vous recevez une facture. Après paiement, vous recevez l'accès à la plateforme par e-mail.</p>
+
+    <form id="form" novalidate>
+      <h2>01 Qui s'inscrit ?</h2>
+      <div class="keuze" role="radiogroup" aria-label="Qui s'inscrit">
+        <label><input type="radio" name="type" value="individueel" checked><strong>Moi, en tant que personne</strong><span class="klein zacht">Un participant. Facture à votre nom ou au nom de votre société.</span></label>
+        <label><input type="radio" name="type" value="onderneming"><strong>Une entreprise</strong><span class="klein zacht">Des places pour plusieurs collaborateurs, avec son propre gestionnaire</span></label>
+      </div>
+
+      <section id="sec-contact">
+        <h2><span class="nr">02</span> <span id="titel-contact">Vos coordonnées</span></h2>
+        <div id="beheerinfo" class="melding info verborgen">
+          <p>La personne de contact devient le <strong>gestionnaire</strong> de l'entreprise sur la plateforme.</p>
+          <p class="klein">Après l'activation, le gestionnaire crée lui-même les accès de ses collaborateurs, attribue les places et suit la progression. Plus tard, il peut aussi nommer des collègues gestionnaires.</p>
+        </div>
+        <div class="velden twee">
+          <label class="veld"><span class="label">Prénom</span><input name="voornaam" required maxlength="80" autocomplete="given-name"></label>
+          <label class="veld"><span class="label">Nom</span><input name="achternaam" required maxlength="80" autocomplete="family-name"></label>
+        </div>
+        <div class="velden twee">
+          <label class="veld"><span class="label">E-mail</span><input name="email" type="email" required maxlength="254" autocomplete="email"></label>
+          <label class="veld"><span class="label">Téléphone (facultatif)</span><input name="telefoon" type="tel" maxlength="40" autocomplete="tel"></label>
+        </div>
+      </section>
+
+      <section id="sec-facturatie">
+        <h2><span class="nr">03</span> <span id="titel-facturatie">Facturation</span></h2>
+        <label class="check" id="bedrijfkeuze"><input type="checkbox" name="factuur_bedrijf" id="factuur_bedrijf"><span>Facture au nom d'une société, avec numéro de TVA</span></label>
+        <fieldset id="bedrijfblok" class="verborgen" disabled>
+          <div class="velden twee">
+            <label class="veld"><span class="label" id="label-bedrijf">Nom de la société</span><input name="organisatie_naam" required maxlength="160" autocomplete="organization"></label>
+            <label class="veld"><span class="label">Numéro de TVA</span><input name="btw_nummer" required maxlength="20" class="mono" placeholder="BE0123456749" autocapitalize="characters" spellcheck="false"></label>
+          </div>
+        </fieldset>
+        <label class="veld"><span class="label">Adresse de facturation</span><input name="adres" maxlength="300" autocomplete="street-address" placeholder="Rue n°, code postal commune"></label>
+      </section>
+
+      <section id="sec-opleiding">
+        <h2><span class="nr">04</span> Formation</h2>
+        <label class="veld"><span class="label">Choisissez ce que vous voulez suivre</span><select name="product_id" id="product" required><option value="">Chargement…</option></select></label>
+        <div id="plaatsenblok" class="verborgen">
+          <label class="veld"><span class="label">Nombre de places</span><input name="aantal_plaatsen" type="number" min="1" max="500" value="5" class="mono" inputmode="numeric"></label>
+          <p class="klein zacht">Une place par collaborateur. Après l'activation, le gestionnaire attribue lui-même les places. Vous commandez des places supplémentaires plus tard.</p>
+        </div>
+        <p class="prijsregel" id="prijs"></p>
+        <label class="veld"><span class="label">Remarque (facultatif)</span><textarea name="opmerking" maxlength="1000"></textarea></label>
+      </section>
+
+      <div class="val" aria-hidden="true"><label>Website<input name="website" tabindex="-1" autocomplete="off"></label></div>
+
+      <label class="check"><input type="checkbox" name="akkoord" required><span class="klein">J'accepte les <a href="/fr/#conditions" target="_blank" rel="noopener">conditions et la déclaration de confidentialité</a>. En cas d'inscription par une entreprise, son gestionnaire peut consulter la progression et les résultats de ses propres collaborateurs.</span></label>
+
+      <div id="melding" class="melding verborgen" role="alert"></div>
+      <button class="knop" type="submit" id="verstuur">Envoyer la demande</button>
+    </form>
+
+    <div id="bedankt" class="paneel verborgen" style="margin-top:24px">
+      <h2 style="margin-top:0">Demande reçue</h2>
+      <p id="bedankt-tekst">Merci. Nous vous envoyons la facture dès que possible. Après paiement, vous recevez l'accès par e-mail.</p>
+    </div>
+  </main>
+  <script src="/fr/inscription/inscription.js" type="module"></script>
+  <footer class="voet">
+    <p class="disclaimer">Les formations ont été composées avec le plus grand soin. En cas de doute, consultez toujours les documents normatifs et les règlements : ils restent la référence.</p>
+    <p>Betosoft Academy · <a href="/fr/">accueil</a> · <a href="/fr/#prix">prix</a> · <a href="https://www.betosoft.be/fr/">betosoft.be</a> · <a href="/aanvragen/" lang="nl">Nederlands</a></p>
+  </footer>
+  <script src="/fout.js" type="module"></script>
+</body>
+</html>

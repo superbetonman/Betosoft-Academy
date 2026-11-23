@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="fr-BE">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Connexion · Betosoft Academy</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <script src="/thema.js"></script>
+  <link rel="stylesheet" href="/stijl.css">
+</head>
+<body>
+  <header class="kop">
+  <div class="kop-in">
+    <a class="logo" href="/fr/" aria-label="Betosoft Academy, accueil"><img src="/logo.svg" alt="" width="34" height="30"><span class="logo-tekst">Betosoft <em>Academy</em></span></a>
+    <nav class="hoofdnav" aria-label="Menu principal">
+      <a href="/fr/#formations">Formations</a>
+      <a href="/fr/#fonctionnement">Fonctionnement</a>
+      <a href="/fr/#prix">Prix</a>
+      <a href="/fr/#entreprises">Entreprises</a>
+      <a href="/fr/#conditions">Conditions</a>
+    </nav>
+    <div class="rechts"><a class="bknop" href="/fr/inscription/">S'inscrire</a></div>
+  </div>
+</header>
+  <section class="aanmeldscherm">
+    <h1>Se connecter</h1>
+    <p class="zacht">Pour les participants, les entreprises et les gestionnaires.</p>
+    <form id="form" class="paneel">
+      <label class="veld"><span class="label">Nom d'utilisateur ou e-mail</span><input name="login" autocomplete="username" required autofocus></label>
+      <label class="veld"><span class="label">Mot de passe</span><input type="password" name="wachtwoord" autocomplete="current-password" required></label>
+      <div id="fout" class="melding fout verborgen" role="alert"></div>
+      <button class="knop" type="submit">Se connecter</button>
+    </form>
+    <p class="klein zacht">Pas encore de mot de passe ? Utilisez le lien d'invitation reçu de Betosoft ou du gestionnaire de votre entreprise. La plateforme d'apprentissage elle-même est encore en néerlandais.</p>
+  </section>
+  <script type="module">
+    import { api } from "/gemeen.js"
+    const terug = new URLSearchParams(location.search).get("terug")
+    const veilig = (p) => (p && p.startsWith("/") && !p.startsWith("//") ? p : null)
+    try {
+      const s = await api("/api/sessie")
+      if (s.aangemeld) location.replace(veilig(terug) || s.bestemming)
+    } catch {}
+    document.getElementById("form").addEventListener("submit", async (e) => {
+      e.preventDefault()
+      const f = document.getElementById("fout")
+      f.classList.add("verborgen")
+      const knop = e.target.querySelector("button")
+      knop.disabled = true
+      try {
+        const r = await api("/api/aanmelden", { methode: "POST", data: Object.fromEntries(new FormData(e.target)) })
+        location.replace(veilig(terug) || r.bestemming)
+      } catch (err) {
+        f.textContent = "La connexion a échoué. Vérifiez votre nom d'utilisateur et votre mot de passe."
+        f.classList.remove("verborgen")
+      } finally {
+        knop.disabled = false
+      }
+    })
+  </script>
+  <footer class="voet">
+    <p class="disclaimer">Les formations ont été composées avec le plus grand soin. En cas de doute, consultez toujours les documents normatifs et les règlements : ils restent la référence.</p>
+    <p>Betosoft Academy · <a href="/fr/">accueil</a> · <a href="https://www.betosoft.be/fr/">betosoft.be</a> · <a href="/aanmelden/" lang="nl">Nederlands</a></p>
+  </footer>
+  <script src="/fout.js" type="module"></script>
+</body>
+</html>
