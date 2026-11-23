@@ -20,7 +20,7 @@ async function bezoek(id: string, code: string) {
   const r = await db()`
     UPDATE demo_bezoekers SET bezoeken = bezoeken + 1, laatst_bezocht_op = now(), bevestigd_op = coalesce(bevestigd_op, now()),
       cursussen_bekeken = CASE WHEN ${code} = ANY(cursussen_bekeken) THEN cursussen_bekeken ELSE cursussen_bekeken || ${code}::text END
-    WHERE id = ${id} RETURNING id`
+    WHERE id = ${id} AND verstuurd_via LIKE 'mail%' RETURNING id`
   return r.length > 0
 }
 
@@ -29,7 +29,7 @@ export async function demoPoort(req: Request, context: Context, code: string, ta
   const url = new URL(req.url)
   const tok = url.searchParams.get("toegang")
   if (tok) {
-    const [r] = await db()`SELECT id FROM demo_bezoekers WHERE token_hash = ${hashToken(tok)} AND aangevraagd_op > now() - make_interval(days => ${LINK_DAGEN})`
+    const [r] = await db()`SELECT id FROM demo_bezoekers WHERE token_hash = ${hashToken(tok)} AND verstuurd_via LIKE 'mail%' AND aangevraagd_op > now() - make_interval(days => ${LINK_DAGEN})`
     if (r) {
       zetDemo(context, r.id)
       await bezoek(r.id, code)
@@ -46,24 +46,26 @@ export async function demoPoort(req: Request, context: Context, code: string, ta
 const T = {
   nl: {
     lang: "nl-BE", thuis: "/", titel: "Bekijk de demo", sub: (t: string) => `Demo · ${t}`,
-    uitleg: "Vul je gegevens in. Je krijgt meteen een persoonlijke link om de demo te openen. Die link werkt 30 dagen; daarna blijft de demo 90 dagen open in deze browser.",
+    uitleg: "Vul je gegevens in. Je krijgt per mail een persoonlijke link en een code om de demo te openen. De link werkt 30 dagen, de code 24 uur. Daarna blijft de demo 90 dagen open in deze browser.",
+    code: "Code uit de mail (6 cijfers)", codeKnop: "Open de demo", codeFout: "Deze code klopt niet.",
     verlopen: "Deze link is niet meer geldig. Vraag hieronder een nieuwe aan.",
     naam: "Naam en voornaam", email: "E-mailadres", tel: "Telefoon (gsm)", org: "Onderneming (niet verplicht)",
     knop: "Stuur mij de link", bezig: "Even geduld…",
     privacy: "Betosoft gebruikt je gegevens om je toegang tot de demo te geven en je eventueel te contacteren over de cursus. We geven ze niet door.",
     al: "Heb je al een account?", aanmelden: "Aanmelden", aanmeldUrl: "/aanmelden/",
-    mail: (e: string) => `<strong>Bekijk je mailbox.</strong> We stuurden een link naar ${e}. Geen mail binnen enkele minuten? Kijk bij ongewenste mail.`,
+    mail: (e: string) => `<strong>Bekijk je mailbox.</strong> We stuurden een link en een code naar ${e}. Klik op de link, of vul hieronder de code in. Geen mail binnen enkele minuten? Kijk bij ongewenste mail.`,
     fout: "Het versturen lukte niet. Probeer het opnieuw.",
   },
   fr: {
     lang: "fr-BE", thuis: "/fr/", titel: "Voir la démo", sub: (t: string) => `Démo · ${t}`,
-    uitleg: "Indiquez vos coordonnées. Vous recevez tout de suite un lien personnel pour ouvrir la démo. Ce lien est valable 30 jours ; ensuite, la démo reste ouverte 90 jours dans ce navigateur.",
+    uitleg: "Indiquez vos coordonnées. Vous recevez par e-mail un lien personnel et un code pour ouvrir la démo. Le lien est valable 30 jours, le code 24 heures. Ensuite, la démo reste ouverte 90 jours dans ce navigateur.",
+    code: "Code reçu par e-mail (6 chiffres)", codeKnop: "Ouvrir la démo", codeFout: "Ce code n'est pas correct.",
     verlopen: "Ce lien n'est plus valable. Demandez-en un nouveau ci-dessous.",
     naam: "Nom et prénom", email: "Adresse e-mail", tel: "Téléphone (GSM)", org: "Entreprise (facultatif)",
     knop: "Envoyez-moi le lien", bezig: "Un instant…",
     privacy: "Betosoft utilise vos données pour vous donner accès à la démo et, le cas échéant, vous contacter au sujet de la formation. Nous ne les transmettons pas.",
     al: "Vous avez déjà un compte ?", aanmelden: "Se connecter", aanmeldUrl: "/fr/connexion/",
-    mail: (e: string) => `<strong>Consultez votre boîte mail.</strong> Nous avons envoyé un lien à ${e}. Pas de mail dans quelques minutes ? Regardez dans les indésirables.`,
+    mail: (e: string) => `<strong>Consultez votre boîte mail.</strong> Nous avons envoyé un lien et un code à ${e}. Cliquez sur le lien ou saisissez le code ci-dessous. Pas de mail dans quelques minutes ? Regardez dans les indésirables.`,
     fout: "L'envoi a échoué. Réessayez.",
   },
 }
@@ -90,11 +92,27 @@ function formulier(code: string, taal: "nl" | "fr", titel: string, verlopen: boo
     <div class="knoppen"><button class="knop" type="submit">${t.knop}</button></div>
     <div id="demomelding" class="melding verborgen" role="status" style="margin-top:12px"></div>
   </form>
+  <form id="codeform" class="verborgen" novalidate style="margin-top:12px">
+    <label class="veld"><span class="label">${t.code}</span><input name="code" required inputmode="numeric" pattern="[0-9]{6}" maxlength="6" autocomplete="one-time-code" class="mono" style="max-width:180px;letter-spacing:.2em"></label>
+    <div class="knoppen"><button class="knop" type="submit">${t.codeKnop}</button></div>
+    <div id="codemelding" class="melding fout verborgen" role="alert" style="margin-top:12px"></div>
+  </form>
   <p class="klein zacht" style="margin-top:20px">${t.al} <a href="${t.aanmeldUrl}?terug=${encodeURIComponent(terug)}">${t.aanmelden}</a></p>
 </main>
 <script>
 (function () {
   var f = document.getElementById("demoform"), m = document.getElementById("demomelding"), k = f.querySelector("button")
+  var cf = document.getElementById("codeform"), cm = document.getElementById("codemelding"), aanvraag = null
+  cf.addEventListener("submit", async function (e) {
+    e.preventDefault()
+    var b = cf.querySelector("button"); b.disabled = true; cm.className = "melding fout verborgen"
+    try {
+      var r = await fetch("/api/demo/code", { method: "POST", headers: { "content-type": "application/json", "x-academie": "1" }, body: JSON.stringify({ id: aanvraag, code: cf.code.value.trim(), taal: ${JSON.stringify(taal)} }) })
+      var j = await r.json().catch(function () { return {} })
+      if (!r.ok) throw new Error(j.fout || ${JSON.stringify(t.codeFout)})
+      location.href = j.url
+    } catch (err) { cm.className = "melding fout"; cm.textContent = err.message; b.disabled = false }
+  })
   f.addEventListener("submit", async function (e) {
     e.preventDefault()
     if (!f.reportValidity()) return
@@ -105,9 +123,10 @@ function formulier(code: string, taal: "nl" | "fr", titel: string, verlopen: boo
       var r = await fetch("/api/demo/aanvraag", { method: "POST", headers: { "content-type": "application/json", "x-academie": "1" }, body: JSON.stringify(d) })
       var j = await r.json().catch(function () { return {} })
       if (!r.ok) throw new Error(j.fout || ${JSON.stringify(t.fout)})
-      if (j.url) { location.href = j.url; return }
       f.querySelectorAll("input,button").forEach(function (x) { x.disabled = true })
       m.className = "melding"; m.innerHTML = ${JSON.stringify(t.mail("__E__"))}.replace("__E__", d.email.replace(/[<>&"']/g, ""))
+      aanvraag = j.id
+      cf.classList.remove("verborgen"); cf.code.focus()
     } catch (err) {
       m.className = "melding fout"; m.textContent = err.message; k.disabled = false; k.textContent = oud
     }

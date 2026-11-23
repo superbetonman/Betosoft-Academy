@@ -794,9 +794,9 @@ const actieNamen = {
 // Wie het demoformulier invulde (naam, e-mail, telefoon), welke demo's hij opende en hoe vaak.
 tabs.demo = async () => {
   const { bezoekers } = await api("/api/beheer/demo")
-  const via = { mail: "mail", "mail+sms": "mail en sms", direct: "meteen (geen mail)" }
+  const via = { mail: "mail", "mail+sms": "mail en sms", mislukt: "mail mislukt, geen toegang", direct: "zonder mail (oud, vervallen)" }
   inhoud.innerHTML = `<h1>Demo-bezoekers</h1>
-    <p class="zacht klein">Wie een demo wil bekijken, vult naam, e-mail en telefoon in en krijgt een persoonlijke link. Geopend = de link gevolgd.</p>
+    <p class="zacht klein">Wie een demo wil bekijken, vult naam, e-mail en telefoon in en krijgt per mail een persoonlijke link en code. Zonder link of code geen toegang. Geopend = link of code gebruikt.</p>
     <div class="balk"><button class="knop licht klein" id="democsv" ${bezoekers.length ? "" : "disabled"}>Download als CSV</button>
       <span class="zacht klein">${bezoekers.length} aanvragen · ${bezoekers.filter((b) => b.bevestigd_op).length} geopend</span></div>
     ${bezoekers.length ? `<div class="scroll-x paneel" style="padding:0"><table class="eenvoudig">
