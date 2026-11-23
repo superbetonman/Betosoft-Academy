@@ -48,7 +48,7 @@ function kerncijfers(n, toegangMnd) {
     ["En français", n === null ? "–" : getal(n)],
     ["Modules", bmc ? getal(bmc.modules_aantal || bmc.modules.length) : "–"],
     ["Leçons", bmc ? getal(bmc.lessen) : "–"],
-    ["Accès", `${getal(toegangMnd)}<small>mois</small>`],
+    ["Plateforme", `10&nbsp;€<small>par mois</small>`],
   ]
   $("#kerncijfers").innerHTML = cijfers.map(([k, v]) => `<div><dt>${k}</dt><dd>${v}</dd></div>`).join("")
 }
@@ -87,10 +87,9 @@ function voorwaarden(regels, toegangMnd, pf) {
   const m = (v) => `<span class="mono">${getal(v)}</span>`
   const vm = regels.verlenging_maanden ?? 1
   return [
-    ["Accès", `Formation complète : ${m(toegangMnd)} mois à partir de l'activation. Les mises à jour pendant cette période sont comprises.`],
+    ["Accès", "Une formation achetée reste ouverte tant que votre accès à la plateforme court. Les mises à jour sont comprises."],
     ...(pf ? [["Plateforme", `Accès à la plateforme : ${e$(Number(pf.prijs_excl_btw) / 12)} par mois et par personne, minimum un an (${e$(pf.prijs_excl_btw)} par an, facturés à l'avance). Se renouvelle chaque fois d'un an, sauf résiliation avant la fin. En plus, vous payez par formation suivie.`]] : []),
-    ["Prolonger", `Chaque fois ${m(vm)} mois pour ${m(regels.verlenging_prijs_pct ?? 25)}&#8239;% du prix initial, au maximum ${m(regels.verlenging_max ?? 3)} fois, à demander dans les ${m(regels.verlenging_venster_maanden ?? 3)} mois après le début.`],
-    ["Après la date de fin", "L'accès s'arrête. Votre progression et vos résultats restent enregistrés."],
+    ["Sans accès à la plateforme", "Si votre accès à la plateforme s'arrête, vos formations se ferment. Votre progression et vos résultats restent enregistrés ; avec un nouvel accès, elles se rouvrent."],
     ["Paiement", `Accès après paiement de la facture. Le prix est fixé au moment de votre demande. Prix hors TVA de ${m(regels.btw_pct ?? 21)}&#8239;%.`],
     ["Entreprises", "Prix par place. Chaque place est attribuée à un seul collaborateur. Une personne peut aussi être facturée au nom d'une société."],
     ["Nouvelles versions", "Si un module change pendant votre accès, vous recevez la nouvelle version. Les leçons terminées et les tests réussis restent valables, sauf si leur contenu a changé de façon importante."],
@@ -114,7 +113,7 @@ async function laad() {
     $("#prijstabellen").innerHTML = vol.length
       ? `<div class="scroll-x"><table class="prijzen"><colgroup><col class="c-product"><col class="c-toegang"><col class="c-prijs"></colgroup>
         <thead><tr><th>Formation</th><th class="num">Accès</th><th class="num">Prix</th></tr></thead>
-        <tbody>${pf ? `<tr><td><strong>Accès à la plateforme</strong><span class="zacht">par personne, minimum un an ; se renouvelle chaque année sauf résiliation avant la fin</span></td><td class="num">1 an</td><td class="num">${e$(Number(pf.prijs_excl_btw) / 12)} / mois <span class="zacht">min. 1 an : ${esc(eur(pf.prijs_excl_btw))}</span></td></tr>` : ""}${vol.map((p) => `<tr><td><strong>Formation complète chauffeur de camion malaxeur</strong><span class="zacht">base commune et parcours chauffeur, 8 modules</span></td><td class="num">${getal(p.geldigheid_maanden || 3)} mois</td><td class="num">${prix(p)}</td></tr>`).join("")}</tbody></table></div>
+        <tbody>${pf ? `<tr><td><strong>Accès à la plateforme</strong><span class="zacht">par personne, minimum un an ; se renouvelle chaque année sauf résiliation avant la fin</span></td><td class="num">1 an</td><td class="num">${e$(Number(pf.prijs_excl_btw) / 12)} / mois <span class="zacht">min. 1 an : ${esc(eur(pf.prijs_excl_btw))}</span></td></tr>` : ""}${vol.map((p) => `<tr><td><strong>Formation complète chauffeur de camion malaxeur</strong><span class="zacht">base commune et parcours chauffeur, 8 modules</span></td><td class="num">${p.geldigheid_maanden ? getal(p.geldigheid_maanden) + " mois" : "tant que l'accès à la plateforme court"}</td><td class="num">${prix(p)}</td></tr>`).join("")}</tbody></table></div>
         <div class="knoppen" style="margin-top:14px"><a class="knop" href="/fr/inscription/?product=CRS-BMC">S'inscrire</a></div>`
       : `<p class="zacht">Les prix suivent à l'ouverture.</p>`
   } catch (e) {

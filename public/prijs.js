@@ -36,6 +36,7 @@ export function toegangTekst(p) {
   if (p.periode === "maand") return "per maand, loopt zolang je betaalt"
   if (p.periode === "jaar") return "minimum één jaar, verlengt per jaar tenzij je opzegt vóór het einde"
   if (p.geldigheid_maanden) return `${getal(p.geldigheid_maanden)} maanden vanaf activatie`
+  if (p.type !== "abonnement") return "zolang je toegang tot het platform loopt"
   return "—"
 }
 
@@ -87,15 +88,11 @@ export function voorwaardenItems(producten, regels) {
   return {
     toegangMnd,
     items: [
-      ["Toegang", `Losse modules, niveaus en volledige cursussen: ${m(toegangMnd)} maanden vanaf de activatie. Updates in die periode zijn inbegrepen.`],
+      ["Toegang", "Een cursus, niveau of module die je koopt, blijft open zolang je toegang tot het platform loopt. Updates zijn inbegrepen."],
       ...(pf
         ? [["Platform", `Toegang tot het platform: ${m$(Number(pf.prijs_excl_btw) / 12)} per maand per persoon, minimum één jaar (${m$(pf.prijs_excl_btw)} per jaar, vooraf gefactureerd). Verlengt telkens met een jaar, tenzij je opzegt vóór het einde. Daarbovenop betaal je per cursus die je volgt.`]]
         : []),
-      [
-        "Verlengen",
-        `Telkens ${m(vm)} ${vm === 1 ? "maand" : "maanden"} voor ${m(regels.verlenging_prijs_pct ?? 25)}&#8239;% van de oorspronkelijke prijs, maximaal ${m(regels.verlenging_max ?? 3)} keer, aan te vragen binnen ${m(regels.verlenging_venster_maanden ?? 3)} maanden na de start.`,
-      ],
-      ["Na de einddatum", "De toegang stopt. Je voortgang en resultaten blijven bewaard."],
+      ["Zonder platformtoegang", "Stopt je toegang tot het platform, dan gaan je cursussen dicht. Je voortgang en resultaten blijven bewaard; met nieuwe platformtoegang gaan ze weer open."],
       ["Betalen", `Toegang na betaling van de factuur. De prijs ligt vast op het moment van je aanvraag. Prijzen exclusief ${m(regels.btw_pct ?? 21)}&#8239;% btw.`],
       ["Ondernemingen", "Prijs per plaats. Elke plaats wordt toegewezen aan één medewerker. Een persoon kan ook op naam van een bedrijf gefactureerd worden."],
       ["Nieuwe versies", "Wijzigt een module tijdens je toegang, dan krijg je de nieuwe versie. Afgeronde lessen en geslaagde toetsen blijven gelden, tenzij de inhoud ervan wezenlijk wijzigde."],

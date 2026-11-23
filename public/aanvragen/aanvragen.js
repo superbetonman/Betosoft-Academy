@@ -7,7 +7,7 @@ let producten = []
 const esc = (v) => String(v ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c])
 const euro = (n) => new Intl.NumberFormat("nl-BE", { style: "currency", currency: "EUR" }).format(Number(n))
 const periode = (p) =>
-  p.periode === "maand" ? "per maand" : p.periode === "jaar" ? "minimum één jaar, verlengt per jaar" : p.geldigheid_maanden ? `eenmalig, ${p.geldigheid_maanden} maanden toegang` : "eenmalig"
+  p.periode === "maand" ? "per maand" : p.periode === "jaar" ? "minimum één jaar, verlengt per jaar" : p.geldigheid_maanden ? `eenmalig, ${p.geldigheid_maanden} maanden toegang` : "eenmalig, open zolang je toegang tot het platform loopt"
 
 async function laadProducten() {
   try {

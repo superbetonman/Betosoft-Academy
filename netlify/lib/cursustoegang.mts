@@ -23,6 +23,22 @@ export async function magCursus(g: Gebruiker | null, code: string): Promise<bool
 }
 
 /**
+ * Platform: heeft deze gebruiker een cursus gekocht (die via het platform loopt) maar geen geldige toegang tot het platform?
+ * Dan is de cursus dicht tot de platformtoegang weer loopt (migratie 011). Persoonlijk of via een plaats van zijn onderneming.
+ */
+export async function platformOntbreekt(g: Gebruiker | null): Promise<boolean> {
+  if (!g || isBeheer(g)) return false
+  const [r] = await db()`
+    SELECT EXISTS (
+      SELECT 1 FROM toegangsrechten tr JOIN producten p ON p.id = tr.product_id
+      LEFT JOIN plaats_toewijzingen pt ON pt.toegangsrecht_id = tr.id AND pt.ingetrokken_op IS NULL
+      WHERE tr.platform_vereist AND p.type <> 'abonnement' AND tr.status = 'actief' AND tr.start_datum <= current_date
+        AND (tr.gebruiker_id = ${g.id} OR pt.gebruiker_id = ${g.id})
+    ) AND NOT EXISTS (SELECT 1 FROM v_platform_toegang WHERE gebruiker_id = ${g.id}) AS ontbreekt`
+  return !!r?.ontbreekt
+}
+
+/**
  * Mag deze gebruiker de gegevens (voortgang) onder deze code lezen en schrijven?
  * Bij de cursus zelf, of bij de bron als hij een cursus mag openen die van die bron afgeleid is: BMC en BPB bewaren hun
  * voortgang bij BMC-BPB, zodat de gemeenschappelijke basis één keer gevolgd wordt.

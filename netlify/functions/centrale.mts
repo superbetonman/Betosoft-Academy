@@ -232,7 +232,7 @@ const routes: Record<string, Handler> = {
   "GET producten": async () => {
     const rijen = await sql()`
       SELECT id, naam, type, prijs_excl_btw, periode, geldigheid_maanden, beschrijving FROM producten
-      WHERE actief AND type <> 'abonnement' AND product_te_koop(id) ORDER BY CASE type WHEN 'traject' THEN 1 ELSE 2 END, code`
+      WHERE actief AND (type <> 'abonnement' OR code = 'ABO-PLATFORM') AND product_te_koop(id) ORDER BY CASE type WHEN 'traject' THEN 1 ELSE 2 END, code`
     return json({ producten: rijen })
   },
 }

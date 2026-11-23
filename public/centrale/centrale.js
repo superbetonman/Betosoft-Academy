@@ -70,7 +70,7 @@ tabs.overzicht = async () => {
       <li>Voeg je medewerkers toe. Elke medewerker krijgt een uitnodigingslink om een wachtwoord te kiezen.</li>
       <li>Wijs een plaats in een opleiding toe. De medewerker ziet de opleiding meteen na aanmelden.</li>
       <li>Volg voortgang en resultaten in Leerlijn en Scorebord. Een afgeronde cursus geeft vanzelf een attest dat je kunt afdrukken of mailen.</li>
-      <li>Niet klaar op tijd? Vraag een verlenging aan bij de opleiding (${esc(verlengTekst(geldig[0]))}).</li>
+      <li>Een opleiding blijft open zolang de medewerker toegang tot het platform heeft. Wijs dus elke medewerker ook een plaats voor de toegang tot het platform toe.</li>
     </ol>`
 }
 function verlengTekst(r) {
@@ -85,7 +85,7 @@ function rechtRij(r) {
       <div class="meta">
         <span><span class="mono">${datum(r.start_datum)}</span> – <span class="mono">${r.eind_datum ? datum(r.eind_datum) : "onbeperkt"}</span></span>
         <span>plaatsen <span class="mono">${r.gebruikt}/${r.aantal_plaatsen}</span></span>
-        <span>verlengd <span class="mono">${r.verlengingen}/${r.verlengingen_max}</span></span>
+        ${r.verlengingen_max ? `<span>verlengd <span class="mono">${r.verlengingen}/${r.verlengingen_max}</span></span>` : ""}
         ${r.verlenging_open ? `<span class="status s-concept">verlenging aangevraagd</span>` : ""}
         ${rechtStatus(r)}
       </div>
@@ -218,7 +218,7 @@ tabs.opleidingen = async () => {
   inhoud.innerHTML = `
     <h1>Opleidingen</h1>
     <div class="balk"><button class="knop" data-actie="bestel">Opleiding of plaatsen bestellen</button></div>
-    <p class="klein zacht">Een opleiding is ${esc("3 maanden")} toegankelijk vanaf de start. Updates van de opleiding in die periode zijn inbegrepen. Niet klaar op tijd? Vraag een verlenging aan.</p>
+    <p class="klein zacht">Een opleiding blijft open zolang de medewerker toegang tot het platform heeft (10 € per maand per persoon, minimum één jaar). Updates zijn inbegrepen.</p>
     <h2>01 Lopend</h2>
     ${ov.rechten.filter((r) => r.geldig).map(rechtRij).join("") ? `<div class="lijst">${ov.rechten.filter((r) => r.geldig).map(rechtRij).join("")}</div>` : `<div class="leeg">Geen lopende opleidingen.</div>`}
     <h2>02 Afgelopen</h2>

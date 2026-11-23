@@ -177,6 +177,7 @@ Netlify (`betosoft-academy`, statische pagina's + functies in Frankfurt) en Neon
   om om te zetten naar het nieuwe plan.
 - `migraties/009_modules_af_masterclass.sql`: alle modules van PLM en VRK klaar (CSC niet: zie de ombouw tot "Milieu, CSC en MVO"); nieuwe cursus BT3 (Masterclass betontechnologie 3.0)
 - `migraties/010_platformtoegang.sql`: product ABO-PLATFORM, toegang tot het platform 10 euro per maand per persoon, minimum één jaar (120 euro per jaar), verlengt per jaar; daarbovenop de cursusprijs. De oude abonnementen voor alle cursussen gaan uit de verkoop. Het product geeft op zich geen toegang tot een cursus (enkel facturatie).
+- `migraties/011_cursus_via_platform.sql`: een cursus (module, traject, pakket) heeft geen eigen einddatum meer en is open zolang de gebruiker geldige platformtoegang heeft (`v_platform_toegang`, persoonlijk of via een plaats). Zonder platformtoegang is ze dicht (`/cursus/` en `/leren/` melden dat). Kolom `toegangsrechten.platform_vereist`; rechten van vóór de migratie houden de oude regel. Geen verlenging per maand meer voor die rechten (`v_verlenging_stand.maximum` = 0).
   met acht modules en product `CRS-BT3`, op "niet tonen"; de abonnementen heten "Academy-abonnement". Uitvoeren na het opladen van de
   nieuwe cursusbestanden; daarna elke cursus één keer openen als beheerder om de lessenlijst te bevestigen.
 - Bedrijfsregels zitten in databankfuncties: `activeer_aanvraag`, `verleng_recht`, `vraag_verlenging`, `wijs_plaats_toe`,

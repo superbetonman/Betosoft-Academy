@@ -1,7 +1,7 @@
 import type { Config, Context } from "@netlify/functions"
 import { db } from "../lib/db.mts"
 import { aangemeld, isBeheer } from "../lib/sessie.mts"
-import { CURSUSCODE, magCursus, cursusInfo, type CursusInfo } from "../lib/cursustoegang.mts"
+import { CURSUSCODE, magCursus, cursusInfo, platformOntbreekt, type CursusInfo } from "../lib/cursustoegang.mts"
 
 /**
  * Serveert de cursusapps uit de databank (tabel cursus_bestanden):
@@ -115,6 +115,14 @@ export default async (req: Request, context: Context) => {
         return c.startpagina === "voorbereiding"
           ? pagina("In voorbereiding", "Deze cursus is in voorbereiding. Je voortgang blijft bewaard.", "/leren/", "Naar mijn leerlijn", 403)
           : pagina("Tijdelijk offline", "Deze cursus staat tijdelijk offline. Je voortgang blijft bewaard.", "/leren/", "Naar mijn leerlijn", 403)
+      if (await platformOntbreekt(g))
+        return pagina(
+          "Toegang tot het platform ontbreekt",
+          "Je cursus blijft open zolang je toegang tot het platform loopt. Die toegang ontbreekt of is verlopen. Je voortgang en resultaten blijven bewaard; vraag de toegang aan of neem contact op met de beheerder van je onderneming.",
+          "/aanvragen/?product=ABO-PLATFORM",
+          "Toegang tot het platform aanvragen",
+          403,
+        )
       return pagina(
         "Geen toegang tot deze cursus",
         "Je hebt nog geen toegang tot de volledige cursus. Bekijk de demo, of vraag toegang via je onderneming of via een inschrijving.",

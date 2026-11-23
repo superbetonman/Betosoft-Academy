@@ -38,7 +38,7 @@ function kerncijfers(toegangMaanden) {
     ["Cursussen", n(lijst.length)],
     ["Modules klaar", n(som(lijst, "modules_klaar") - dubbel("modules"))],
     ["Lessen", n(som(lijst, "lessen") - dubbel("lessen"))],
-    ["Toegang", `${getal(toegangMaanden)}<small>maanden</small>`],
+    ["Platform", `10&nbsp;€<small>per maand</small>`],
   ]
   $("#kerncijfers").innerHTML = cijfers.map(([k, v]) => `<div><dt>${k}</dt><dd>${v}</dd></div>`).join("")
 }

@@ -191,7 +191,7 @@ tabs.overzicht = async () => {
             <div class="meta"><span>${esc(r.product_naam)}</span><span>einde <span class="mono">${datum(r.eind_datum)}</span></span>
               <span class="status ${r.dagen_resterend < 0 ? "s-afwijking" : "s-aandacht"}">${r.dagen_resterend < 0 ? "verlopen" : `nog <span class="mono">${r.dagen_resterend}</span> d`}</span>
               <span>modules niet af <span class="mono">${r.modules_niet_af}</span></span>
-              <span>verlengd <span class="mono">${r.verlengingen}/${r.verlengingen_max}</span></span>
+              ${r.verlengingen_max ? `<span>verlengd <span class="mono">${r.verlengingen}/${r.verlengingen_max}</span></span>` : ""}
               ${r.verlenging_aangevraagd ? `<span class="status s-concept">verlenging aangevraagd</span>` : ""}</div>
           </div>
           <div class="knoppen">${!r.verlenging_aangevraagd && r.verlengingen < r.verlengingen_max && r.aanvragen_tot >= vandaag()
@@ -205,7 +205,7 @@ tabs.overzicht = async () => {
       <li>Je maakt de factuur in je eigen boekhoudtool en noteert het factuurnummer.</li>
       <li>Na betaling (of meteen, zoals je verkiest) klik je op <em>Activeren</em>: de toegang start.</li>
       <li>Maandabonnement: na elke betaling klik je op <em>Verlengen</em> (+1 maand).</li>
-      <li>Opleiding niet af binnen 3 maanden: registreer een verlenging (25 % per maand, max. 3 keer). Die komt als aanvraag binnen; activeer na betaling.</li>
+      <li>Toegang tot het platform (ABO-PLATFORM): per jaar; verleng na betaling met <em>Verlengen</em> (+12 maanden). Een cursus loopt mee met die toegang en heeft geen eigen einddatum. Oude rechten (van vóór 23 november 2026) houden hun eigen periode en verlenging.</li>
     </ol>
     <p class="klein zacht">Aanvraagformulier voor klanten: <a href="/aanvragen/" target="_blank" rel="noopener">/aanvragen/</a></p>`
 }
@@ -304,7 +304,7 @@ function rechtRij(r) {
         <span>${esc(r.product)}</span>
         <span><span class="mono">${datum(r.start_datum)}</span> – <span class="mono">${r.eind_datum ? datum(r.eind_datum) : "onbeperkt"}</span></span>
         ${centrale ? `<span>plaatsen <span class="mono">${r.plaatsen_gebruikt}/${r.aantal_plaatsen}</span></span>` : ""}
-        ${r.product_type !== "abonnement" ? `<span>verlengd <span class="mono">${r.verlengingen}/${r.verlengingen_max}</span></span>` : ""}
+        ${r.product_type !== "abonnement" ? `${r.verlengingen_max ? `<span>verlengd <span class="mono">${r.verlengingen}/${r.verlengingen_max}</span></span>` : ""}` : ""}
         ${r.factuurnummer ? `<span>factuur <span class="mono">${esc(r.factuurnummer)}</span></span>` : ""}
         ${rechtStatus(r)}
       </div>

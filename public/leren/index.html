@@ -59,6 +59,11 @@
           $("#tester").classList.remove("verborgen")
           $("#tester").innerHTML = `<strong>Testermodus.</strong> Als beheerder kun je elke cursus openen en volgen. Je voortgang wordt in je account bewaard, maar telt niet mee in het klassement. Open je een cursus, dan bevestig je meteen de lessenlijst ervan (nodig voor voortgang en attesten). Meld wat je vaststelt met de knop <em>Fout melden</em> rechts op het scherm. <a href="/beheer/">Naar beheer</a>`
         }
+        if (d.platform_ontbreekt) {
+          $("#tester").classList.remove("verborgen")
+          $("#tester").classList.add("fout")
+          $("#tester").innerHTML = `<strong>Je toegang tot het platform ontbreekt of is verlopen.</strong> Je cursussen blijven open zolang die toegang loopt; nu zijn ze dicht. Je voortgang en resultaten blijven bewaard. <a href="/aanvragen/?product=ABO-PLATFORM">Toegang tot het platform aanvragen</a>`
+        }
         const t = d.totaal
         $("#niveau").innerHTML = niveauBlok(t, `<a href="/scores/">klassement</a>`)
         const attesten = d.attesten.filter((a) => !a.ingetrokken_op)

@@ -1,7 +1,7 @@
 import type { Config, Context } from "@netlify/functions"
 import { db, json, fout, dbFout, UUID } from "../lib/db.mts"
 import { aangemeld, eigenAanvraag, isBeheer, type Gebruiker } from "../lib/sessie.mts"
-import { CURSUSCODE, magCursus, magGegevens } from "../lib/cursustoegang.mts"
+import { CURSUSCODE, magCursus, magGegevens, platformOntbreekt } from "../lib/cursustoegang.mts"
 import { laadDeelnemers, leerlijn, valideerStructuur, telLessen, telToetsen, korteNaam, volleNaam, NIVEAUS, PUNTEN, BADGES } from "../lib/leerlijn.mts"
 
 /**
@@ -49,6 +49,7 @@ export default async (req: Request, context: Context) => {
       return json({
         ik: { id: g.id, naam: volleNaam(g), voornaam: g.voornaam, rol: g.rol, bedrijf: l.bedrijf, locatie: l.locatie },
         beheer,
+        platform_ontbreekt: await platformOntbreekt(g),
         cursussen: l.cursussen.filter((c) => beheer || c.toegang || c.deels || c.af > 0),
         totaal: l.totaal,
         attesten: l.attesten,

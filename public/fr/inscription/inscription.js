@@ -11,7 +11,7 @@ const FOUT_FR = (f) => (f ? `La demande n'a pas pu être envoyée. Vérifiez les
 const esc = (v) => String(v ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c])
 const euro = (n) => new Intl.NumberFormat("fr-BE", { style: "currency", currency: "EUR" }).format(Number(n))
 const periode = (p) =>
-  p.periode === "maand" ? "par mois" : p.periode === "jaar" ? "par an" : p.geldigheid_maanden ? `paiement unique, ${p.geldigheid_maanden} mois d'accès` : "paiement unique"
+  p.periode === "maand" ? "par mois" : p.periode === "jaar" ? "par an" : p.geldigheid_maanden ? `paiement unique, ${p.geldigheid_maanden} mois d'accès` : "paiement unique, ouverte tant que votre accès à la plateforme court"
 
 async function laadProducten() {
   try {
