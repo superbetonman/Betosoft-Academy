@@ -166,8 +166,20 @@ tabs.leerlijn = async () => {
 function toonDeelnemer(id) {
   const m = leerData.find((x) => x.id === id)
   if (!m) return
-  dialoog({ titel: m.naam, inhoud: deelnemerDetail(m), sluitTekst: "Sluiten" })
+  dialoog({ titel: m.naam, inhoud: deelnemerDetail(m, { reset: true }), sluitTekst: "Sluiten" })
   const dlg = $("#dialoog")
+  $("#resetknop")?.addEventListener("click", async (e) => {
+    const b = e.currentTarget
+    const cursus = $("#resetcursus").value
+    if (!confirm(`Voortgang van ${cursus} wissen voor ${b.dataset.naam}? Lessen, opdrachten en toetsresultaten van deze cursus verdwijnen. Attesten en badges blijven. Dit kan niet ongedaan gemaakt worden.`)) return
+    b.disabled = true
+    try {
+      const r = await api(`/api/centrale/medewerkers/${b.dataset.gebruiker}/reset`, { methode: "POST", data: { cursus } })
+      dlg.close()
+      toast(`Voortgang gereset: ${r.cursussen.join(" en ")}`)
+      herlaad()
+    } catch (err) { toast(err.message, true); b.disabled = false }
+  })
   dlg.style.width = "min(860px, calc(100vw - 24px))"
   dlg.addEventListener("close", () => (dlg.style.width = ""), { once: true })
 }
@@ -323,9 +335,10 @@ acties.beheer = ({ id }) => {
         <button type="button" class="knop klein" id="wijs">Toewijzen</button></div>` : ""}
       <h3 style="margin:16px 0 6px">Gegevens</h3>
       <div class="velden twee">
-        <label class="veld"><span class="label">Voornaam</span><input name="voornaam" value="${esc(m.voornaam || "")}" maxlength="80"></label>
-        <label class="veld"><span class="label">Achternaam</span><input name="achternaam" value="${esc(m.achternaam || "")}" maxlength="80"></label>
+        <label class="veld"><span class="label">Voornaam</span><input value="${esc(m.voornaam || "")}" readonly disabled></label>
+        <label class="veld"><span class="label">Achternaam</span><input value="${esc(m.achternaam || "")}" readonly disabled></label>
       </div>
+      <p class="klein zacht">De naam ligt vast: een opleiding staat op naam. Een tikfout? Vraag een correctie aan Betosoft.</p>
       ${locatieKeuze(m.organisatie_id)}
       <div class="knoppen" style="margin-top:8px">
         ${m.actief ? `<button type="button" class="knop stil klein" id="uitnodig">${m.account_actief ? "Nieuwe aanmeldlink" : "Uitnodigingslink"}</button>` : ""}

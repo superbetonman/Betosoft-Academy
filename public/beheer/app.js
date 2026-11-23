@@ -426,7 +426,7 @@ tabs.cursisten = async () => {
             <span>sinds <span class="mono">${datum(g.aangemaakt_op)}</span></span>
           </div>
         </div>
-        <div class="knoppen"><button class="knop stil klein" data-actie="cursistActief" data-id="${g.id}" data-actief="${g.actief ? "0" : "1"}">${g.actief ? "Deactiveren" : "Activeren"}</button></div>
+        <div class="knoppen"><button class="knop stil klein" data-actie="cursistNaam" data-id="${g.id}" data-voornaam="${esc(g.voornaam || "")}" data-achternaam="${esc(g.achternaam || "")}">Naam corrigeren</button><button class="knop stil klein" data-actie="cursistActief" data-id="${g.id}" data-actief="${g.actief ? "0" : "1"}">${g.actief ? "Deactiveren" : "Activeren"}</button></div>
       </div>`).join("")}</div>` : `<div class="leeg">Geen cursisten gevonden.</div>`}`
   let t
   $("#cursistzoek").addEventListener("input", (e) => {
@@ -476,7 +476,7 @@ function toonDeelnemer(id) {
   dialoog({
     titel: m.naam,
     breed: true,
-    inhoud: deelnemerDetail(m, { beheer: true }) + (zonder.length ? `
+    inhoud: deelnemerDetail(m, { beheer: true, reset: true }) + (zonder.length ? `
       <h3 style="margin:16px 0 6px">Attest handmatig uitreiken</h3>
       <p class="klein zacht">Bijvoorbeeld na een examen buiten de academy, of opnieuw na intrekken. Het attest vermeldt de voortgang zoals ze nu is.</p>
       <div class="balk"><select id="uitreikcursus" style="max-width:340px">${zonder.map((c) => `<option value="${esc(c.code)}">${esc(c.code)} · ${esc(c.titel)} (${c.pct === null ? c.af + " lessen" : c.pct + " %"})</option>`).join("")}</select>
@@ -502,6 +502,19 @@ $("#dialooginhoud").addEventListener("click", async (e) => {
       dlg.close()
       herlaad()
     } catch (err) { toast(err.message, true) }
+    return
+  }
+  const rs = e.target.closest("#resetknop")
+  if (rs) {
+    const cursus = $("#resetcursus").value
+    if (!confirm(`Voortgang van ${cursus} wissen voor ${rs.dataset.naam}? Lessen, opdrachten en toetsresultaten van deze cursus verdwijnen. Attesten en badges blijven. Dit kan niet ongedaan gemaakt worden.`)) return
+    rs.disabled = true
+    try {
+      const r = await api(`/api/beheer/cursisten/${rs.dataset.gebruiker}/reset`, { methode: "POST", data: { cursus } })
+      toast(`Voortgang gereset: ${r.cursussen.join(" en ")}`)
+      dlg.close()
+      herlaad()
+    } catch (err) { toast(err.message, true); rs.disabled = false }
     return
   }
   const uit = e.target.closest("#uitreiken")
@@ -1198,6 +1211,19 @@ acties.plaatsenWijzigen = ({ id, aantal, gebruikt }) =>
     },
   })
 
+acties.cursistNaam = async ({ id, voornaam, achternaam }) => {
+  const v = prompt("Naam corrigeren (enkel bij een tikfout; komt in het logboek). Voornaam:", voornaam || "")
+  if (v === null || !v.trim()) return
+  const a = prompt("Achternaam:", achternaam || "")
+  if (a === null) return
+  try {
+    await api(`/api/beheer/cursisten/${id}/naam`, { methode: "POST", data: { voornaam: v.trim(), achternaam: a.trim() } })
+    toast("Naam gecorrigeerd")
+    herlaad()
+  } catch (err) {
+    toast(err.message, true)
+  }
+}
 acties.cursistActief = async ({ id, actief }) => {
   try {
     await api(`/api/beheer/cursisten/${id}/actief`, { methode: "POST", data: { actief: actief === "1" } })

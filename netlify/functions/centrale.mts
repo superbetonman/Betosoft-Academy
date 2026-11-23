@@ -141,16 +141,29 @@ const routes: Record<string, Handler> = {
     return json({ ok: true, gebruiker: g.id, uitnodiging })
   },
 
+  // De naam van een medewerker ligt vast: zo kan een plaats niet ongemerkt naar iemand anders gaan (licentie op naam).
+  // Een tikfout verbetert Betosoft (Beheer → Cursisten → Naam corrigeren). Hier enkel de locatie.
   "POST medewerkers/wijzig": async ({ b, id: gid, bereik }) => {
     const g = await persoonInBereik(gid, bereik)
     if (!g) return fout("Medewerker niet gevonden.", 404)
+    const [n] = await sql()`SELECT voornaam, achternaam FROM gebruikers WHERE id = ${gid}`
+    const anders = (nieuw: unknown, oud: string | null) => nieuw !== undefined && (tekst(nieuw, 80) ?? null) !== (oud ?? null)
+    if (anders(b.voornaam, n.voornaam) || anders(b.achternaam, n.achternaam))
+      return fout("De naam van een medewerker kan niet gewijzigd worden. Is er een tikfout, vraag dan een correctie aan Betosoft.", 403)
     const locatie = uuid(b.locatie_id)
     if (locatie && !bereik.includes(locatie)) return fout("Onbekende locatie.", 403)
-    await sql()`
-      UPDATE gebruikers SET voornaam = coalesce(${tekst(b.voornaam, 80)}, voornaam), achternaam = ${tekst(b.achternaam, 80)},
-             organisatie_id = coalesce(${locatie}::uuid, organisatie_id)
-      WHERE id = ${gid}`
+    if (locatie) await sql()`UPDATE gebruikers SET organisatie_id = ${locatie}::uuid WHERE id = ${gid}`
     return json({ ok: true })
+  },
+
+  // Voortgang van één cursus wissen (attesten en badges blijven). BMC en BPB delen hun voortgang: dan voor beide.
+  "POST medewerkers/reset": async ({ b, id: gid, bereik, ik }) => {
+    const g = await persoonInBereik(gid, bereik)
+    if (!g) return fout("Medewerker niet gevonden.", 404)
+    const cursus = (tekst(b.cursus, 20) ?? "").toUpperCase()
+    if (!/^[A-Z0-9-]{1,20}$/.test(cursus)) return fout("Kies een cursus.")
+    const [r] = await sql()`SELECT reset_voortgang(${gid}::uuid, ${cursus}, ${ik.id}::uuid) AS cursussen`
+    return json({ ok: true, cursussen: r.cursussen })
   },
 
   "POST medewerkers/actief": async ({ b, id: gid, bereik, ik }) => {

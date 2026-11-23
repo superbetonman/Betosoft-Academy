@@ -108,9 +108,10 @@ export function matrix(deelnemers, { bedrijf = false } = {}) {
 }
 
 /** Detail van één deelnemer (in een dialoog). */
-export function deelnemerDetail(d, { beheer = false } = {}) {
+export function deelnemerDetail(d, { beheer = false, reset = false } = {}) {
   const t = d.totaal
   const actief = d.cursussen.filter((c) => c.toegang || c.deels || c.af)
+  const metVoortgang = d.cursussen.filter((c) => c.af > 0)
   return `${niveauBlok(t)}
     <p class="klein zacht">${esc(d.email)}${d.bedrijf ? ` · ${esc(d.bedrijf)}` : ""}${d.locatie && d.locatie !== d.bedrijf ? ` · ${esc(d.locatie)}` : ""}</p>
     <div class="lkaarten">${actief.length ? actief.map((c) => cursusKaart(c, { beheer })).join("") : `<div class="leeg">Nog geen opleidingen.</div>`}</div>
@@ -120,5 +121,9 @@ export function deelnemerDetail(d, { beheer = false } = {}) {
         <div class="knoppen"><a class="knop licht klein" href="/attest/${a.id}" target="_blank" rel="noopener">Bekijken</a>${!a.ingetrokken_op ? `<a class="knop licht klein" href="/attest/${a.id}#mail" target="_blank" rel="noopener">Mailen</a>` : ""}
         ${beheer && !a.ingetrokken_op ? `<button class="knop gevaar klein" type="button" data-intrek="${a.id}" data-nummer="${esc(a.nummer)}">Intrekken</button>` : ""}</div></div>`)
       .join("")}</div>` : ""}
-    <h3 style="margin:16px 0 6px">Badges</h3>${badgeLijst(t.badges)}`
+    <h3 style="margin:16px 0 6px">Badges</h3>${badgeLijst(t.badges)}
+    ${reset && metVoortgang.length ? `<h3 style="margin:16px 0 6px">Voortgang resetten</h3>
+      <p class="klein zacht">Wist de voortgang van één cursus: lessen, opdrachten en toetsresultaten. Uitgereikte attesten en behaalde badges blijven. Betonmixerchauffeur en betonpompbediende delen hun basis: een reset geldt dan voor beide.</p>
+      <div class="balk"><select id="resetcursus" style="max-width:340px">${metVoortgang.map((c) => `<option value="${esc(c.code)}">${esc(c.code)} · ${esc(c.titel)} (${c.af} lessen af)</option>`).join("")}</select>
+      <button class="knop gevaar klein" type="button" id="resetknop" data-gebruiker="${esc(d.id)}" data-naam="${esc(d.naam || d.email)}">Voortgang resetten</button></div>` : ""}`
 }

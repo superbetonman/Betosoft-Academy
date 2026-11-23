@@ -343,6 +343,27 @@ const routes: Record<string, Handler> = {
     return json({ ok: true, id: l.id })
   },
 
+  "POST cursisten/reset": async ({ b, id: gid, ik }) => {
+    const cursus = (tekst(b.cursus, 20) ?? "").toUpperCase()
+    if (!/^[A-Z0-9-]{1,20}$/.test(cursus)) return fout("Kies een cursus.")
+    const [g] = await sql()`SELECT id FROM gebruikers WHERE id = ${gid}`
+    if (!g) return fout("Persoon niet gevonden.", 404)
+    const [r] = await sql()`SELECT reset_voortgang(${gid}::uuid, ${cursus}, ${ik.id}::uuid) AS cursussen`
+    return json({ ok: true, cursussen: r.cursussen })
+  },
+
+  // Naam corrigeren (tikfout): enkel hier, niet door de onderneming of de persoon zelf. Komt in het logboek.
+  "POST cursisten/naam": async ({ b, id: gid, ik }) => {
+    const voornaam = tekst(b.voornaam, 80)
+    if (!voornaam) return fout("Vul minstens de voornaam in.")
+    const achternaam = tekst(b.achternaam, 80)
+    const [oud] = await sql()`SELECT voornaam, achternaam FROM gebruikers WHERE id = ${gid} AND rol IN ('cursist','centrale_verantwoordelijke')`
+    if (!oud) return fout("Persoon niet gevonden.", 404)
+    await sql()`UPDATE gebruikers SET voornaam = ${voornaam}, achternaam = ${achternaam} WHERE id = ${gid}`
+    await sql()`SELECT log_actie('naam_gecorrigeerd', 'gebruiker', ${gid}::uuid, ${JSON.stringify({ van: [oud.voornaam, oud.achternaam], naar: [voornaam, achternaam], door: ik.id })}::jsonb)`
+    return json({ ok: true })
+  },
+
   "POST cursisten/rol": async ({ b, id: gid }) => {
     const rol = b.rol === "centrale_verantwoordelijke" ? "centrale_verantwoordelijke" : b.rol === "cursist" ? "cursist" : null
     if (!rol) return fout("Ongeldige rol.")
