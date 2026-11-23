@@ -23,6 +23,8 @@
     licht: "Passer en mode clair", donker: "Passer en mode sombre", lichtK: "Mode clair", donkerK: "Mode sombre",
     toonInhoud: "Afficher la table des matières", verbergInhoud: "Masquer la table des matières",
     terugStart: "Retour à l'accueil", terugLeerlijn: "Retour à mon parcours",
+    voorlopig: "Image provisoire : les images et les films ne sont pas encore définitifs.",
+    geenAfdruk: "L'impression de cette formation n'est pas disponible.",
     demo: "<b>Démo.</b> Vous voyez un avant-goût de cette formation : le départ et quelques leçons de différents modules. Les autres leçons, exercices et tests se trouvent dans la formation complète.",
   } : {
     disclaimer: "De cursussen zijn met de grootste zorg samengesteld. Raadpleeg in geval van twijfel altijd de normatieve documenten en reglementen; die blijven de referentie.",
@@ -31,6 +33,8 @@
     licht: "Naar lichte modus", donker: "Naar donkere modus", lichtK: "Lichte modus", donkerK: "Donkere modus",
     toonInhoud: "Inhoudstafel tonen", verbergInhoud: "Inhoudstafel verbergen",
     terugStart: "Terug naar de startpagina", terugLeerlijn: "Terug naar mijn leerlijn",
+    voorlopig: "Voorlopig beeld: de afbeeldingen en filmpjes zijn nog niet definitief.",
+    geenAfdruk: "Deze cursus afdrukken is niet mogelijk.",
     demo: "<b>Demo.</b> Je bekijkt een voorproefje van deze cursus: de start en enkele lessen uit verschillende modules. De andere lessen, opdrachten en toetsen zitten in de volledige cursus.",
   }
   var THUIS = FR ? "/fr/" : "/"
@@ -286,6 +290,21 @@
     "html.academie-zonder-inhoud .shell{grid-template-columns:minmax(0,1fr)}" +
     "html.academie-zonder-inhoud .side{display:none}}" +
     "@media print{.academie-inhoud{display:none!important}}" +
+    // taalkeuze met vlag (enkel bij een demo die ook in het Frans bestaat)
+    ".academie-menu .am-taal{display:inline-flex;gap:2px;padding:2px;border:1px solid #A9BDC3;border-radius:999px}" +
+    ".academie-menu .am-taal a{display:inline-flex;align-items:center;gap:6px;padding:3px 10px 3px 7px;border:0;border-radius:999px;font:600 12px/1 'IBM Plex Mono',monospace;letter-spacing:.04em}" +
+    ".academie-menu .am-taal a:hover{background:rgba(243,239,231,.14)}" +
+    ".academie-menu .am-taal a[aria-current]{background:#F3EFE7;color:#223840}" +
+    ".academie-menu .am-taal svg{width:19px;height:13px;display:block;border-radius:2px;box-shadow:0 0 0 1px rgba(0,0,0,.28)}" +
+    // voorlopige beelden: melding onder elk beeld en filmpje
+    ".academie-voorlopig{display:flex;gap:8px;align-items:flex-start;margin:8px 0 0;padding:7px 10px;border:1px solid #C06B3E;border-left-width:3px;border-radius:4px;background:rgba(192,107,62,.08);font:13px/1.4 'IBM Plex Sans',system-ui,sans-serif}" +
+    ".academie-voorlopig b{font-weight:700}" +
+    // afdrukken en kopiëren uit (behalve in de beheerdersversie)
+    (A.beheer ? "" :
+      "a[href='#afdruk'],a[href^='#afdruk-'],a[href^='#fiche-'],#pvPrint,.side-links:has(a[href='#afdruk']):not(:has(a:not([href^='#afdruk']))){display:none!important}" +
+      "#main,#view,.shell,.wrap{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}" +
+      "#main input,#main textarea,#main select,#main [contenteditable]{-webkit-user-select:text;user-select:text}" +
+      "@media print{body>*{display:none!important}body:after{content:'" + T.geenAfdruk.replace(/'/g, "\\'") + "';display:block!important;font:16px/1.5 'IBM Plex Sans',system-ui,sans-serif;padding:40px}}") +
     // afgeleide cursus: de groep van het andere traject is leeg, dan ook de titel ervan niet tonen
     (Array.isArray(A.modules) ? ".sec-h:has(+ .mods:empty){display:none}" : "")
 
@@ -360,6 +379,61 @@
     balk.insertBefore(b, balk.firstChild)
   }
 
+  // ---------- Taalkeuze NL / FR (demo's die ook in het Frans bestaan) ----------
+  var FR_DEMO = { BMC: 1 }
+  var VLAG_NL = '<svg viewBox="0 0 9 6" aria-hidden="true"><rect width="9" height="2" fill="#AE1C28"/><rect y="2" width="9" height="2" fill="#fff"/><rect y="4" width="9" height="2" fill="#21468B"/></svg>'
+  var VLAG_FR = '<svg viewBox="0 0 3 2" aria-hidden="true"><rect width="1" height="2" fill="#002654"/><rect x="1" width="1" height="2" fill="#fff"/><rect x="2" width="1" height="2" fill="#CE1126"/></svg>'
+  function taalKeuze() {
+    var c = encodeURIComponent(cursus)
+    return '<span class="am-taal" role="group" aria-label="Taal · Langue">' +
+      '<a data-taal href="/demo/' + c + '/" lang="nl" hreflang="nl" title="Nederlands"' + (FR ? "" : ' aria-current="true"') + ">" + VLAG_NL + "NL</a>" +
+      '<a data-taal href="/fr/demo/' + c + '/" lang="fr" hreflang="fr" title="Français"' + (FR ? ' aria-current="true"' : "") + ">" + VLAG_FR + "FR</a></span>"
+  }
+  // dezelfde les openen in de andere taal
+  document.addEventListener("click", function (e) {
+    var a = e.target && e.target.closest ? e.target.closest("a[data-taal]") : null
+    if (a && location.hash) a.href = a.getAttribute("href") + location.hash
+  }, true)
+
+  // ---------- Voorlopige beelden: melding onder elk beeld en filmpje ----------
+  function voorlopig() {
+    var zet = function () {
+      var f = document.querySelectorAll(".m-frame.has")
+      for (var i = 0; i < f.length; i++) {
+        var n = f[i].nextElementSibling
+        if (n && n.classList.contains("academie-voorlopig")) continue
+        var d = document.createElement("p")
+        d.className = "academie-voorlopig"
+        d.setAttribute("role", "note")
+        d.innerHTML = "<span>" + T.voorlopig.replace(/^([^:]+:)/, "<b>$1</b>") + "</span>"
+        f[i].parentNode.insertBefore(d, n)
+      }
+    }
+    var wacht = null
+    new MutationObserver(function () { clearTimeout(wacht); wacht = setTimeout(zet, 50) }).observe(document.body, { childList: true, subtree: true })
+    zet()
+  }
+
+  // ---------- Afdrukken en kopiëren uit (cursisten en demo; de beheerdersversie houdt alles) ----------
+  function beveilig() {
+    if (A.beheer) return
+    try { window.print = function () {} } catch (e) {}
+    var vrij = function (t) { return t && t.closest && t.closest("input,textarea,select,[contenteditable]") }
+    document.addEventListener("keydown", function (e) {
+      var k = (e.key || "").toLowerCase()
+      if ((e.ctrlKey || e.metaKey) && (k === "p" || k === "s")) { e.preventDefault(); e.stopPropagation() }
+    }, true)
+    ;["copy", "cut", "dragstart", "contextmenu"].forEach(function (ev) {
+      document.addEventListener(ev, function (e) { if (!vrij(e.target)) e.preventDefault() }, true)
+    })
+    // afdrukversie en fiches om af te drukken: terug naar de start
+    var weg = function () {
+      if (/^#(afdruk|fiche-)/.test(location.hash)) location.replace(location.pathname + location.search + "#")
+    }
+    window.addEventListener("hashchange", weg)
+    weg()
+  }
+
   // De menubalk: eerst zonder sessie (meteen zichtbaar), daarna aangevuld volgens de rol
   function menuHtml(s) {
     var aan = s && s.aangemeld
@@ -375,6 +449,7 @@
     }
     var rechts = '<span class="am-code" title="' + T.code + '">' + esc(cursus) + "</span>"
     if (A.demo && A.product) rechts += '<a class="am-actie" href="' + AANVRAGEN + encodeURIComponent(A.product) + '">' + T.inschrijven + "</a>"
+    if (A.demo && FR_DEMO[cursus]) rechts += taalKeuze()
     if (A.demo && !aan) rechts += '<a href="' + (FR ? "/fr/connexion/" : "/aanmelden/") + "?terug=" + encodeURIComponent("/cursus/" + cursus + "/") + '">' + T.aanmelden + "</a>"
     return '<div class="academie-menu-in">' +
       '<a class="am-logo" href="' + THUIS + '" aria-label="Betosoft Academy"><img src="/logo.svg" alt="" width="24" height="21"><span class="am-tekst">Betosoft <em>Academy</em></span></a>' +
@@ -406,6 +481,8 @@
     if (balk) { balk.appendChild(thuis); balk.appendChild(knop) }
     else { knop.style.position = "fixed"; knop.style.top = "52px"; knop.style.right = "10px"; knop.style.zIndex = "50"; document.body.appendChild(knop) }
     inhoudstafel(balk)
+    voorlopig()
+    beveilig()
 
     var main = document.getElementById("main") || document.body
     if (A.demo) {

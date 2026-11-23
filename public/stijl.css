@@ -193,3 +193,10 @@ table.eenvoudig th, table.eenvoudig td { text-align: left; padding: 6px 8px; bor
 table.eenvoudig th { font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: var(--inkt-zacht); font-weight: 600; }
 table.eenvoudig td.num, table.eenvoudig th.num { text-align: right; }
 .scroll-x { overflow-x: auto; }
+
+/* ---------- Taalkeuze NL / FR met vlag (kopbalk) ---------- */
+.taalkeuze { display: inline-flex; gap: 2px; padding: 2px; border: 1px solid var(--b-zacht, #A9BDC3); border-radius: 999px; }
+.taalkeuze a { display: inline-flex; align-items: center; gap: 7px; padding: 5px 11px 5px 8px; border-radius: 999px; color: var(--b-inkt, #F3EFE7); text-decoration: none; font: 600 13px/1 var(--mono); letter-spacing: .04em; }
+.taalkeuze a:hover { background: rgba(243, 239, 231, .14); }
+.taalkeuze a[aria-current] { background: var(--b-inkt, #F3EFE7); color: var(--b-grond, #223840); }
+.taalkeuze .vlag { width: 21px; height: 14px; flex: none; display: block; border-radius: 2px; box-shadow: 0 0 0 1px rgba(0, 0, 0, .28); }

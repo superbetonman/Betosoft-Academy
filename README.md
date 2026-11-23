@@ -72,6 +72,11 @@ Netlify (`betosoft-academy`, statische pagina's + functies in Frankfurt) en Neon
 - De cursussen zijn gebouwd als losse apps (claude.ai-artifacts). Ze staan in de tabel `cursus_bestanden`, **niet** in deze publieke repo.
 - `public/cursus-academie.js` levert de functies die de apps verwachten (`window.claude.use("db" | "user" | "downloads")`):
   voortgang en eigen gegevens gaan per gebruiker naar `/api/leren/gegevens/<CODE>`. Het voegt ook de disclaimer, de demoband en de foutmelder toe.
+  Verder (voorlopig, op vraag van de opdrachtgever): afdrukken en kopiëren staan uit in de demo en bij cursisten
+  (afdrukversie en fiches verborgen, `window.print` en Ctrl/Cmd+P of S geblokkeerd, geen selectie, kopiëren of rechtsklik buiten
+  invulvelden; een afdruk toont enkel een melding). De beheerdersversie houdt alles. Onder elk beeld en filmpje (`.m-frame.has`)
+  staat een melding dat de beelden nog voorlopig zijn. Een demo die ook in het Frans bestaat (`FR_DEMO`) krijgt een taalkeuze
+  NL/FR met vlag in de menubalk; dezelfde les opent in de andere taal.
 - Toegang tot `/cursus/<CODE>/`: beheerders altijd (tester); een cursist als hij toegang heeft tot alle modules van de cursus.
 - Twee versies per cursus: `index.html` voor cursisten (zonder opnamebriefings, AI-prompts, posterprompts en mediaplan; de
   beeldvakken staan als placeholder "Volgt binnenkort") en `beheer.html` voor beheerders (met die productie-informatie).
