@@ -71,6 +71,29 @@ export function wisSessie(context: Context) {
   context.cookies.delete({ name: COOKIE, path: "/" })
 }
 
+/** Demo-cookie (90 dagen): wie het demoformulier invulde en de link volgde. Los van de sessie; enkel het id van demo_bezoekers. */
+export const DEMO_COOKIE = "academie_demo"
+const DEMO_S = 60 * 60 * 24 * 90
+export function zetDemo(context: Context, id: string) {
+  const data = Buffer.from(JSON.stringify({ demo: id, exp: Math.floor(Date.now() / 1000) + DEMO_S })).toString("base64url")
+  context.cookies.set({ name: DEMO_COOKIE, value: `${data}.${handtekening(data)}`, path: "/", httpOnly: true, secure: true, sameSite: "Lax", expires: new Date(Date.now() + DEMO_S * 1000) })
+}
+export function leesDemo(context: Context): string | null {
+  const token = context.cookies.get(DEMO_COOKIE)
+  if (!token) return null
+  const [data, sig] = token.split(".")
+  if (!data || !sig) return null
+  const x = Buffer.from(handtekening(data))
+  const y = Buffer.from(sig)
+  if (x.length !== y.length || !timingSafeEqual(x, y)) return null
+  try {
+    const p = JSON.parse(Buffer.from(data, "base64url").toString())
+    return typeof p.demo === "string" && typeof p.exp === "number" && p.exp > Date.now() / 1000 ? p.demo : null
+  } catch {
+    return null
+  }
+}
+
 export const isBeheer = (g: Gebruiker | null) => !!g && (g.rol === "beheerder" || g.rol === "superadmin")
 
 export function bestemming(rol: Rol) {

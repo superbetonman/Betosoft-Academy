@@ -790,6 +790,38 @@ const actieNamen = {
   locatie_toegevoegd: "Locatie toegevoegd", rol_gewijzigd: "Rol gewijzigd",
   cursus_online: "Cursus online", cursus_offline: "Cursus offline", cursus_startpagina: "Startpagina gewijzigd",
 }
+// =============== DEMO-BEZOEKERS ===============
+// Wie het demoformulier invulde (naam, e-mail, telefoon), welke demo's hij opende en hoe vaak.
+tabs.demo = async () => {
+  const { bezoekers } = await api("/api/beheer/demo")
+  const via = { mail: "mail", "mail+sms": "mail en sms", direct: "meteen (geen mail)" }
+  inhoud.innerHTML = `<h1>Demo-bezoekers</h1>
+    <p class="zacht klein">Wie een demo wil bekijken, vult naam, e-mail en telefoon in en krijgt een persoonlijke link. Geopend = de link gevolgd.</p>
+    <div class="balk"><button class="knop licht klein" id="democsv" ${bezoekers.length ? "" : "disabled"}>Download als CSV</button>
+      <span class="zacht klein">${bezoekers.length} aanvragen · ${bezoekers.filter((b) => b.bevestigd_op).length} geopend</span></div>
+    ${bezoekers.length ? `<div class="scroll-x paneel" style="padding:0"><table class="eenvoudig">
+      <thead><tr><th>Aangevraagd</th><th>Naam</th><th>Contact</th><th>Onderneming</th><th>Demo</th><th>Geopend</th><th class="num">Bezoeken</th><th>Laatst</th></tr></thead>
+      <tbody>${bezoekers.map((b) => `<tr>
+        <td class="mono klein">${tijdstip(b.aangevraagd_op)}</td>
+        <td>${esc(b.naam)}</td>
+        <td class="klein"><a href="mailto:${esc(b.email)}">${esc(b.email)}</a><br><a class="mono" href="tel:${esc(b.telefoon)}">${esc(b.telefoon)}</a></td>
+        <td class="klein">${esc(b.onderneming || "")}</td>
+        <td class="mono klein">${esc(b.cursus)}${b.taal === "fr" ? " (FR)" : ""}${(b.cursussen_bekeken || []).filter((c) => c !== b.cursus).length ? `<br><span class="zacht">ook ${esc(b.cursussen_bekeken.filter((c) => c !== b.cursus).join(", "))}</span>` : ""}</td>
+        <td class="klein">${b.bevestigd_op ? `<span class="status s-conform">ja</span>` : `<span class="status s-indicatief">nog niet</span>`}<br><span class="zacht">${esc(via[b.verstuurd_via] || "")}</span></td>
+        <td class="num mono">${b.bezoeken}</td>
+        <td class="mono klein">${b.laatst_bezocht_op ? tijdstip(b.laatst_bezocht_op) : ""}</td></tr>`).join("")}</tbody>
+    </table></div>` : `<div class="leeg">Nog geen aanvragen voor een demo.</div>`}`
+  $("#democsv")?.addEventListener("click", () => {
+    const kol = ["aangevraagd_op", "naam", "email", "telefoon", "onderneming", "cursus", "taal", "bevestigd_op", "bezoeken", "laatst_bezocht_op", "cursussen_bekeken"]
+    const cel = (v) => `"${String(Array.isArray(v) ? v.join(" ") : v ?? "").replace(/"/g, '""')}"`
+    const csv = "\ufeff" + [kol.join(";"), ...bezoekers.map((b) => kol.map((k) => cel(b[k])).join(";"))].join("\r\n")
+    const a = document.createElement("a")
+    a.href = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }))
+    a.download = `demo-bezoekers-${new Date().toISOString().slice(0, 10)}.csv`
+    a.click()
+  })
+}
+
 tabs.logboek = async () => {
   const { logboek } = await api("/api/beheer/logboek")
   inhoud.innerHTML = `<h1>Logboek</h1><p class="zacht klein">Laatste 200 acties.</p>

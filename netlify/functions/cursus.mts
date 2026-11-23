@@ -1,6 +1,7 @@
 import type { Config, Context } from "@netlify/functions"
 import { db } from "../lib/db.mts"
 import { aangemeld, isBeheer } from "../lib/sessie.mts"
+import { demoPoort } from "../lib/demo.mts"
 import { CURSUSCODE, magCursus, cursusInfo, platformOntbreekt, type CursusInfo } from "../lib/cursustoegang.mts"
 
 /**
@@ -67,13 +68,15 @@ export default async (req: Request, context: Context) => {
     if (!c?.bron || c.startpagina === "niet_tonen") return pagina("Page introuvable", "Il n'y a pas encore de démo en français pour cette formation.", "/fr/#formations", "Vers les formations", 404, "fr")
     const [b] = await db()`SELECT type, inhoud FROM cursus_bestanden WHERE cursus = ${c.bron} AND pad = 'demo-fr.html'`
     if (!b) return pagina("Bientôt disponible", "La démo en français arrive bientôt.", "/fr/#formations", "Vers les formations", 404, "fr")
+    const poort = await demoPoort(req, context, code, "fr", FR_META[code].titel)
+    if (poort) return poort
     const [p] = await db()`SELECT code FROM producten WHERE code = ${"CRS-" + code} AND product_te_koop(id)`
     const a = afgeleid(b.inhoud, { ...c, titel: FR_META[code].titel, app_meta: FR_META[code].meta }, p?.code ?? null, "fr")
     if (!a) return pagina("Momentanément indisponible", "Cette formation est en cours de mise à jour. Réessayez plus tard.", "/fr/#formations", "Retour", 503, "fr")
     return new Response(a, {
       headers: {
         "content-type": b.type,
-        "cache-control": "public, max-age=300",
+        "cache-control": "private, no-store",
         "x-robots-tag": "noarchive",
         "x-content-type-options": "nosniff",
         "referrer-policy": "same-origin",
@@ -100,6 +103,10 @@ export default async (req: Request, context: Context) => {
     if (c?.startpagina === "niet_tonen") {
       if (!isBeheer(await aangemeld(context))) return pagina("Niet gevonden", "Voor deze cursus is er nog geen demo.", "/#cursussen", "Naar de cursussen", 404)
       verborgen = true
+    }
+    if (c) {
+      const poort = await demoPoort(req, context, code, "nl", c.titel)
+      if (poort) return poort
     }
   } else {
     if (pad === "") pad = "index.html"
@@ -150,7 +157,7 @@ export default async (req: Request, context: Context) => {
   return new Response(inhoud, {
     headers: {
       "content-type": b.type,
-      "cache-control": soort === "demo" && !verborgen ? "public, max-age=300" : "private, no-store",
+      "cache-control": "private, no-store",
       "x-robots-tag": soort === "demo" ? "noarchive" : "noindex, nofollow",
       "x-content-type-options": "nosniff",
       "referrer-policy": "same-origin",

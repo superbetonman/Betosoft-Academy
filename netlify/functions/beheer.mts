@@ -633,6 +633,15 @@ const routes: Record<string, Handler> = {
     return json({ ok: true })
   },
 
+  // ---------- Demo-bezoekers (migratie 013) ----------
+  "GET demo": async () => {
+    const rijen = await sql()`
+      SELECT id, naam, email::text AS email, telefoon, onderneming, cursus, taal, verstuurd_via, aangevraagd_op, bevestigd_op,
+             laatst_bezocht_op, bezoeken, cursussen_bekeken
+      FROM demo_bezoekers ORDER BY aangevraagd_op DESC LIMIT 1000`
+    return json({ bezoekers: rijen })
+  },
+
   // ---------- Logboek ----------
   "GET logboek": async () => {
     const rijen = await sql()`SELECT id, actie, entiteit, entiteit_id, details, tijdstip FROM auditlog ORDER BY tijdstip DESC LIMIT 200`
