@@ -7,7 +7,7 @@ let producten = []
 const esc = (v) => String(v ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c])
 const euro = (n) => new Intl.NumberFormat("nl-BE", { style: "currency", currency: "EUR" }).format(Number(n))
 const periode = (p) =>
-  p.periode === "maand" ? "per maand" : p.periode === "jaar" ? "per jaar" : p.geldigheid_maanden ? `eenmalig, ${p.geldigheid_maanden} maanden toegang` : "eenmalig"
+  p.periode === "maand" ? "per maand" : p.periode === "jaar" ? "minimum één jaar, verlengt per jaar" : p.geldigheid_maanden ? `eenmalig, ${p.geldigheid_maanden} maanden toegang` : "eenmalig"
 
 async function laadProducten() {
   try {
@@ -17,7 +17,7 @@ async function laadProducten() {
     producten = []
   }
   const groepen = [
-    ["abonnement", "Abonnement (alle opleidingen)"],
+    ["abonnement", "Toegang tot het platform"],
     ["traject", "Volledig traject"],
     ["module", "Losse module"],
   ]
@@ -47,7 +47,12 @@ function toonPrijs() {
   if (p.prijs_excl_btw === null) return (prijsEl.textContent = `Prijs op aanvraag · ${periode(p)}`)
   const tot = onderneming ? ` · ${n} plaatsen: ${euro(p.prijs_excl_btw * n)} excl. btw` : ""
   prijsEl.textContent = `${euro(p.prijs_excl_btw)} excl. btw ${onderneming ? "per plaats " : ""}· ${periode(p)}${tot}`
-  if (p.beschrijving) prijsEl.textContent += ` · ${p.beschrijving}`
+  if (p.periode === "jaar") prijsEl.textContent = `${euro(p.prijs_excl_btw / 12)} per maand excl. btw ${onderneming ? "per plaats " : ""}· ${euro(p.prijs_excl_btw)} per jaar · ${periode(p)}${tot}`
+  if (p.beschrijving && p.periode !== "jaar") prijsEl.textContent += ` · ${p.beschrijving}`
+  // bij een cursus komt de toegang tot het platform erbij
+  const pf = producten.find((x) => x.code === "ABO-PLATFORM" && x.prijs_excl_btw !== null)
+  if (pf && p.type !== "abonnement")
+    prijsEl.textContent += `. Daarbij komt de toegang tot het platform: ${euro(pf.prijs_excl_btw / 12)} per maand ${onderneming ? "per plaats" : "per persoon"}, minimum één jaar (${euro(pf.prijs_excl_btw)} per jaar), tenzij je die al hebt.`
 }
 
 // Bedrijfsgegevens: verplicht voor een onderneming, optioneel (vinkje) voor een persoon.

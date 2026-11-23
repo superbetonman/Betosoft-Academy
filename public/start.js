@@ -1,8 +1,8 @@
 // Startpagina: cursusoverzicht (uit /cursussen.js), prijzen en voorwaarden (uit de databank via /prijs.js).
 // Welke cursussen verschijnen en of je kunt inschrijven, komt uit de databank (Beheer → Cursussen): tot die geladen is,
 // staat er geen enkele cursus, zodat een cursus die niet getoond mag worden ook niet even opduikt.
-import { esc, getal } from "/gemeen.js"
-import { laadProducten, productenVan, tegelPrijs, prijsTekst, voorwaardenItems, isPakket } from "/prijs.js"
+import { esc, euro, getal } from "/gemeen.js"
+import { laadProducten, productenVan, tegelPrijs, prijsTekst, voorwaardenItems, isPakket, platformVan } from "/prijs.js"
 import { CURSUSSEN, GROEPEN } from "/cursussen.js"
 
 const $ = (s) => document.querySelector(s)
@@ -150,12 +150,13 @@ function prijsoverzicht(producten, regels) {
     .filter((c) => AANBOD.get(c.code) === "inschrijven")
     .map((c) => [c, productenVan(producten, c.code)])
     .filter(([, l]) => l.length)
-  $("#prijsinleiding").innerHTML = `Alle prijzen zijn exclusief <span class="mono">${getal(btw)}&#8239;%</span> btw en gelden per persoon; een onderneming betaalt per plaats. Voor de cursussen in voorbereiding volgt de prijs bij de opening.`
+  const pf = platformVan(producten)
+  $("#prijsinleiding").innerHTML = (pf ? `<strong>Je betaalt de toegang tot het platform, <span class="mono">${esc(euro(Number(pf.prijs_excl_btw) / 12))}</span> per maand per persoon (minimum één jaar), en daarbovenop per cursus die je volgt.</strong> ` : "") + `Alle prijzen zijn exclusief <span class="mono">${getal(btw)}&#8239;%</span> btw en gelden per persoon; een onderneming betaalt per plaats. Voor de cursussen in voorbereiding volgt de prijs bij de opening.`
   $("#prijstabellen").innerHTML = `<div class="scroll-x"><table class="prijzen">
     <colgroup><col class="c-product"><col class="c-toegang"><col class="c-prijs"></colgroup>
     <thead><tr><th>Cursus</th><th class="num">Volledige cursus</th><th class="num"></th></tr></thead>
     <tbody>${perCursus.map(([c, l]) => rij(c.titel, c.code, l)).join("")}
-    ${abo.map((p) => `<tr><td><strong>${esc(p.naam)}</strong><span class="zacht">alle cursussen</span></td><td class="num">${prijsTekst(p)}</td><td class="num"><a href="/prijzen/#abonnement">Details</a></td></tr>`).join("")}
+    ${abo.map((p) => `<tr><td><strong>${esc(p.naam)}</strong><span class="zacht">${p.alle_modules ? "alle cursussen" : "per persoon, minimum één jaar"}</span></td><td class="num">${prijsTekst(p)}</td><td class="num"><a href="/prijzen/#abonnement">Details</a></td></tr>`).join("")}
     </tbody></table></div>
     <div class="knoppen" style="margin-top:14px"><a class="knop" href="/prijzen/">Alle prijzen en trajecten</a></div>`
 }

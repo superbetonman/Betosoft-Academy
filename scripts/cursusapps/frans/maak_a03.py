@@ -2,7 +2,7 @@ import subprocess
 R='ffmpeg -v error -y'.split()
 def dur(f): return float(subprocess.check_output(['ffprobe','-v','error','-show_entries','format=duration','-of','csv=p=0',f]))
 imgs=['13','14b','10','15','16','17','18c','19']
-T={'nl':[0.0,7.76,12.6,18.62,26.06,33.6,39.78,46.62],'fr':[0.0,9.68,13.36,18.74,23.6,30.0,35.9,43.34]}
+T={'nl':[0.0, 7.22, 10.79, 16.25, 22.48, 28.92, 34.09, 40.93],'fr':[0.0, 7.39, 11.44, 16.86, 23.49, 29.6, 35.72, 41.53]}
 lead=0.5
 for lang,ts in T.items():
     vo=f'vo/a03-{lang}.wav'; total=dur(vo)+lead+1.2

@@ -1,7 +1,7 @@
 // Prijzenpagina: abonnement, per cursus (volledige cursus, niveaus/trajecten, losse modules), ondernemingen en voorwaarden.
 import { esc, euro, getal } from "/gemeen.js"
 import { CURSUSSEN } from "/cursussen.js"
-import { laadProducten, productenVan, prijsTekst, toegangTekst, heeftPrijs, voorwaardenItems } from "/prijs.js"
+import { laadProducten, productenVan, prijsTekst, toegangTekst, heeftPrijs, voorwaardenItems, platformVan } from "/prijs.js"
 
 const $ = (s) => document.querySelector(s)
 
@@ -24,10 +24,14 @@ async function laad() {
     // Enkel de cursussen die publiek verschijnen (Beheer → Cursussen); de producten zijn al beperkt tot wat te koop is.
     const zichtbaar = CURSUSSEN.filter((c) => aanbod.has(c.code))
     const btw = regels.btw_pct ?? 21
-    $("#inleiding").innerHTML = `<strong>Je betaalt per cursus, per niveau of per module</strong>, of je neemt een abonnement voor alle cursussen. Prijzen exclusief <span class="mono">${getal(btw)}&#8239;%</span> btw, per persoon. Een onderneming betaalt per plaats.`
+    const pf = platformVan(producten)
+    const pfMaand = pf ? Number(pf.prijs_excl_btw) / 12 : null
+    $("#inleiding").innerHTML = pf
+      ? `<strong>Je betaalt twee dingen: de toegang tot het platform, <span class="mono">${esc(euro(pfMaand))}</span> per maand per persoon (minimum één jaar), en per cursus, niveau of module die je volgt.</strong> Prijzen exclusief <span class="mono">${getal(btw)}&#8239;%</span> btw, per persoon. Een onderneming betaalt per plaats.`
+      : `<strong>Je betaalt per cursus, per niveau of per module.</strong> Prijzen exclusief <span class="mono">${getal(btw)}&#8239;%</span> btw, per persoon. Een onderneming betaalt per plaats.`
 
     const abo = producten.filter((p) => p.type === "abonnement")
-    $("#abonnementen").innerHTML = abo.length ? tabel(abo) : `<p class="zacht">Er is nog geen abonnement.</p>`
+    $("#abonnementen").innerHTML = abo.length ? tabel(abo) : `<p class="zacht">De prijs volgt.</p>`
 
     // per cursus enkel als je kunt inschrijven (een gedeelde basismodule maakt een cursus in voorbereiding niet te koop)
     const open = (c) => aanbod.get(c.code) === "inschrijven" && productenVan(producten, c.code).length > 0
@@ -54,7 +58,10 @@ async function laad() {
     // Rekenvoorbeeld voor een onderneming met de eerste volledige cursus die een prijs heeft
     const vb = producten.find((p) => p.code.startsWith("CRS-") && heeftPrijs(p))
     $("#rekenvoorbeeld").innerHTML = vb
-      ? `<p class="label" style="margin:0 0 6px">Rekenvoorbeeld</p><p style="margin:0">${esc(vb.naam)} voor 5 medewerkers: <span class="mono">5 × ${esc(euro(vb.prijs_excl_btw))} = ${esc(euro(5 * Number(vb.prijs_excl_btw)))}</span> excl. btw.</p>`
+      ? `<p class="label" style="margin:0 0 6px">Rekenvoorbeeld</p><p style="margin:0">${esc(vb.naam)} voor 5 medewerkers, het eerste jaar: ` +
+        (pf
+          ? `toegang tot het platform <span class="mono">5 × ${esc(euro(pf.prijs_excl_btw))}</span> plus de cursus <span class="mono">5 × ${esc(euro(vb.prijs_excl_btw))}</span> = <span class="mono">${esc(euro(5 * (Number(pf.prijs_excl_btw) + Number(vb.prijs_excl_btw))))}</span> excl. btw.</p>`
+          : `<span class="mono">5 × ${esc(euro(vb.prijs_excl_btw))} = ${esc(euro(5 * Number(vb.prijs_excl_btw)))}</span> excl. btw.</p>`)
       : `<p class="label" style="margin:0 0 6px">Rekenvoorbeeld</p><p style="margin:0">5 plaatsen voor een volledige cursus = 5 × de prijs per persoon. De prijzen worden vastgelegd tijdens de testfase.</p>`
 
     const v = voorwaardenItems(producten, regels)

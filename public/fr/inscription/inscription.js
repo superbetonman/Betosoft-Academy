@@ -4,6 +4,7 @@ const prijsEl = document.getElementById("prijs")
 const melding = document.getElementById("melding")
 let producten = []
 const FR_NOM = { "CRS-BMC": "Formation complète chauffeur de camion malaxeur" }
+let plateforme = null
 // Les messages d'erreur du serveur sont en néerlandais : un message général en français, avec le détail entre parenthèses.
 const FOUT_FR = (f) => (f ? `La demande n'a pas pu être envoyée. Vérifiez les champs obligatoires et le numéro de TVA. (${f})` : "L'envoi a échoué. Réessayez plus tard.")
 
@@ -16,7 +17,9 @@ async function laadProducten() {
   try {
     const res = await fetch("/api/producten")
     // En français : seules les formations disponibles en français (pour l'instant : chauffeur de camion malaxeur)
-    producten = ((await res.json()).producten || []).filter((p) => FR_NOM[p.code])
+    const alle = (await res.json()).producten || []
+    plateforme = alle.find((p) => p.code === "ABO-PLATFORM" && p.prijs_excl_btw !== null) || null
+    producten = alle.filter((p) => FR_NOM[p.code])
   } catch {
     producten = []
   }
@@ -47,6 +50,8 @@ function toonPrijs() {
   if (p.prijs_excl_btw === null) return (prijsEl.textContent = `Prix sur demande · ${periode(p)}`)
   const tot = onderneming ? ` · ${n} places : ${euro(p.prijs_excl_btw * n)} hors TVA` : ""
   prijsEl.textContent = `${euro(p.prijs_excl_btw)} hors TVA ${onderneming ? "par place " : ""}· ${periode(p)}${tot}`
+  if (plateforme && p.prijs_excl_btw !== null)
+    prijsEl.textContent += `. S'y ajoute l'accès à la plateforme : ${euro(plateforme.prijs_excl_btw / 12)} par mois ${onderneming ? "par place" : "par personne"}, minimum un an (${euro(plateforme.prijs_excl_btw)} par an), sauf si vous l'avez déjà.`
 }
 
 // Bedrijfsgegevens: verplicht voor een onderneming, optioneel (vinkje) voor een persoon.

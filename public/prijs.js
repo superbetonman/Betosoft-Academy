@@ -21,13 +21,20 @@ export function laadProducten() {
 
 export const heeftPrijs = (p) => p && p.prijs_excl_btw !== null && p.prijs_excl_btw !== undefined
 
+/** Toegang tot het platform: per maand, gefactureerd per jaar (minimum één jaar). */
+export const PLATFORM = "ABO-PLATFORM"
+export const platformVan = (producten) => producten.find((p) => p.code === PLATFORM && heeftPrijs(p)) || null
+
 export function prijsTekst(p) {
   if (!heeftPrijs(p)) return `<span class="prijs-volgt">prijs volgt</span>`
+  if (p.periode === "jaar")
+    return `<span class="mono">${esc(euro(Number(p.prijs_excl_btw) / 12))}</span> / maand <span class="zacht">min. 1 jaar: ${esc(euro(p.prijs_excl_btw))}</span>`
   return `<span class="mono">${esc(euro(p.prijs_excl_btw))}</span>${p.periode === "maand" ? " / maand" : p.periode === "jaar" ? " / jaar" : ""}`
 }
 
 export function toegangTekst(p) {
   if (p.periode === "maand") return "per maand, loopt zolang je betaalt"
+  if (p.periode === "jaar") return "minimum één jaar, verlengt per jaar tenzij je opzegt vóór het einde"
   if (p.geldigheid_maanden) return `${getal(p.geldigheid_maanden)} maanden vanaf activatie`
   return "—"
 }
@@ -75,11 +82,15 @@ export function voorwaardenItems(producten, regels) {
   const m = (v) => `<span class="mono">${getal(v)}</span>`
   const toegangMnd = meestVoorkomend(producten.filter((p) => p.type !== "abonnement").map((p) => p.geldigheid_maanden), 3)
   const vm = regels.verlenging_maanden ?? 1
+  const pf = platformVan(producten)
+  const m$ = (v) => `<span class="mono">${esc(euro(v))}</span>`
   return {
     toegangMnd,
     items: [
       ["Toegang", `Losse modules, niveaus en volledige cursussen: ${m(toegangMnd)} maanden vanaf de activatie. Updates in die periode zijn inbegrepen.`],
-      ["Abonnement", "Jaarabonnement: 12 maanden toegang tot alle cursussen. Maandabonnement: loopt per maand zolang je betaalt."],
+      ...(pf
+        ? [["Platform", `Toegang tot het platform: ${m$(Number(pf.prijs_excl_btw) / 12)} per maand per persoon, minimum één jaar (${m$(pf.prijs_excl_btw)} per jaar, vooraf gefactureerd). Verlengt telkens met een jaar, tenzij je opzegt vóór het einde. Daarbovenop betaal je per cursus die je volgt.`]]
+        : []),
       [
         "Verlengen",
         `Telkens ${m(vm)} ${vm === 1 ? "maand" : "maanden"} voor ${m(regels.verlenging_prijs_pct ?? 25)}&#8239;% van de oorspronkelijke prijs, maximaal ${m(regels.verlenging_max ?? 3)} keer, aan te vragen binnen ${m(regels.verlenging_venster_maanden ?? 3)} maanden na de start.`,

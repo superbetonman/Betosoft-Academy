@@ -81,11 +81,14 @@ function kaart(c, producten, open) {
   </article>`
 }
 
-function voorwaarden(regels, toegangMnd) {
+const eur = (n) => new Intl.NumberFormat("fr-BE", { style: "currency", currency: "EUR" }).format(Number(n))
+const e$ = (v) => `<span class="mono">${esc(eur(v))}</span>`
+function voorwaarden(regels, toegangMnd, pf) {
   const m = (v) => `<span class="mono">${getal(v)}</span>`
   const vm = regels.verlenging_maanden ?? 1
   return [
     ["Accès", `Formation complète : ${m(toegangMnd)} mois à partir de l'activation. Les mises à jour pendant cette période sont comprises.`],
+    ...(pf ? [["Plateforme", `Accès à la plateforme : ${e$(Number(pf.prijs_excl_btw) / 12)} par mois et par personne, minimum un an (${e$(pf.prijs_excl_btw)} par an, facturés à l'avance). Se renouvelle chaque fois d'un an, sauf résiliation avant la fin. En plus, vous payez par formation suivie.`]] : []),
     ["Prolonger", `Chaque fois ${m(vm)} mois pour ${m(regels.verlenging_prijs_pct ?? 25)}&#8239;% du prix initial, au maximum ${m(regels.verlenging_max ?? 3)} fois, à demander dans les ${m(regels.verlenging_venster_maanden ?? 3)} mois après le début.`],
     ["Après la date de fin", "L'accès s'arrête. Votre progression et vos résultats restent enregistrés."],
     ["Paiement", `Accès après paiement de la facture. Le prix est fixé au moment de votre demande. Prix hors TVA de ${m(regels.btw_pct ?? 21)}&#8239;%.`],
@@ -105,12 +108,13 @@ async function laad() {
     const vol = producten.filter((p) => p.code === "CRS-BMC")
     const toegang = vol[0]?.geldigheid_maanden || 3
     kerncijfers(zichtbaar.filter(open).length, toegang)
-    $("#voorwaardenlijst").innerHTML = voorwaarden(regels, toegang).map(([k, t]) => `<div><dt>${k}</dt><dd>${t}</dd></div>`).join("")
-    $("#prijsinleiding").innerHTML = `Tous les prix s'entendent hors <span class="mono">${getal(regels.btw_pct ?? 21)}&#8239;%</span> de TVA et par personne ; une entreprise paie par place. Les formations en préparation auront leur prix à l'ouverture.`
+    const pf = producten.find((p) => p.code === "ABO-PLATFORM" && heeftPrijs(p))
+    $("#voorwaardenlijst").innerHTML = voorwaarden(regels, toegang, pf).map(([k, t]) => `<div><dt>${k}</dt><dd>${t}</dd></div>`).join("")
+    $("#prijsinleiding").innerHTML = (pf ? `<strong>Vous payez l'accès à la plateforme, ${e$(Number(pf.prijs_excl_btw) / 12)} par mois et par personne (minimum un an), et en plus chaque formation que vous suivez.</strong> ` : "") + `Tous les prix s'entendent hors <span class="mono">${getal(regels.btw_pct ?? 21)}&#8239;%</span> de TVA et par personne ; une entreprise paie par place. Les formations en préparation auront leur prix à l'ouverture.`
     $("#prijstabellen").innerHTML = vol.length
       ? `<div class="scroll-x"><table class="prijzen"><colgroup><col class="c-product"><col class="c-toegang"><col class="c-prijs"></colgroup>
         <thead><tr><th>Formation</th><th class="num">Accès</th><th class="num">Prix</th></tr></thead>
-        <tbody>${vol.map((p) => `<tr><td><strong>Formation complète chauffeur de camion malaxeur</strong><span class="zacht">base commune et parcours chauffeur, 8 modules</span></td><td class="num">${getal(p.geldigheid_maanden || 3)} mois</td><td class="num">${prix(p)}</td></tr>`).join("")}</tbody></table></div>
+        <tbody>${pf ? `<tr><td><strong>Accès à la plateforme</strong><span class="zacht">par personne, minimum un an ; se renouvelle chaque année sauf résiliation avant la fin</span></td><td class="num">1 an</td><td class="num">${e$(Number(pf.prijs_excl_btw) / 12)} / mois <span class="zacht">min. 1 an : ${esc(eur(pf.prijs_excl_btw))}</span></td></tr>` : ""}${vol.map((p) => `<tr><td><strong>Formation complète chauffeur de camion malaxeur</strong><span class="zacht">base commune et parcours chauffeur, 8 modules</span></td><td class="num">${getal(p.geldigheid_maanden || 3)} mois</td><td class="num">${prix(p)}</td></tr>`).join("")}</tbody></table></div>
         <div class="knoppen" style="margin-top:14px"><a class="knop" href="/fr/inscription/?product=CRS-BMC">S'inscrire</a></div>`
       : `<p class="zacht">Les prix suivent à l'ouverture.</p>`
   } catch (e) {
