@@ -53,7 +53,7 @@ function kerncijfers(n, toegangMnd) {
   $("#kerncijfers").innerHTML = cijfers.map(([k, v]) => `<div><dt>${k}</dt><dd>${v}</dd></div>`).join("")
 }
 
-const prix = (p) => (heeftPrijs(p) ? `<span class="mono">${esc(euro(p.prijs_excl_btw))}</span>` : `<span class="prijs-volgt">prix à venir</span>`)
+const prix = (p) => (heeftPrijs(p) ? `<span class="mono">${esc(new Intl.NumberFormat("fr-BE", { style: "currency", currency: "EUR" }).format(Number(p.prijs_excl_btw)))}</span>` : `<span class="prijs-volgt">prix à venir</span>`)
 const uren = (min) => Math.round(min / 60)
 
 function kaart(c, producten, open) {
