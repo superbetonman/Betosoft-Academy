@@ -545,6 +545,16 @@ tabs.cursussen = async () => {
       <div class="klein"><span class="mono">${s.modules}</span> modules · <span class="mono">${s.lessen}</span> lessen · <span class="mono">${s.toetsen}</span> toetsen</div>
       ${s.verouderd ? `<div class="klein" style="color:var(--aandacht)">cursus gewijzigd: open ze opnieuw</div>` : `<div class="klein zacht">${esc(tijdstip(s.bijgewerkt_op))}</div>`}`
   }
+  // Talen: NL is de standaard; FR toont of er een Franse demo en een volledige Franse cursus is (met link naar de Franse demo)
+  const talen = (c) => {
+    const t = c.talen || {}
+    const nl = t.nl ? `<span class="tag">NL</span>` : `<span class="zacht klein">geen app</span>`
+    if (!t.fr_demo && !t.fr_cursus) return `${nl}<div class="klein zacht">geen Franse versie</div>`
+    const voor = c.afgeleid?.length ? ` <span class="klein zacht">voor ${t.fr_codes.map(esc).join(", ")}</span>` : ""
+    const wat = [t.fr_demo ? "demo" : "", t.fr_cursus ? "volledige cursus" : "cursus nog niet vertaald"].filter(Boolean).join(" · ")
+    const link = t.fr_demo && !c.afgeleid?.length ? ` <a class="klein" href="/fr/demo/${encodeURIComponent(c.code)}/" target="_blank" rel="noopener">openen</a>` : ""
+    return `${nl} <span class="tag">FR</span>${voor}<div class="klein zacht">FR: ${wat}${link}</div>`
+  }
   const prijs = (c) => (c.producten || []).filter((p) => /^(CRS|PAK)-/.test(p.code)).map((p) => `${esc(p.code)} <span class="mono">${p.prijs === null ? "prijs volgt" : esc(euro(p.prijs))}</span>${p.actief ? "" : " (inactief)"}`).join("<br>") || `<span class="zacht">geen</span>`
   inhoud.innerHTML = `
     <h1>Cursussen</h1>
@@ -554,7 +564,7 @@ tabs.cursussen = async () => {
       cursisten met toegang ze openen; anders enkel beheerders (als tester). De <em>lessenlijst</em> komt uit de cursusapp zelf:
       open de cursus als beheerder om ze te bevestigen (nodig voor voortgang in procent en voor attesten). Doe dat opnieuw na elke nieuwe versie van de app.</p>
     <div class="scroll-x paneel" style="padding:0"><table class="eenvoudig">
-      <thead><tr><th>Cursus</th><th>Startpagina</th><th>Lessenlijst</th><th class="num">Modules klaar</th><th>Product</th><th class="num">Met toegang</th><th class="num">Gestart</th><th class="num">Attesten</th><th></th></tr></thead>
+      <thead><tr><th>Cursus</th><th>Startpagina</th><th>Lessenlijst</th><th>Talen</th><th class="num">Modules klaar</th><th>Product</th><th class="num">Met toegang</th><th class="num">Gestart</th><th class="num">Attesten</th><th></th></tr></thead>
       <tbody>${cursussen.map((c) => `<tr>
         <td><span class="tag">${esc(c.code)}</span><div><strong>${esc(c.titel)}</strong></div>
           <div class="klein zacht">${c.bron ? `app, basis en voortgang van <span class="mono">${esc(c.bron)}</span> · ${esc((c.app_modules || []).join(", "))}`
@@ -564,6 +574,7 @@ tabs.cursussen = async () => {
             ${STARTPAGINA.map(([w, t]) => `<option value="${w}"${w === c.startpagina ? " selected" : ""}>${t}</option>`).join("")}</select>
           <div class="klein zacht">${esc(STARTPAGINA.find(([w]) => w === c.startpagina)?.[2] || "")}</div>`}</td>
         <td>${struct(c)}</td>
+        <td>${talen(c)}</td>
         <td class="num mono">${c.modules_klaar ?? 0}/${c.modules ?? 0}</td>
         <td class="klein">${prijs(c)}</td>
         <td class="num mono">${c.met_toegang ?? 0}</td>

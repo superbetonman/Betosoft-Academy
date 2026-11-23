@@ -5,6 +5,9 @@ import { maakUitnodiging } from "../lib/uitnodiging.mts"
 import { hashWachtwoord, wachtwoordFout } from "../lib/wachtwoord.mts"
 import { laadDeelnemers, laadCursussen, laadStructuren, leerlijn, stand, reikAttestUit, volleNaam, gegevensCode } from "../lib/leerlijn.mts"
 
+// Cursussen met een Franse versie: zelfde lijst als FR_META in functions/cursus.mts (pas beide samen aan).
+const FR_DEMO = new Set(["BMC"])
+
 type Handler = (p: { b: any; q: URLSearchParams; id?: string; ik: Gebruiker; req: Request }) => Promise<Response>
 
 /** Enkel de superadmin mag prijzen, instellingen en beheerders wijzigen. */
@@ -555,15 +558,21 @@ const routes: Record<string, Handler> = {
                 HAVING count(DISTINCT mt.module_id) = (SELECT count(*) FROM v_cursus_modules x WHERE x.cursus_id = c.id)) t) AS met_toegang,
              (SELECT count(*)::int FROM cursus_gegevens cg WHERE cg.cursus = coalesce(c.bron, c.code) AND cg.pad LIKE 'data/users/%/progress') AS gestart,
              (SELECT count(*)::int FROM attesten a WHERE a.cursus_id = c.id AND a.ingetrokken_op IS NULL) AS attesten,
-             (SELECT array_agg(x.code ORDER BY x.code) FROM cursussen x WHERE x.bron = c.code) AS afgeleid
+             (SELECT array_agg(x.code ORDER BY x.code) FROM cursussen x WHERE x.bron = c.code) AS afgeleid,
+             EXISTS (SELECT 1 FROM cursus_bestanden b WHERE b.cursus = coalesce(c.bron, c.code) AND b.pad = 'demo-fr.html') AS fr_demo_bestand,
+             EXISTS (SELECT 1 FROM cursus_bestanden b WHERE b.cursus = coalesce(c.bron, c.code) AND b.pad = 'index-fr.html') AS fr_cursus_bestand
       FROM cursussen c`
     const per = new Map(cijfers.map((r: any) => [r.code, r]))
     return json({
       cursussen: cursussen.map((c) => {
         const s = structuren.get(c.code)
         const x: any = per.get(c.code) ?? {}
+        // Talen: Nederlands is de standaard. Frans: de demo (demo-fr.html bij de bron, enkel voor de cursussen in FR_DEMO)
+        // en later de volledige cursus (index-fr.html). Een bron toont de Franse versies van haar afgeleide cursussen.
+        const frCodes = x.afgeleid?.length ? x.afgeleid.filter((a: string) => FR_DEMO.has(a)) : FR_DEMO.has(c.code) ? [c.code] : []
+        const talen = { nl: !!x.bestanden, fr_demo: !!x.fr_demo_bestand && frCodes.length > 0, fr_cursus: !!x.fr_cursus_bestand && frCodes.length > 0, fr_codes: frCodes }
         return {
-          ...c, ...x,
+          ...c, ...x, talen,
           structuur: s ? { bevestigd: s.bevestigd, bijgewerkt_op: s.bijgewerkt_op, lessen: s.structuur.modules.filter((m) => m.avail).reduce((t, m) => t + m.lessen.length, 0),
             toetsen: s.structuur.modules.filter((m) => m.avail).reduce((t, m) => t + m.lessen.filter((l) => l.soort === "toets").length, 0),
             modules: s.structuur.modules.filter((m) => m.avail && m.lessen.length).length, verouderd: !!(x.bestanden_op && s.bijgewerkt_op && new Date(x.bestanden_op) > new Date(s.bijgewerkt_op)) } : null,
