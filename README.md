@@ -82,6 +82,17 @@ Netlify (`betosoft-academy`, statische pagina's + functies in Frankfurt) en Neon
 - BT3 (Masterclass betontechnologie 3.0) gebruikt de motor van de PLM-app (zelfde lessen, animaties, voorlezen, toetsen en
   voortgang), met een eigen accentkleur. Voorbeeldcentrale in alle cursussen: Beter BetonCentrale (BBC).
 
+## SCORM-pakket voor een ander LMS (bv. TalentLMS)
+- `scripts/scorm/maak-scorm.mjs <CODE> <uitmap>` maakt een SCORM 1.2-pakket (`<CODE>-scorm12.zip`) van de cursistenversie uit
+  `cursus_bestanden`. TalentLMS aanvaardt enkel SCORM 1.2 (eenheid "SCORM | xAPI | cmi5"). Valideer eerst in SCORM Cloud.
+- `scripts/scorm/scorm-brug.js` neemt in het pakket de plaats van `cursus-academie.js`: voortgang compact in `cmi.suspend_data`
+  (max. 4096 tekens; LAB vol: ongeveer 2 300), status `incomplete` tot alle onderdelen af zijn en dan `passed`, score = gemiddelde
+  van de beste score per toets, `lesson_location` = laatste les. Een behaalde status gaat niet terug. De kopie in de browser
+  staat per cursist (`student_id`). Zonder LMS werkt het pakket enkel in de browser.
+- Eén pakket = de hele cursus als één eenheid. Leerlijn, punten, badges en attesten van de academy zitten er niet in.
+- Getest met LAB. Afgeleide cursussen (BMC, BPB) en BT1/BT2 (zonder `COURSE`) worden geweigerd. De zip bevat de cursusinhoud:
+  niet in deze repo zetten.
+
 ## Cursussen op de startpagina en online
 - Per cursus kies je in **Beheer → Cursussen** hoe ze publiek verschijnt (`cursussen.startpagina`, migratie 006):
   | Keuze | Startpagina en prijzen | Demo | Inschrijven | Cursus voor cursisten |
